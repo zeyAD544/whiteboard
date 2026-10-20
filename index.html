@@ -1930,6 +1930,114 @@ let openModalEl = null;
 const sctx = el.scene.getContext('2d', { alpha: false });
 const octx = el.overlay.getContext('2d');
 
+/* ============================================================ PEN INPUT ENGINE
+   Writing on glass only feels like paper if three things are right: honest
+   sampling (every stylus report, in order, at full rate), honest pressure
+   (per-point, not one value smeared across a batch), and honest geometry
+   (a smoothed, variable-width ribbon instead of jagged line segments).
+   Everything below is tuned for that. */
+const PEN = {
+  /* One-euro filter: removes hand jitter at low speed without lagging fast
+     flicks. Adaptive cutoff = minCutoff + beta * |velocity|. */
+  minCutoff: 1.1,
+  beta: 0.012,
+  dCutoff: 1.0,
+  /* A stylus report counts as "real pressure" when the device reports a value
+     that isn't the flat 0.5 a mouse/no-pressure source sends. */
+  mousePressure: 0.5,
+  pressureMinDelta: 0.0009,
+  /* Points closer than this (in screen px) collapse together. */
+  minStepScreen: 0.62,
+  /* Width modulation for pressure-capable pens. */
+  widthAtZero: 0.30,
+  widthAtOne: 1.30,
+  /* Velocity thinning for pressure-less input (mouse / plain stylus). */
+  velWidthMin: 0.72,
+  velWidthMax: 1.12,
+  velRef: 2.4,
+  /* Ignore an accidental palm touch that starts this soon after the pen lifts. */
+  palmGraceMs: 260,
+  /* Predicted-point lookahead is intentionally off: it invents geometry that
+     then has to be retracted, which reads as wobble on paper. Sampling fidelity
+     plus smoothing already covers the perceived latency. */
+  usePrediction: false
+};
+let penProximity = false;
+let lastPenUpAt = 0;
+let penHasPressure = false;
+let smoothing = null;
+let activeStrokeWidth = 0;
+
+/* Coalesced/historical samples give us the true stylus trace; a naive single
+   pointermove per frame throws most of it away. */
+function collectSamples(e) {
+  const out = [];
+  if (typeof e.getCoalescedEvents === 'function') {
+    const c = e.getCoalescedEvents();
+    if (c && c.length) out.push(...c);
+  }
+  if (!out.length && e.getHistoricalEvents) {
+    try { const h = e.getHistoricalEvents(); if (h && h.length) out.push(...h); } catch { /* noop */ }
+  }
+  if (!out.length) out.push(e);
+  return out;
+}
+
+function hasRealPressure(e) {
+  if (e.pointerType !== 'pen') return false;
+  const p = e.pressure;
+  return Number.isFinite(p) && p > 0 && Math.abs(p - PEN.mousePressure) > PEN.pressureMinDelta;
+}
+
+/* --- one-euro filter over screen coordinates (x, y) --- */
+function makeOneEuro() {
+  return { x: null, y: null, dx: 0, dy: 0, t: 0 };
+}
+function alpha(cutoff, dt) {
+  const tau = 1 / (2 * Math.PI * cutoff);
+  return 1 / (1 + tau / dt);
+}
+function oneEuro(f, nx, ny, now) {
+  if (f.x === null) { f.x = nx; f.y = ny; f.t = now; return { x: nx, y: ny }; }
+  let dt = (now - f.t) / 1000;
+  if (dt <= 0) dt = 0.001;
+  if (dt > 0.1) dt = 0.1;
+  f.t = now;
+  const ddx = (nx - f.x) / dt, ddy = (ny - f.y) / dt;
+  const da = alpha(PEN.dCutoff, dt);
+  f.dx += da * (ddx - f.dx);
+  f.dy += da * (ddy - f.dy);
+  const speed = Math.hypot(f.dx, f.dy);
+  const cutoff = PEN.minCutoff + PEN.beta * speed;
+  const a = alpha(cutoff, dt);
+  f.x += a * (nx - f.x);
+  f.y += a * (ny - f.y);
+  return { x: f.x, y: f.y };
+}
+
+function pressureToWidth(base, p) {
+  const scale = clamp(PEN.widthAtZero + p * (PEN.widthAtOne - PEN.widthAtZero), 0.12, 2.2);
+  return Math.max(0.35, base * scale);
+}
+
+/* Smoothed stroke accumulator. Keeps raw *and* smoothed points so we can thin
+   without losing where the pen actually went. */
+function beginStrokeFilter(startScreen) {
+  smoothing = {
+    raw: makeOneEuro(),
+    out: startScreen ? { x: startScreen.x, y: startScreen.y } : null
+  };
+  if (startScreen) { smoothing.raw.x = startScreen.x; smoothing.raw.y = startScreen.y; }
+}
+
+function resetPenInput() {
+  smoothing = null;
+  activePenPressure = 0;
+  penHasPressure = false;
+  activeStrokeWidth = 0;
+}
+
+
 /* ------------------------------------------------------------ color utils */
 function hexToRgb(hex) {
   const m = /^#?([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(hex);
@@ -2418,20 +2526,70 @@ function strokePath(ctx, pts) {
   ctx.lineTo(last.x, last.y);
 }
 
+/* Variable-width stroke rendered as one filled ribbon rather than a stack of
+   separately-stroked segments. Per-segment stroking is what produces the beaded,
+   banded look at width changes; a single polygon with round caps reads as ink. */
 function drawPressureStroke(ctx, e) {
   const pts = e.points;
   const prs = e.pressures;
   const base = e.size;
-  ctx.lineCap = 'round';
-  ctx.lineJoin = 'round';
-  for (let i = 1; i < pts.length; i++) {
-    const p = prs[i] || 0.5;
-    ctx.lineWidth = Math.max(0.3, base * clamp(0.28 + p * 1.05, 0.25, 1.6));
+  const n = pts.length;
+  const wAt = (i) => Math.max(0.22, base * clamp(PEN.widthAtZero + (prs[i] || 0.5) * (PEN.widthAtOne - PEN.widthAtZero), 0.12, 2.2)) / 2;
+
+  if (n === 2) {
+    const w = (wAt(0) + wAt(1)) / 2;
+    ctx.lineWidth = w * 2;
+    ctx.lineCap = 'round';
     ctx.beginPath();
-    ctx.moveTo(pts[i - 1].x, pts[i - 1].y);
-    ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.moveTo(pts[0].x, pts[0].y);
+    ctx.lineTo(pts[1].x, pts[1].y);
     ctx.stroke();
+    return;
   }
+
+  /* Smooth the centre line with a Catmull-Rom-to-bezier pass so the ribbon
+     follows curves instead of the raw polyline. */
+  const sx = new Array(n), sy = new Array(n), sw = new Array(n);
+  for (let i = 0; i < n; i++) { sx[i] = pts[i].x; sy[i] = pts[i].y; sw[i] = wAt(i); }
+  const cx = new Array(n), cy = new Array(n), cw = new Array(n);
+  for (let i = 0; i < n; i++) {
+    const p0 = Math.max(0, i - 1), p1 = i, p2 = Math.min(n - 1, i + 1), p3 = Math.min(n - 1, i + 2);
+    cx[i] = (sx[p1] * 2 + sx[p2] - sx[p0] * 0.5 - sx[p3] * 0.5) / 3;
+    cy[i] = (sy[p1] * 2 + sy[p2] - sy[p0] * 0.5 - sy[p3] * 0.5) / 3;
+    cw[i] = (sw[p0] + sw[p1] * 2 + sw[p2]) / 4;
+  }
+
+  /* Build left and right edges by offsetting along the smoothed normal. */
+  const left = [], right = [];
+  for (let i = 0; i < n; i++) {
+    let tx, ty;
+    if (i === 0) { tx = cx[1] - cx[0]; ty = cy[1] - cy[0]; }
+    else if (i === n - 1) { tx = cx[n - 1] - cx[n - 2]; ty = cy[n - 1] - cy[n - 2]; }
+    else { tx = cx[i + 1] - cx[i - 1]; ty = cy[i + 1] - cy[i - 1]; }
+    const len = Math.hypot(tx, ty) || 1;
+    const nx = -ty / len, ny = tx / len;
+    left.push({ x: cx[i] + nx * cw[i], y: cy[i] + ny * cw[i] });
+    right.push({ x: cx[i] - nx * cw[i], y: cy[i] - ny * cw[i] });
+  }
+
+  ctx.beginPath();
+  ctx.moveTo(left[0].x, left[0].y);
+  for (let i = 1; i < n; i++) {
+    const mx = (left[i - 1].x + left[i].x) / 2, my = (left[i - 1].y + left[i].y) / 2;
+    ctx.quadraticCurveTo(left[i - 1].x, left[i - 1].y, mx, my);
+  }
+  ctx.lineTo(left[n - 1].x, left[n - 1].y);
+  /* round the end cap */
+  ctx.arc(cx[n - 1], cy[n - 1], cw[n - 1], Math.atan2(left[n - 1].y - cy[n - 1], left[n - 1].x - cx[n - 1]), Math.atan2(right[n - 1].y - cy[n - 1], right[n - 1].x - cx[n - 1]), true);
+  ctx.lineTo(right[n - 1].x, right[n - 1].y);
+  for (let i = n - 2; i >= 0; i--) {
+    const mx = (right[i + 1].x + right[i].x) / 2, my = (right[i + 1].y + right[i].y) / 2;
+    ctx.quadraticCurveTo(right[i + 1].x, right[i + 1].y, mx, my);
+  }
+  ctx.lineTo(right[0].x, right[0].y);
+  ctx.arc(cx[0], cy[0], cw[0], Math.atan2(right[0].y - cy[0], right[0].x - cx[0]), Math.atan2(left[0].y - cy[0], left[0].x - cx[0]), true);
+  ctx.closePath();
+  ctx.fill();
 }
 
 function drawElement(ctx, e) {
@@ -2623,9 +2781,27 @@ function drawOverlay() {
 }
 
 /* ------------------------------------------------------------ pointer math */
-function stagePoint(e) {
+/* The stage rect is stable for the whole duration of a stroke, but reading it
+   on every move forces a synchronous layout each event. Cache it and refresh on
+   resize/scroll so stroke sampling costs nothing per sample. */
+let stageRect = { left: 0, top: 0, width: 0, height: 0 };
+let stageRectDirty = true;
+function refreshStageRect() {
   const r = el.stage.getBoundingClientRect();
+  stageRect = { left: r.left, top: r.top, width: r.width, height: r.height };
+  stageRectDirty = false;
+  return stageRect;
+}
+function getStageRect() {
+  if (stageRectDirty || !stageRect.width) return refreshStageRect();
+  return stageRect;
+}
+function stagePoint(e) {
+  const r = stageRectDirty ? refreshStageRect() : stageRect;
   return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function screenPointToWorld(clientX, clientY, r) {
+  return screenToWorld(clientX - r.left, clientY - r.top);
 }
 function toWorld(e) {
   const s = stagePoint(e);
@@ -2646,13 +2822,25 @@ function onPointerDown(e) {
   const isPen = e.pointerType === 'pen';
   const isTouch = e.pointerType === 'touch';
 
-  if (isPen) penActive = true;
+  if (isPen) {
+    penActive = true;
+    penProximity = true;
+    penHasPressure = hasRealPressure(e);
+    if (penHasPressure) activePenPressure = clamp(e.pressure, 0.02, 1);
+  }
   if (isTouch) {
     activeTouches.add(e.pointerId);
-    if (penActive) {
-      /* palm rejection: while the pen is down, ignore finger input */
-      e.preventDefault();
-      return;
+    /* Palm rejection has two triggers: the pen is physically down right now, or
+       it just lifted (a resting hand lands in that window). Either way a finger
+       rest must never leave a mark. A second finger still gets through so pinch
+       and two-finger undo keep working. */
+    const penNear = penActive || penProximity;
+    const withinGrace = Date.now() - lastPenUpAt < PEN.palmGraceMs;
+    if (penNear || withinGrace) {
+      if (activeTouches.size === 1 && state.tool !== 'select') {
+        e.preventDefault();
+        return;
+      }
     }
   }
 
@@ -2691,22 +2879,26 @@ function onPointerDown(e) {
   if (state.tool === 'eraser') { startErase(p); return; }
   if (state.tool === 'select') { startSelect(e, p, s); return; }
   if (SHAPE_TOOLS.includes(state.tool)) { startShape(p, e); return; }
-  startDraw(p);
+  startDraw(p, e);
 }
 
-function startDraw(p) {
+function startDraw(p, e) {
   const marker = state.tool === 'highlighter';
+  beginStrokeFilter(stagePoint(e));
+  penHasPressure = !marker && hasRealPressure(e);
+  activePenPressure = penHasPressure ? clamp(e.pressure, 0.02, 1) : 0;
+  activeStrokeWidth = marker ? state.sizes.highlighter : (penHasPressure ? pressureToWidth(state.sizes.pen, activePenPressure) : state.sizes.pen);
   draft = {
     id: uid(),
     type: 'stroke',
     marker,
     points: [p],
     color: state.color,
-    size: marker ? state.sizes.highlighter : state.sizes.pen,
+    size: state.sizes.pen,
     opacity: marker ? state.opacities.highlighter : state.opacities.pen,
-    pressure: !!activePenPressure
+    pressure: penHasPressure
   };
-  if (activePenPressure && !marker) draft.pressures = [activePenPressure];
+  if (penHasPressure) draft.pressures = [activePenPressure];
   gesture = { type: 'draw' };
   hoverEl = null;
   queueOverlay();
@@ -2824,8 +3016,12 @@ function onPointerMove(e) {
   pointerScreen = s;
   pointerInside = true;
   if (e.pointerType === 'pen') {
+    penProximity = true;
     if (e.buttons) penActive = true;
-    if (e.pressure > 0 && e.pressure !== 0.5) activePenPressure = e.pressure;
+    if (e.pressure > 0 && Math.abs(e.pressure - PEN.mousePressure) > PEN.pressureMinDelta) {
+      activePenPressure = clamp(e.pressure, 0.02, 1);
+      penHasPressure = true;
+    }
   }
   if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
 
@@ -2862,21 +3058,32 @@ function onPointerMove(e) {
     }
     case 'draw': {
       if (!draft) break;
-      const evts = typeof e.getCoalescedEvents === 'function' ? e.getCoalescedEvents() : [];
-      const list = evts.length ? evts : [e];
-      const rect = el.stage.getBoundingClientRect();
-      const minStep = 0.55 / cam.scale;
+      const r = getStageRect();
+      const samples = collectSamples(e);
+      const minStep = PEN.minStepScreen / cam.scale;
+      const minStep2 = minStep * minStep;
+      const now = performance.now();
       let last = draft.points[draft.points.length - 1];
-      for (const ev of list) {
+      let wrote = false;
+      for (const ev of samples) {
         if (draft.points.length > 12000) break;
-        const w = screenToWorld(ev.clientX - rect.left, ev.clientY - rect.top);
-        if (dist(last, w) >= minStep) {
+        const sx = ev.clientX - r.left;
+        const sy = ev.clientY - r.top;
+        const sm = smoothing ? oneEuro(smoothing.raw, sx, sy, now) : { x: sx, y: sy };
+        const w = screenToWorld(sm.x, sm.y);
+        const dx = w.x - last.x, dy = w.y - last.y;
+        if (dx * dx + dy * dy >= minStep2) {
           draft.points.push(w);
-          if (draft.pressures) draft.pressures.push(activePenPressure || 0.5);
+          if (draft.pressures) {
+            const p = hasRealPressure(ev) ? clamp(ev.pressure, 0.02, 1) : (activePenPressure || clamp(ev.pressure || 0.5, 0.02, 1));
+            draft.pressures.push(p);
+            activePenPressure = p;
+          }
           last = w;
+          wrote = true;
         }
       }
-      queueOverlay();
+      if (wrote) { invalidate(draft); queueOverlay(); }
       break;
     }
     case 'shape': {
@@ -3076,6 +3283,8 @@ function onPointerUp(e) {
 
   if (e.pointerType === 'pen') {
     penActive = false;
+    penProximity = false;
+    lastPenUpAt = Date.now();
     activePenPressure = 0;
   }
   if (e.pointerType === 'touch') activeTouches.delete(e.pointerId);
@@ -3117,12 +3326,25 @@ function finishGesture(e) {
   el.stage.classList.remove('is-grabbing');
 
   if (g.type === 'draw') {
+    /* The pointerup sample carries the real end of the stroke; without it every
+       stroke stops one report short of where the pen lifted. */
+    if (draft && e && typeof e.clientX === 'number') {
+      const r = getStageRect();
+      const w = screenToWorld(e.clientX - r.left, e.clientY - r.top);
+      const last = draft.points[draft.points.length - 1];
+      if (!last || dist(last, w) > 0.35 / cam.scale) {
+        draft.points.push(w);
+        if (draft.pressures) draft.pressures.push(hasRealPressure(e) ? clamp(e.pressure, 0.02, 1) : (activePenPressure || clamp(e.pressure || 0.5, 0.02, 1)));
+      }
+    }
     if (draft && draft.points.length) {
+      /* A tap with no travel is a dot, which is what the user drew. */
       pushHistory();
       elements.push(draft);
       bboxCache = new WeakMap();
     }
     draft = null;
+    resetPenInput();
     syncEmptyNote();
     scheduleSave();
     queueScene();
@@ -3183,10 +3405,18 @@ function updateToolCursor() {
 
 el.overlay.addEventListener('pointerdown', onPointerDown);
 el.overlay.addEventListener('pointermove', onPointerMove);
+/* pointerrawupdate fires at the device's native sample rate with the freshest
+   coordinates, ahead of frame-batched pointermove. Use it to drive an active
+   stroke; coalesced handling inside onPointerMove keeps it correct. */
+el.overlay.addEventListener('pointerrawupdate', (e) => {
+  if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
+  if (gesture && gesture.type === 'draw') onPointerMove(e);
+});
 el.overlay.addEventListener('pointerup', onPointerUp);
 el.overlay.addEventListener('pointercancel', onPointerUp);
-el.overlay.addEventListener('pointerleave', () => {
+el.overlay.addEventListener('pointerleave', (e) => {
   pointerInside = false;
+  if (e.pointerType === 'pen') penProximity = false;
   if (!gesture && !pinch) { hoverEl = null; queueOverlay(); }
 });
 el.overlay.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
@@ -4702,7 +4932,7 @@ window.addEventListener('focus', () => {
 
 /* ------------------------------------------------------------ resize + save */
 if (window.ResizeObserver) {
-  const ro = new ResizeObserver(() => measureStage());
+  const ro = new ResizeObserver(() => { stageRectDirty = true; measureStage(); });
   ro.observe(el.stage);
   const panelRo = new ResizeObserver((entries) => {
     const h = entries[0] ? entries[0].contentRect.height : el.videoPanel.clientHeight;
@@ -4711,9 +4941,11 @@ if (window.ResizeObserver) {
   panelRo.observe(el.videoPanel);
 }
 window.addEventListener('resize', () => {
+  stageRectDirty = true;
   applyRatio();
   measureStage();
 });
+window.addEventListener('scroll', () => { stageRectDirty = true; }, true);
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { if (saveTimer) saveNow(); }
 });
@@ -5482,6 +5714,7 @@ async function openPage(pageId) {
   document.title = (state.title.trim() || 'Untitled page') + ' — Margin';
   el.dashboard.hidden = true;
   el.app.hidden = false;
+  stageRectDirty = true;
   el.videoUrl.value = state.videoUrl || '';
   renderRecents();
   await mountPageVideo();
