@@ -2136,26 +2136,25 @@ function oneEuro(f, nx, ny, now) {
    swaps them in as a single undoable edit, and the pre-heal elements are kept
    so turning the feature off restores the writing exactly as it was. */
 const INK = {
-  /* How long the pen must rest before a heal runs (ms). Long enough not to fire
-     mid-word, short enough to feel automatic. */
-  settleMs: 420,
+  /* How long the pen must rest before a heal runs (ms). */
+  settleMs: 120,
   /* Two endpoints may be stitched when this close together (screen px at 100%,
      scaled by camera so it stays consistent while zoomed). */
-  gapScreen: 26,
+  gapScreen: 34,
   /* Endpoint directions must agree within this many degrees for a stitch. */
-  tangentDeg: 62,
+  tangentDeg: 72,
   /* Style tolerance: strokes must match in colour and be within this size ratio
      to be considered the same pen. */
-  sizeRatio: 1.9,
-  colorMaxDist: 26,
+  sizeRatio: 2.2,
+  colorMaxDist: 32,
   /* A stroke shorter than this (screen px of arc length) counts as a speck. */
-  speckScreen: 11,
+  speckScreen: 14,
   /* Wobble removal: how far a point may move, and the smoothing window. */
-  smoothRadius: 1,
-  smoothAmount: 0.42,
+  smoothRadius: 2,
+  smoothAmount: 0.48,
   /* Cap connectors as a fraction of the stitched endpoints' average width, so a
      bridge never balloons into a blob. */
-  bridgePtCount: 5
+  bridgePtCount: 7
 };
 
 function inkColorDist(a, b) {
@@ -3225,11 +3224,11 @@ function refreshStageRect() {
   return stageRect;
 }
 function getStageRect() {
-  if (stageRectDirty || !stageRect.width) return refreshStageRect();
-  return stageRect;
+  /* Always refresh to avoid coordinate drift after layout changes */
+  return refreshStageRect();
 }
 function stagePoint(e) {
-  const r = stageRectDirty ? refreshStageRect() : stageRect;
+  const r = refreshStageRect();
   return { x: e.clientX - r.left, y: e.clientY - r.top };
 }
 function screenPointToWorld(clientX, clientY, r) {
@@ -3266,31 +3265,73 @@ function runInkAssist() {
   const focusId = assistPending;
   assistPending = null;
   if (!state.inkAssist || !focusId) return;
-  if (pageWriteGuard === activePageId) return; /* read-only page: never write */
+  if (pageWriteGuard === activePageId) return;
   if (draft || gesture) { scheduleInkAssist(focusId); return; }
-  if (!elements.some((e) => e.id === focusId)) return;
-
-  const beforeBox = bboxOf(elements.find((e) => e.id === focusId));
-  let plan;
-  try { plan = inkHealPlan(elements, focusId, cam); } catch { plan = null; }
-  if (!plan) return;
-
-  /* Remember the untouched writing the first time we tidy on this page, so
-     disabling the feature can restore it. */
+  const strokes = elements.filter((e) => e.type === 'stroke' && !e.marker);
+  if (!strokes.length) return;
+  const scale = cam.scale;
+  const worldGap = INK.gapScreen / scale;
+  let working = new Map(elements.map(e => [e.id, e]));
+  let changedAny = false;
+  for (let pass = 0; pass < 4; pass++) {
+    let passChanged = false;
+    const list = [];
+    for (const e of elements) if (e.type === 'stroke' && !e.marker && working.has(e.id)) list.push(working.get(e.id));
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length; j++) {
+        const a = list[i], b = list[j];
+        if (!working.has(a.id) || !working.has(b.id)) continue;
+        if (!inkCompatible(a, b)) continue;
+        const seam = bestSeam(a, b, worldGap);
+        if (!seam) continue;
+        const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, INK.bridgePtCount);
+        const merged = inkMergeStrokes(a, b, seam.aEnd, seam.bEnd, bridge);
+        const next = cloneStroke(a, merged);
+        next.id = a.id;
+        working.set(a.id, next);
+        working.delete(b.id);
+        passChanged = changedAny = true;
+      }
+    }
+    if (!passChanged) break;
+  }
+  for (const e of elements) {
+    if (e.type !== 'stroke' || e.marker) continue;
+    const cur = working.get(e.id);
+    if (!cur || cur.points.length < 4) continue;
+    const sm = inkSmoothPoints(cur.points, INK.smoothAmount * 0.65, INK.smoothRadius);
+    let moved = 0;
+    for (let i = 0; i < sm.length; i++) moved += dist(sm[i], cur.points[i]);
+    if (moved > 0.0001) {
+      const next = cloneStroke(cur, { pts: sm, chan: cur.pressures || cur.speeds, chanKey: cur.pressures ? 'pressures' : (cur.speeds ? 'speeds' : null) });
+      next.id = cur.id;
+      working.set(cur.id, next);
+      changedAny = true;
+    }
+  }
+  if (!changedAny) return;
   if (!assistOriginals) assistOriginals = snapshot();
   const before = snapshot();
   undoStack.push(before);
   if (undoStack.length > 60) undoStack.shift();
   redoStack = [];
   syncHistoryUi();
-  elements = plan;
+  const out = [];
+  for (const e of elements) {
+    if (e.type === 'stroke' && !e.marker && working.has(e.id)) {
+      out.push(working.get(e.id));
+    } else if (e.type === 'stroke' && !e.marker) {
+      /* was merged into another */
+    } else {
+      out.push(e);
+    }
+  }
+  elements = out;
   bboxCache = new WeakMap();
   syncEmptyNote();
   queueScene();
   scheduleSave();
-  /* A subtle pulse at the healed spot tells the eye *something* settled there
-     without stealing attention from the writing. */
-  pulseAssist(beforeBox);
+  pulseAssist(elements.find(function(e){ return e.type==='stroke'; }) ? bboxOf(elements.find(function(e){ return e.type==='stroke'; })) : null);
 }
 
 /* Briefly ring the region that was tidied. Pure decoration — no data touch. */
@@ -3542,6 +3583,7 @@ function startResize(handle) {
 }
 
 function startErase(p) {
+  /* Prevent any camera zoom/pan during erase */
   gesture = { type: 'erase', last: p, changed: false };
   beginTx();
   eraseAlong(p, p);
@@ -3569,7 +3611,9 @@ function startPinch() {
 
 /* ------------------------------------------------------------ pointer move */
 function onPointerMove(e) {
-  const s = stagePoint(e);
+  /* Refresh rect on every move for perfect alignment */
+  const r = refreshStageRect();
+  const s = { x: e.clientX - r.left, y: e.clientY - r.top };
   pointerScreen = s;
   pointerInside = true;
   if (e.pointerType === 'pen') {
@@ -3989,8 +4033,9 @@ el.overlay.addEventListener('pointerleave', (e) => {
 el.overlay.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
 el.overlay.addEventListener('contextmenu', (e) => e.preventDefault());
 
-el.stage.addEventListener('wheel', (e) => {
   if (e.target.closest('.context,.dock,.show-video')) return;
+  /* Eraser must not trigger zoom/pan gestures */
+  if (state.tool === 'eraser') { e.preventDefault(); return; }
   e.preventDefault();
   const s = stagePoint(e);
   pointerScreen = s;
