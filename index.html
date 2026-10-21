@@ -1286,7 +1286,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <button class="dock-btn" id="zoomIn" aria-label="Zoom in" data-tip="Zoom in"><svg class="icon"><use href="#i-plus"/></svg></button>
         <span class="dock-sep" aria-hidden="true"></span>
         <button class="dock-btn" id="gridBtn" aria-label="Background: Dots" data-tip="Cycle background · G"><svg class="icon"><use href="#i-dots"/></svg></button>
-        <button class="dock-btn dock-toggle" id="assistBtn" data-act="inkassist" aria-label="Ink Assist" aria-pressed="false" data-tip="Ink Assist · tidy gaps &amp; wobble"><svg class="icon"><use href="#i-assist"/></svg></button>
+        <button class="dock-btn dock-toggle" id="assistBtn" data-act="inkassist" aria-label="Ink Assist" aria-pressed="false" data-tip="Ink Assist — tidy gaps &amp; wobble (I) · whole page (Shift+I)"><svg class="icon"><use href="#i-assist"/></svg></button>
         <button class="dock-btn" id="fitBtn" aria-label="Fit board to content" data-tip="Fit to content · 1"><svg class="icon"><use href="#i-fit"/></svg></button>
       </div>
       <button class="show-video" id="showVideoBtn" data-available="false"><svg class="icon sm"><use href="#i-youtube"/></svg>Show video</button>
@@ -1444,6 +1444,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="key-row"><span>Duplicate</span><span class="keys"><kbd>⌘</kbd><kbd>D</kbd></span></div>
       <div class="key-row"><span>Cycle background</span><span class="keys"><kbd>G</kbd></span></div>
       <div class="key-row"><span>Ink Assist (tidy gaps &amp; wobble)</span><span class="keys"><kbd>I</kbd></span></div>
+      <div class="key-row"><span>Tidy the whole page</span><span class="keys"><kbd>Shift</kbd><kbd>I</kbd></span></div>
       <div class="key-row"><span>Fullscreen</span><span class="keys"><kbd>F</kbd></span></div>
     </div>
     <div class="modal-actions"><button class="btn btn-primary" id="keysDone">Back to the board</button></div>
@@ -2177,50 +2178,74 @@ function oneEuro(f, nx, ny, now) {
 }
 
 /* ============================================================ INK ASSIST
-   An optional, purely additive cleanup pass. When it's on, after the pen rests
-   for a moment we look at the strokes near the one just drawn and:
-     * bridge small gaps where a stroke clearly meant to continue another one
-       (endpoint proximity + matching direction + matching style),
-     * nudge the intended line of that local neighbourhood to remove the
-       hand's high-frequency wobble,
-     * absorb accidental specks into the nearest stroke instead of leaving
-       them as stray dots.
-   Nothing here is ever destructive: the pass builds *new* element objects and
-   swaps them in as a single undoable edit, and the pre-heal elements are kept
-   so turning the feature off restores the writing exactly as it was. */
+   A handwriting clean-up pass that runs while you write (or over the whole
+   page with Shift+I). Four stages:
+
+     1. JOIN   strokes that were meant to be one are stitched end to end
+               (gap + facing tangents + same pen + same colour).
+     2. TOUCH  an end that stops a hair short of another line is extended
+               until it lands on it, so t-bars, f-hooks and plus signs close.
+     3. SHAPE  every stroke is de-duplicated, de-spiked and resampled, then
+               fitted: a near-straight run becomes a true line, axis-snapped
+               when it sits within a few degrees of horizontal or vertical.
+               Everything else is smoothed with the corners left intact.
+     4. WIDTH  the pressure/speed channel is median-filtered and clamped, so
+               a pressure spike can never leave a blob on the line.
+
+   Nothing here is destructive: the pass builds new element objects, swaps
+   them in as ONE undoable edit, and the pre-heal board is remembered so
+   switching the feature off puts the writing back exactly as drawn. */
 const INK = {
   /* How long the pen must rest before a heal runs (ms). */
-  settleMs: 120,
+  settleMs: 130,
   /* Two endpoints may be stitched when this close together (screen px at 100%,
      scaled by camera so it stays consistent while zoomed). */
   gapScreen: 34,
   /* Endpoint directions must agree within this many degrees for a stitch. */
-  tangentDeg: 72,
+  tangentDeg: 68,
   /* Style tolerance: strokes must match in colour and be within this size ratio
      to be considered the same pen. */
   sizeRatio: 2.2,
-  colorMaxDist: 32,
+  colorMaxDist: 40,
   /* A stroke shorter than this (screen px of arc length) counts as a speck. */
   speckScreen: 14,
-  /* Wobble removal: how far a point may move, and the smoothing window. */
+  /* Wobble removal: pull strength and window, before shape fitting. */
   smoothRadius: 2,
-  smoothAmount: 0.48,
-  /* Cap connectors as a fraction of the stitched endpoints' average width, so a
-     bridge never balloons into a blob. */
-  bridgePtCount: 7
+  smoothAmount: 0.5,
+  /* Cap connectors as a fraction of the stitched endpoints' average width. */
+  bridgePtCount: 7,
+  /* How many join sweeps before we call the neighbourhood settled. */
+  mergePasses: 6,
+  /* Resample spacing (screen px) and the hard point ceiling per stroke. */
+  resampleScreen: 5,
+  maxPts: 1600,
+  /* A stroke counts as straight when it strays less than this fraction of its
+     own length, and gets snapped to an axis within this many degrees. */
+  straightDev: 0.022,
+  straightAxisDeg: 3.5,
+  /* Width channel: how far a sample may drift from its local median. */
+  widthClamp: 0.55
 };
 
-function inkColorDist(a, b) {
-  const pa = hexToRgb(safeColor(a)), pb = hexToRgb(safeColor(b));
-  if (!pa || !pb) return Infinity;
-  return Math.abs(pa.r - pb.r) + Math.abs(pa.g - pb.g) + Math.abs(pa.b - pb.b);
-}
-
-function hexToRgb(hex) {
+/* ------------------------------------------------------------ ink colour */
+function inkRgb(hex) {
   const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
   if (!m) return null;
   const n = parseInt(m[1], 16);
-  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+
+function inkColorDist(a, b) {
+  const pa = inkRgb(safeColor(a)), pb = inkRgb(safeColor(b));
+  if (!pa || !pb) return Infinity;
+  return Math.abs(pa[0] - pb[0]) + Math.abs(pa[1] - pb[1]) + Math.abs(pa[2] - pb[2]);
+}
+
+function inkCompatible(a, b) {
+  if (!!a.marker !== !!b.marker) return false;
+  if (inkColorDist(a.color, b.color) > INK.colorMaxDist) return false;
+  const hi = Math.max(a.size, b.size), lo = Math.min(a.size, b.size) || 1;
+  return hi / lo <= INK.sizeRatio;
 }
 
 /* Arc length of a stroke's centre line, in world units. */
@@ -2244,31 +2269,125 @@ function endTangent(pts, which) {
   return { x: dx / len, y: dy / len };
 }
 
-function inkCompatible(a, b) {
-  if (!!a.marker !== !!b.marker) return false;
-  if (inkColorDist(a.color, b.color) > INK.colorMaxDist) return false;
-  const hi = Math.max(a.size, b.size), lo = Math.min(a.size, b.size) || 1;
-  return hi / lo <= INK.sizeRatio;
+/* ------------------------------------------------------------ geometry */
+/* Distance from p to the segment a-b. */
+function inkSegDist(p, a, b) {
+  const vx = b.x - a.x, vy = b.y - a.y;
+  const wx = p.x - a.x, wy = p.y - a.y;
+  const vv = vx * vx + vy * vy;
+  const t = vv > 1e-12 ? clamp((wx * vx + wy * vy) / vv, 0, 1) : 0;
+  return Math.hypot(wx - vx * t, wy - vy * t);
 }
 
-/* Remove the hand's high-frequency wobble from a point run by pulling each
-   interior point toward the midpoint of its neighbours. Small radius, gentle
-   amount: the shape the student drew is preserved, the tremor is not. */
-function inkSmoothPoints(pts, amount, radius) {
-  if (pts.length < 3) return pts.slice();
-  const out = pts.map((p) => ({ x: p.x, y: p.y }));
-  for (let i = 1; i < pts.length - 1; i++) {
-    const a = pts[Math.max(0, i - radius)];
-    const b = pts[Math.min(pts.length - 1, i + radius)];
-    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
-    out[i].x += (mx - out[i].x) * amount;
-    out[i].y += (my - out[i].y) * amount;
+/* Collapse samples the pen emitted while standing still. */
+function inkDedupe(pts, eps) {
+  if (pts.length < 2) return pts.slice();
+  const out = [{ x: pts[0].x, y: pts[0].y }];
+  for (let i = 1; i < pts.length; i++) {
+    if (dist(out[out.length - 1], pts[i]) >= eps) out.push({ x: pts[i].x, y: pts[i].y });
+  }
+  const last = pts[pts.length - 1];
+  if (out.length > 1 && dist(out[out.length - 1], last) <= 1e-9) {
+    out[out.length - 1] = { x: last.x, y: last.y };
+  } else if (dist(out[out.length - 1], last) > 1e-9) {
+    out.push({ x: last.x, y: last.y });
   }
   return out;
 }
 
-/* Carry a stroke's per-point width channel (pressure or speed) across a heal,
-   interpolating where points were added or merged so the taper survives. */
+/* Drop samples where the pen doubled back on itself (a slip or a stutter).
+   Real corners are sharp but never a reversal, so they survive. */
+function inkDespike(pts, size) {
+  if (pts.length < 3) return pts.slice();
+  const out = [{ x: pts[0].x, y: pts[0].y }];
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = out[out.length - 1], b = pts[i], c = pts[i + 1];
+    const ax = b.x - a.x, ay = b.y - a.y;
+    const bx = c.x - b.x, by = c.y - b.y;
+    const la = Math.hypot(ax, ay), lb = Math.hypot(bx, by);
+    if (la > size * 1.5 && lb > size * 1.5) {
+      const dot = (ax * bx + ay * by) / (la * lb);
+      if (dot < -0.86) continue;
+    }
+    out.push({ x: b.x, y: b.y });
+  }
+  out.push({ x: pts[pts.length - 1].x, y: pts[pts.length - 1].y });
+  return out;
+}
+
+/* Even spacing along the path: makes smoothing and fitting behave the same
+   whether the tablet reported 3 or 300 samples per centimetre. */
+function inkResample(pts, step) {
+  const n = pts.length;
+  if (n < 2 || !(step > 0)) return pts.slice();
+  const total = strokeLength(pts);
+  if (!(total > step)) return pts.slice();
+  const count = Math.max(2, Math.min(INK.maxPts, Math.round(total / step) + 1));
+  const gap = total / (count - 1);
+  const out = [{ x: pts[0].x, y: pts[0].y }];
+  let acc = 0;
+  let target = gap;
+  for (let i = 1; i < n && out.length < count - 1; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const seg = dist(a, b);
+    if (!(seg > 1e-9)) continue;
+    while (target <= acc + seg && out.length < count - 1) {
+      const t = (target - acc) / seg;
+      out.push({ x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t });
+      target += gap;
+    }
+    acc += seg;
+  }
+  out.push({ x: pts[n - 1].x, y: pts[n - 1].y });
+  return out;
+}
+
+/* Remove the hand's high-frequency wobble by pulling each interior point
+   toward the midpoint of its neighbours — but never across a corner, because
+   the sharp turns are the skeleton of the letter. */
+function inkSmoothPoints(pts, amount, radius) {
+  if (pts.length < 3) return pts.map((p) => ({ x: p.x, y: p.y }));
+  const r = Math.max(1, radius | 0);
+  const out = pts.map((p) => ({ x: p.x, y: p.y }));
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[Math.max(0, i - r)], b = pts[Math.min(pts.length - 1, i + r)];
+    const ax = pts[i].x - a.x, ay = pts[i].y - a.y;
+    const bx = b.x - pts[i].x, by = b.y - pts[i].y;
+    const la = Math.hypot(ax, ay) || 1, lb = Math.hypot(bx, by) || 1;
+    const cosT = (ax * bx + ay * by) / (la * lb);
+    /* cosT near 1: straight (smooth freely). cosT low: a real corner. */
+    const corner = cosT < 0.62 ? clamp((0.62 - cosT) / 0.35, 0, 1) : 0;
+    const w = amount * (1 - corner);
+    if (!(w > 0)) continue;
+    out[i].x += ((a.x + b.x) / 2 - out[i].x) * w;
+    out[i].y += ((a.y + b.y) / 2 - out[i].y) * w;
+  }
+  return out;
+}
+
+/* Median-filter the width channel, then clamp each sample to a band around
+   its own local median: a single wild pressure reading cannot blob the line,
+   but a genuine taper is followed. */
+function inkCleanChannel(chan) {
+  const n = chan ? chan.length : 0;
+  if (!chan || n < 3) return chan ? chan.slice() : null;
+  const out = new Array(n);
+  const win = 4;
+  for (let i = 0; i < n; i++) {
+    const lo = Math.max(0, i - win), hi = Math.min(n - 1, i + win);
+    const buf = [];
+    for (let j = lo; j <= hi; j++) buf.push(chan[j]);
+    buf.sort((p, q) => p - q);
+    const mid = buf[buf.length >> 1] || 0.5;
+    const lowB = Math.max(0.08, mid * (1 - INK.widthClamp));
+    const highB = Math.min(1, mid * (1 + INK.widthClamp));
+    out[i] = clamp(chan[i], lowB, highB);
+  }
+  return out;
+}
+
+/* Carry a stroke's per-point width channel across a heal, interpolating
+   where points were added or merged so the taper survives. */
 function resampleChannel(channel, srcLen, dstLen) {
   if (!channel || !channel.length) return null;
   const out = new Array(dstLen);
@@ -2276,11 +2395,113 @@ function resampleChannel(channel, srcLen, dstLen) {
     const t = dstLen === 1 ? 0 : (i / (dstLen - 1)) * (srcLen - 1);
     const i0 = Math.floor(t), i1 = Math.min(srcLen - 1, i0 + 1);
     const f = t - i0;
-    out[i] = (channel[i0] || channel[i0] || 0.5) * (1 - f) + (channel[i1] || channel[i0] || 0.5) * f;
+    const a = channel[i0] === undefined ? 0.5 : channel[i0];
+    const b = channel[i1] === undefined ? a : channel[i1];
+    out[i] = a * (1 - f) + b * f;
   }
   return out;
 }
 
+/* Is this run straight enough to replace with a true line? */
+function inkFitLine(pts) {
+  if (pts.length < 3) return null;
+  const a = pts[0], b = pts[pts.length - 1];
+  const len = dist(a, b);
+  if (!(len > 4)) return null;
+  let dev = 0;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const d = inkSegDist(pts[i], a, b);
+    if (d > dev) dev = d;
+  }
+  return dev / len <= INK.straightDev ? { a, b, len } : null;
+}
+
+/* A near-horizontal or near-vertical line reads as intended when it is
+   exactly horizontal or vertical, so nudge it onto the axis. */
+function inkAxisSnap(a, b) {
+  const ang = Math.atan2(b.y - a.y, b.x - a.x);
+  const step = Math.PI / 2;
+  const snapped = Math.round(ang / step) * step;
+  let d = ang - snapped;
+  d = Math.atan2(Math.sin(d), Math.cos(d));
+  if (Math.abs(d) * 180 / Math.PI > INK.straightAxisDeg) return null;
+  const len = Math.hypot(b.x - a.x, b.y - a.y);
+  const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+  const hx = Math.cos(snapped) * len / 2, hy = Math.sin(snapped) * len / 2;
+  return { a: { x: mx - hx, y: my - hy }, b: { x: mx + hx, y: my + hy } };
+}
+
+/* Largest distance any original sample sits from the rebuilt path. */
+function inkPathDeviation(oldPts, newPts) {
+  if (!newPts || newPts.length < 2) return Infinity;
+  const stride = Math.max(1, Math.ceil(oldPts.length / 48));
+  let worst = 0;
+  for (let i = 0; i < oldPts.length; i += stride) {
+    const p = oldPts[i];
+    let best = Infinity;
+    for (let j = 1; j < newPts.length; j++) {
+      const d = inkSegDist(p, newPts[j - 1], newPts[j]);
+      if (d < best) best = d;
+    }
+    if (best > worst) worst = best;
+  }
+  return worst;
+}
+
+/* The full per-stroke rebuild: clean, refit, re-smooth, tidy the width. */
+function inkRefineStroke(stroke, scale) {
+  const pts0 = stroke.points;
+  if (!pts0 || pts0.length < 3) return null;
+  const size = Math.max(stroke.size || 2, 1);
+  const key = stroke.pressures ? 'pressures' : (stroke.speeds ? 'speeds' : null);
+  const chan = key ? stroke[key] : null;
+
+  let pts = inkDedupe(pts0, Math.max(0.3, size * 0.22));
+  pts = inkDespike(pts, size);
+  if (pts.length < 3) return null;
+
+  const len = strokeLength(pts);
+  if (len < size * 3) return null;
+
+  const step = Math.max(0.9, (INK.resampleScreen * 0.9) / scale);
+  if (len > step * 3) pts = inkResample(pts, step);
+  if (pts.length < 3) return null;
+
+  let out = null;
+  const line = inkFitLine(pts);
+  if (line) {
+    const snapped = inkAxisSnap(line.a, line.b);
+    const a = snapped ? snapped.a : line.a;
+    const b = snapped ? snapped.b : line.b;
+    out = [{ x: a.x, y: a.y }, { x: b.x, y: b.y }];
+  }
+  if (!out) {
+    out = inkSmoothPoints(pts, INK.smoothAmount, INK.smoothRadius);
+    out = inkSmoothPoints(out, INK.smoothAmount * 0.5, INK.smoothRadius);
+  }
+
+  const dev = inkPathDeviation(pts0, out);
+  const cleaned = chan ? inkCleanChannel(chan) : null;
+  const chanNext = cleaned ? resampleChannel(cleaned, cleaned.length, out.length) : null;
+  let chanChanged = false;
+  if (chanNext && chan) {
+    if (chanNext.length !== chan.length) {
+      chanChanged = true;
+    } else {
+      for (let i = 0; i < chanNext.length; i++) {
+        if (Math.abs(chanNext[i] - chan[i]) > 0.08) { chanChanged = true; break; }
+      }
+    }
+  }
+  if (dev < 0.16 && !chanChanged) return { el: stroke, changed: false };
+
+  const next = Object.assign({}, stroke, { points: out.map((p) => ({ x: p.x, y: p.y })) });
+  if (key && chanNext && chanNext.length === out.length) next[key] = chanNext;
+  else if (key) delete next[key];
+  return { el: next, changed: true };
+}
+
+/* ------------------------------------------------------------ stitching */
 /* Build a smooth bridge between two endpoints. A straight line reads as a
    scratch; a shallow S-curve reads as the pen never left the paper. */
 function inkBridge(a, aDir, b, bDir, count) {
@@ -2290,26 +2511,23 @@ function inkBridge(a, aDir, b, bDir, count) {
   const nx = -(b.y - a.y) / chord, ny = (b.x - a.x) / chord;
   for (let i = 1; i <= count; i++) {
     const t = i / (count + 1);
-    const e = t * t * (3 - 2 * t); /* smoothstep eases the join at both ends */
-    let x = a.x + (b.x - a.x) * t;
-    let y = a.y + (b.y - a.y) * t;
     const s = Math.sin(Math.PI * t);
-    x += nx * bow * s; y += ny * bow * s;
-    pts.push({ x, y });
-    void e;
+    pts.push({
+      x: a.x + (b.x - a.x) * t + nx * bow * s,
+      y: a.y + (b.y - a.y) * t + ny * bow * s
+    });
   }
+  void aDir; void bDir;
   return pts;
 }
 
 /* Order two strokes into one continuous run and return the merged point list
    (including the bridge), plus the seam index so width interpolation is sane. */
 function inkMergeStrokes(a, b, aEnd, bEnd, bridge) {
-  let firstPts = a.points, firstChan, secondPts = b.points, secondChan;
-  if (aEnd === 'end') { firstPts = a.points; } else { firstPts = a.points.slice().reverse(); }
-  if (bEnd === 'start') { secondPts = b.points; } else { secondPts = b.points.slice().reverse(); }
+  const firstPts = aEnd === 'end' ? a.points : a.points.slice().reverse();
+  const secondPts = bEnd === 'start' ? b.points : b.points.slice().reverse();
   const bridge2 = bridge.slice();
   const pts = firstPts.concat(bridge2, secondPts);
-  /* rebuild width channels reversed/concatenated to match the new point order */
   const chanA = a.pressures || a.speeds;
   const chanB = b.pressures || b.speeds;
   const key = a.pressures ? 'pressures' : (a.speeds ? 'speeds' : null);
@@ -2318,105 +2536,15 @@ function inkMergeStrokes(a, b, aEnd, bEnd, bridge) {
   if (key && key === keyB && chanA && chanB) {
     const ca = aEnd === 'end' ? chanA.slice() : chanA.slice().reverse();
     const cb = bEnd === 'start' ? chanB.slice() : chanB.slice().reverse();
+    const la = ca[ca.length - 1] === undefined ? 0.5 : ca[ca.length - 1];
+    const lb = cb[0] === undefined ? 0.5 : cb[0];
     const bridgeVals = bridge2.map((_, i) => {
       const t = (i + 1) / (bridge2.length + 1);
-      const la = ca[ca.length - 1] ?? 0.5, lb = cb[0] ?? 0.5;
       return la * (1 - t) + lb * t;
     });
     chan = ca.concat(bridgeVals, cb);
   }
-  void firstChan; void secondChan;
-  return { pts, chan, chanKey: key, firstPts };
-}
-
-/* The heal itself: given the live elements and the stroke that was just
-   finished, produce a new element list — or null when nothing helped. Pure:
-   never mutates its input, so a refusal leaves the board untouched. */
-function inkHealPlan(elements, focusId, view) {
-  const scale = (view && view.scale) || 1;
-  const worldGap = INK.gapScreen / scale;
-  const worldSpeck = INK.speckScreen / scale;
-
-  const focus = elements.find((e) => e.id === focusId);
-  if (!focus || focus.type !== 'stroke' || focus.marker) return null;
-
-  /* Candidate strokes: plain strokes near the focus (plus the focus itself). */
-  const focusBox = bboxOf(focus);
-  const pad = worldGap + focus.size;
-  const near = elements.filter((e) => {
-    if (e.type !== 'stroke' || e.marker) return false;
-    const b = bboxOf(e);
-    return !(b.x + b.w < focusBox.x - pad || b.x > focusBox.x + focusBox.w + pad ||
-             b.y + b.h < focusBox.y - pad || b.y > focusBox.y + focusBox.h + pad);
-  });
-
-  const working = new Map(); /* id -> element (possibly rewritten) */
-  for (const e of near) working.set(e.id, e);
-  let changedAny = false;
-
-  /* --- 1. absorb specks: a tiny short stroke next to a big one is a slip. --- */
-  for (const e of near) {
-    if (strokeLength(e.points) * scale > worldSpeck) continue;
-    let host = e.id === focusId ? null : focus, hostDist = e.id === focusId ? Infinity : endpointGap(e, focus);
-    for (const cand of near) {
-      if (cand === e) continue;
-      if (strokeLength(cand.points) * scale <= worldSpeck) continue;
-      if (!inkCompatible(e, cand)) continue;
-      const d = endpointGap(e, cand);
-      if (d < hostDist) { hostDist = d; host = cand; }
-    }
-    if (!host || hostDist > worldGap * 1.6) continue;
-    /* Fold the speck into the host as a tiny tail rather than deleting it. */
-    const h = working.get(host.id) || host;
-    const seam = nearestEndPair(e, h);
-    if (!seam) continue;
-    const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, 2);
-    const merged = inkMergeStrokes(h, e, seam.aEnd, seam.bEnd, bridge);
-    const next = cloneStroke(h, merged);
-    next.id = h.id;
-    working.set(h.id, next);
-    working.delete(e.id);
-    changedAny = true;
-  }
-
-  /* --- 2. stitch gaps: focus continues, or is continued by, a neighbour. --- */
-  for (const other of near) {
-    if (other === focus) continue;
-    const cur = working.get(focus.id) || focus;
-    const oc = working.get(other.id) || other;
-    if (!cur || !oc || cur === oc) continue;
-    if (!inkCompatible(cur, oc)) continue;
-    const seam = bestSeam(cur, oc, worldGap);
-    if (!seam) continue;
-    const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, INK.bridgePtCount);
-    const merged = inkMergeStrokes(cur, oc, seam.aEnd, seam.bEnd, bridge);
-    const next = cloneStroke(cur, merged);
-    next.id = cur.id; /* keep the earlier stroke's identity */
-    working.set(cur.id, next);
-    working.delete(oc.id);
-    changedAny = true;
-  }
-
-  /* --- 3. de-wobble: gently calm the focus after structural edits. --- */
-  const smoothed = working.get(focus.id);
-  if (smoothed && smoothed.points.length > 4) {
-    const pts = inkSmoothPoints(smoothed.points, INK.smoothAmount, INK.smoothRadius);
-    let moved = 0;
-    for (let i = 0; i < pts.length; i++) moved += dist(pts[i], smoothed.points[i]);
-    if (moved > 0.0001) {
-      const next = cloneStroke(smoothed, { pts, chan: smoothed.pressures || smoothed.speeds, chanKey: smoothed.pressures ? 'pressures' : 'speeds' });
-      next.id = smoothed.id;
-      working.set(smoothed.id, next);
-      changedAny = true;
-    }
-  }
-
-  if (!changedAny) return null;
-
-  const removed = new Set();
-  for (const e of near) if (!working.has(e.id)) removed.add(e.id);
-  const out = elements.filter((e) => !removed.has(e.id)).map((e) => working.get(e.id) || e);
-  return out;
+  return { pts, chan, chanKey: key };
 }
 
 function cloneStroke(src, merged) {
@@ -2457,7 +2585,10 @@ function nearestEndPair(a, b) {
     const d = dist(pa, pb);
     if (d < bestD) {
       bestD = d;
-      best = { aEnd: wa, bEnd: wb, aPt: pa, bPt: pb, aDir: endTangent(a.points, wa), bDir: endTangent(b.points, wb), d };
+      best = {
+        aEnd: wa, bEnd: wb, aPt: pa, bPt: pb,
+        aDir: endTangent(a.points, wa), bDir: endTangent(b.points, wb), d
+      };
     }
   }
   return best;
@@ -2486,6 +2617,174 @@ function bestSeam(a, b, maxGap) {
   const deg = Math.acos(clamp(dot, -1, 1)) * 180 / Math.PI;
   if (Math.abs(180 - deg) > INK.tangentDeg) return null;
   return pair;
+}
+
+/* Nearest point on a polyline, with the segment it landed on. */
+function inkNearestOnPath(pts, p) {
+  let best = null;
+  for (let i = 1; i < pts.length; i++) {
+    const a = pts[i - 1], b = pts[i];
+    const vx = b.x - a.x, vy = b.y - a.y;
+    const vv = vx * vx + vy * vy;
+    const t = vv > 1e-12 ? clamp(((p.x - a.x) * vx + (p.y - a.y) * vy) / vv, 0, 1) : 0;
+    const x = a.x + vx * t, y = a.y + vy * t;
+    const d = Math.hypot(p.x - x, p.y - y);
+    if (!best || d < best.d) best = { d, x, y, index: i, t };
+  }
+  return best;
+}
+
+/* Extend an end that stops just shy of another line until it touches, so a
+   't' closes and a '+' meets. Only the shoulder of a neighbour qualifies:
+   ends are handled by the join stage, which merges instead. */
+function inkSnapEndpoint(a, b, reach) {
+  const n = b.points.length;
+  if (n < 2) return null;
+  const tipA = b.points[0], tipB = b.points[n - 1];
+  const tipEps = Math.max(1.5, b.size || 2);
+  const ends = [
+    { which: 'start', p: a.points[0], dir: endTangent(a.points, 'start') },
+    { which: 'end', p: a.points[a.points.length - 1], dir: endTangent(a.points, 'end') }
+  ];
+  let best = null;
+  for (const e of ends) {
+    if (!e.dir) continue;
+    const hit = inkNearestOnPath(b.points, e.p);
+    if (!hit || hit.d > reach || hit.d < 0.15) continue;
+    /* landing on the neighbour's own tip is a seam, not a T: let the join
+       stage decide that one */
+    if (Math.hypot(hit.x - tipA.x, hit.y - tipA.y) < tipEps) continue;
+    if (Math.hypot(hit.x - tipB.x, hit.y - tipB.y) < tipEps) continue;
+    const hx = hit.x - e.p.x, hy = hit.y - e.p.y;
+    const dd = Math.hypot(hx, hy) || 1;
+    const towards = (hx / dd) * e.dir.x + (hy / dd) * e.dir.y;
+    if (towards < 0.2 && hit.d > Math.max(2, (a.size || 2) * 1.5)) continue;
+    if (!best || hit.d < best.d) best = { x: hit.x, y: hit.y, which: e.which, d: hit.d };
+  }
+  if (!best) return null;
+  const pts = a.points.map((p) => ({ x: p.x, y: p.y }));
+  const tip = { x: best.x, y: best.y };
+  if (best.which === 'end') pts.push(tip); else pts.unshift(tip);
+  return { pts, chan: null, chanKey: null };
+}
+
+/* ------------------------------------------------------------ spatial */
+function inkGridIndex(list, cell) {
+  const g = new Map();
+  for (const s of list) {
+    const b = bboxOf(s);
+    const pad = Math.max(s.size || 2, 2);
+    const x0 = Math.floor((b.x - pad) / cell), x1 = Math.floor((b.x + b.w + pad) / cell);
+    const y0 = Math.floor((b.y - pad) / cell), y1 = Math.floor((b.y + b.h + pad) / cell);
+    if ((x1 - x0 + 1) * (y1 - y0 + 1) > 900) continue;
+    for (let x = x0; x <= x1; x++) {
+      for (let y = y0; y <= y1; y++) {
+        const k = x + '|' + y;
+        let arr = g.get(k);
+        if (!arr) { arr = []; g.set(k, arr); }
+        arr.push(s.id);
+      }
+    }
+  }
+  return g;
+}
+
+function inkGridNeighbors(s, grid, cell, pad) {
+  const out = new Set();
+  const b = bboxOf(s);
+  const x0 = Math.floor((b.x - pad) / cell), x1 = Math.floor((b.x + b.w + pad) / cell);
+  const y0 = Math.floor((b.y - pad) / cell), y1 = Math.floor((b.y + b.h + pad) / cell);
+  if ((x1 - x0 + 1) * (y1 - y0 + 1) > 2400) return out;
+  for (let x = x0; x <= x1; x++) {
+    for (let y = y0; y <= y1; y++) {
+      const arr = grid.get(x + '|' + y);
+      if (arr) for (let i = 0; i < arr.length; i++) out.add(arr[i]);
+    }
+  }
+  return out;
+}
+
+/* ------------------------------------------------------------ the pass */
+function inkTidy(list, scale, focusId, refineAll) {
+  const gap = INK.gapScreen / scale;
+  const cell = Math.max(gap * 1.25, 20);
+  let work = list.slice();
+  let joins = 0, snaps = 0;
+  /* Only strokes this pass actually touched are rebuilt. Re-smoothing an
+     already-clean neighbour on every keystroke would slowly erode it. */
+  const touched = new Set();
+  if (focusId) touched.add(focusId);
+
+  for (let pass = 0; pass < INK.mergePasses; pass++) {
+    const byId = new Map(work.map((s) => [s.id, s]));
+    const grid = inkGridIndex(work, cell);
+    const seen = new Set();
+    let did = 0;
+    for (const seed of work) {
+      const a = byId.get(seed.id);
+      if (!a) continue;
+      const near = inkGridNeighbors(a, grid, cell, gap);
+      for (const id of near) {
+        if (id === a.id) continue;
+        const pairKey = a.id < id ? a.id + '|' + id : id + '|' + a.id;
+        if (seen.has(pairKey)) continue;
+        seen.add(pairKey);
+        const cur = byId.get(a.id);
+        const b = byId.get(id);
+        if (!cur || !b || cur.id === b.id) continue;
+        if (!inkCompatible(cur, b)) continue;
+        const seam = bestSeam(cur, b, gap);
+        if (!seam) continue;
+        const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, INK.bridgePtCount);
+        const merged = inkMergeStrokes(cur, b, seam.aEnd, seam.bEnd, bridge);
+        const next = cloneStroke(cur, merged);
+        next.id = cur.id;
+        byId.set(cur.id, next);
+        byId.delete(b.id);
+        touched.add(cur.id);
+        did++;
+      }
+    }
+    work = work.filter((s) => byId.has(s.id)).map((s) => byId.get(s.id));
+    joins += did;
+    if (!did) break;
+  }
+
+  {
+    const byId = new Map(work.map((s) => [s.id, s]));
+    const grid = inkGridIndex(work, cell);
+    const reach = gap * 0.9;
+    for (const seed of work) {
+      const cur = byId.get(seed.id);
+      if (!cur) continue;
+      const near = inkGridNeighbors(cur, grid, cell, reach);
+      for (const id of near) {
+        if (id === cur.id) continue;
+        const other = byId.get(id);
+        if (!other || !inkCompatible(cur, other)) continue;
+        const res = inkSnapEndpoint(cur, other, reach);
+        if (!res) continue;
+        const next = cloneStroke(cur, res);
+        next.id = cur.id;
+        byId.set(cur.id, next);
+        touched.add(cur.id);
+        snaps++;
+        break;
+      }
+    }
+    work = work.map((s) => byId.get(s.id) || s);
+  }
+
+  let refined = 0;
+  const out = [];
+  for (const s of work) {
+    if (!refineAll && !touched.has(s.id)) { out.push(s); continue; }
+    const r = inkRefineStroke(s, scale);
+    if (!r) { out.push(s); continue; }
+    out.push(r.el);
+    if (r.changed) refined++;
+  }
+  return { list: out, joins, snaps, refined, changed: (joins + snaps + refined) > 0 };
 }
 
 /* Smoothed stroke accumulator. Keeps raw *and* smoothed points so we can thin
@@ -3038,29 +3337,28 @@ function drawPressureStroke(ctx, e) {
     return;
   }
 
-  /* Smooth the centre line with a Catmull-Rom-to-bezier pass so the ribbon
-     follows curves instead of the raw polyline. */
+  /* Offset the ribbon along the tangent at each anchor point. The ribbon must
+     run through the anchor points themselves; offsetting the spline's control
+     points instead pulls the whole stroke inward, so ink lands somewhere other
+     than where the pen went. */
   const sx = new Array(n), sy = new Array(n), sw = new Array(n);
   for (let i = 0; i < n; i++) { sx[i] = pts[i].x; sy[i] = pts[i].y; sw[i] = wAt(i); }
-  const cx = new Array(n), cy = new Array(n), cw = new Array(n);
+  const cw = new Array(n);
   for (let i = 0; i < n; i++) {
-    const p0 = Math.max(0, i - 1), p1 = i, p2 = Math.min(n - 1, i + 1), p3 = Math.min(n - 1, i + 2);
-    cx[i] = (sx[p1] * 2 + sx[p2] - sx[p0] * 0.5 - sx[p3] * 0.5) / 3;
-    cy[i] = (sy[p1] * 2 + sy[p2] - sy[p0] * 0.5 - sy[p3] * 0.5) / 3;
+    const p0 = Math.max(0, i - 1), p1 = i, p2 = Math.min(n - 1, i + 1);
     cw[i] = (sw[p0] + sw[p1] * 2 + sw[p2]) / 4;
   }
 
   /* Build left and right edges by offsetting along the smoothed normal. */
   const left = [], right = [];
   for (let i = 0; i < n; i++) {
-    let tx, ty;
-    if (i === 0) { tx = cx[1] - cx[0]; ty = cy[1] - cy[0]; }
-    else if (i === n - 1) { tx = cx[n - 1] - cx[n - 2]; ty = cy[n - 1] - cy[n - 2]; }
-    else { tx = cx[i + 1] - cx[i - 1]; ty = cy[i + 1] - cy[i - 1]; }
+    const a = Math.max(0, i - 1), b = Math.min(n - 1, i + 1);
+    let tx = sx[b] - sx[a], ty = sy[b] - sy[a];
+    if (!tx && !ty) { tx = 1; ty = 0; }
     const len = Math.hypot(tx, ty) || 1;
     const nx = -ty / len, ny = tx / len;
-    left.push({ x: cx[i] + nx * cw[i], y: cy[i] + ny * cw[i] });
-    right.push({ x: cx[i] - nx * cw[i], y: cy[i] - ny * cw[i] });
+    left.push({ x: sx[i] + nx * cw[i], y: sy[i] + ny * cw[i] });
+    right.push({ x: sx[i] - nx * cw[i], y: sy[i] - ny * cw[i] });
   }
 
   ctx.beginPath();
@@ -3071,14 +3369,14 @@ function drawPressureStroke(ctx, e) {
   }
   ctx.lineTo(left[n - 1].x, left[n - 1].y);
   /* round the end cap */
-  ctx.arc(cx[n - 1], cy[n - 1], cw[n - 1], Math.atan2(left[n - 1].y - cy[n - 1], left[n - 1].x - cx[n - 1]), Math.atan2(right[n - 1].y - cy[n - 1], right[n - 1].x - cx[n - 1]), true);
+  ctx.arc(sx[n - 1], sy[n - 1], cw[n - 1], Math.atan2(left[n - 1].y - sy[n - 1], left[n - 1].x - sx[n - 1]), Math.atan2(right[n - 1].y - sy[n - 1], right[n - 1].x - sx[n - 1]), true);
   ctx.lineTo(right[n - 1].x, right[n - 1].y);
   for (let i = n - 2; i >= 0; i--) {
     const mx = (right[i + 1].x + right[i].x) / 2, my = (right[i + 1].y + right[i].y) / 2;
     ctx.quadraticCurveTo(right[i + 1].x, right[i + 1].y, mx, my);
   }
   ctx.lineTo(right[0].x, right[0].y);
-  ctx.arc(cx[0], cy[0], cw[0], Math.atan2(right[0].y - cy[0], right[0].x - cx[0]), Math.atan2(left[0].y - cy[0], left[0].x - cx[0]), true);
+  ctx.arc(sx[0], sy[0], cw[0], Math.atan2(right[0].y - sy[0], right[0].x - sx[0]), Math.atan2(left[0].y - sy[0], left[0].x - sx[0]), true);
   ctx.closePath();
   ctx.fill();
 }
@@ -3325,68 +3623,56 @@ function scheduleInkAssist(focusId) {
 
 /* Run the pass. The whole heal lands as a single history step; if it can't
    improve anything the board is left byte-for-byte untouched. */
-function runInkAssist() {
+/* Run the pass. The whole heal lands as a single history step; if it cannot
+   improve anything the board is left byte-for-byte untouched. An incremental
+   run only looks at the neighbourhood of the pen; a forced run takes the
+   whole page. Returns the pass statistics so callers can report them. */
+function runInkAssist(focusId, opts) {
+  const options = opts || {};
   assistTimer = 0;
-  const focusId = assistPending;
+  const focus = focusId || assistPending;
   assistPending = null;
-  if (!state.inkAssist || !focusId) return;
-  if (pageWriteGuard === activePageId) return;
-  if (draft || gesture) { scheduleInkAssist(focusId); return; }
+  if (!state.inkAssist && !options.force) return null;
+  if (pageWriteGuard === activePageId) return null;
+  if (draft || gesture) {
+    if (focus && !options.force) scheduleInkAssist(focus);
+    return null;
+  }
+  const scale = cam.scale || 1;
   const strokes = elements.filter((e) => e.type === 'stroke' && !e.marker);
-  if (!strokes.length) return;
-  const scale = cam.scale;
-  const worldGap = INK.gapScreen / scale;
-  let working = new Map(elements.map(e => [e.id, e]));
-  let changedAny = false;
-  for (let pass = 0; pass < 4; pass++) {
-    let passChanged = false;
-    const list = [];
-    for (const e of elements) if (e.type === 'stroke' && !e.marker && working.has(e.id)) list.push(working.get(e.id));
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length; j++) {
-        const a = list[i], b = list[j];
-        if (!working.has(a.id) || !working.has(b.id)) continue;
-        if (!inkCompatible(a, b)) continue;
-        const seam = bestSeam(a, b, worldGap);
-        if (!seam) continue;
-        const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, INK.bridgePtCount);
-        const merged = inkMergeStrokes(a, b, seam.aEnd, seam.bEnd, bridge);
-        const next = cloneStroke(a, merged);
-        next.id = a.id;
-        working.set(a.id, next);
-        working.delete(b.id);
-        passChanged = changedAny = true;
-      }
-    }
-    if (!passChanged) break;
-  }
-  for (const e of elements) {
-    if (e.type !== 'stroke' || e.marker) continue;
-    const cur = working.get(e.id);
-    if (!cur || cur.points.length < 4) continue;
-    const sm = inkSmoothPoints(cur.points, INK.smoothAmount * 0.65, INK.smoothRadius);
-    let moved = 0;
-    for (let i = 0; i < sm.length; i++) moved += dist(sm[i], cur.points[i]);
-    if (moved > 0.0001) {
-      const next = cloneStroke(cur, { pts: sm, chan: cur.pressures || cur.speeds, chanKey: cur.pressures ? 'pressures' : (cur.speeds ? 'speeds' : null) });
-      next.id = cur.id;
-      working.set(cur.id, next);
-      changedAny = true;
+  if (!strokes.length) return null;
+
+  let scope = strokes;
+  if (focus && !options.wholePage) {
+    const f = strokes.find((s) => s.id === focus);
+    if (f) {
+      const fb = bboxOf(f);
+      const pad = (INK.gapScreen * 7) / scale;
+      scope = strokes.filter((s) => {
+        const b = bboxOf(s);
+        return !(b.x + b.w < fb.x - pad || b.x > fb.x + fb.w + pad ||
+                 b.y + b.h < fb.y - pad || b.y > fb.y + fb.h + pad);
+      });
     }
   }
-  if (!changedAny) return;
-  if (!assistOriginals) assistOriginals = snapshot();
-  const before = snapshot();
-  undoStack.push(before);
+
+  const plan = inkTidy(scope, scale, focus, !!options.wholePage);
+  if (!plan.changed) return plan;
+
+  if (!assistOriginals && !options.force) assistOriginals = snapshot();
+  undoStack.push(snapshot());
   if (undoStack.length > 60) undoStack.shift();
   redoStack = [];
   syncHistoryUi();
+
+  const scopeIds = new Set(scope.map((s) => s.id));
+  const survivors = new Map(plan.list.map((e) => [e.id, e]));
   const out = [];
   for (const e of elements) {
-    if (e.type === 'stroke' && !e.marker && working.has(e.id)) {
-      out.push(working.get(e.id));
-    } else if (e.type === 'stroke' && !e.marker) {
-      /* was merged into another */
+    if (e.type === 'stroke' && !e.marker && scopeIds.has(e.id)) {
+      const next = survivors.get(e.id);
+      if (next) out.push(next);
+      /* merged into another stroke: it now lives inside the survivor */
     } else {
       out.push(e);
     }
@@ -3396,7 +3682,32 @@ function runInkAssist() {
   syncEmptyNote();
   queueScene();
   scheduleSave();
-  pulseAssist(elements.find(function(e){ return e.type==='stroke'; }) ? bboxOf(elements.find(function(e){ return e.type==='stroke'; })) : null);
+
+  const pulseHost =
+    (focus && elements.find((e) => e.id === focus)) ||
+    elements.filter((e) => e.type === 'stroke' && !e.marker).pop();
+  if (pulseHost) pulseAssist(bboxOf(pulseHost));
+  return plan;
+}
+
+/* Tidy the whole page on demand (Shift+I), even with the live feature off. */
+function tidyPage() {
+  if (pageWriteGuard === activePageId) {
+    toast('This page could not be read, so it stays untouched');
+    return;
+  }
+  const plan = runInkAssist(null, { wholePage: true, force: true });
+  if (!plan) return;
+  if (!plan.changed) {
+    toast('Nothing on this page needed tidying');
+    return;
+  }
+  const bits = [];
+  if (plan.joins) bits.push(plan.joins + (plan.joins === 1 ? ' gap joined' : ' gaps joined'));
+  if (plan.snaps) bits.push(plan.snaps + (plan.snaps === 1 ? ' line closed' : ' lines closed'));
+  if (plan.refined) bits.push(plan.refined + (plan.refined === 1 ? ' stroke smoothed' : ' strokes smoothed'));
+  toast('Tidied \u2014 ' + bits.join(', '));
+
 }
 
 /* Briefly ring the region that was tidied. Pure decoration — no data touch. */
@@ -5359,6 +5670,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') nudgeSelection(0, step);
     return;
   }
+  if (key === 'i' && e.shiftKey) { e.preventDefault(); tidyPage(); return; }
   if (e.key === '?') { e.preventDefault(); openModal(el.shortcutsModal, el.keysDone); return; }
   switch (key) {
     case 'v': setTool('select'); break;
