@@ -728,6 +728,17 @@ input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;backgroun
 .load-btn:active{transform:scale(.96)}
 .field-error{margin:0;font-size:10.5px;line-height:1.4;color:#efa896;min-height:0;display:none}
 .field-error[data-visible="true"]{display:block}
+
+/* ------------------------------------------------------------ account */
+.account-btn{max-width:180px}
+.account-btn span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.account-btn[data-signed="true"]{color:#f0c9b6}
+.auth-label{display:block;margin:0 0 6px;font-size:10px;font-weight:600;letter-spacing:.11em;text-transform:uppercase;color:var(--faint)}
+.auth-label + .input-shell{margin-bottom:14px}
+.auth-switch{margin:14px 0 0;font-size:11.5px;color:var(--faint)}
+.link-btn{color:var(--accent-bright);font-size:inherit;font-weight:600}
+.link-btn:hover{text-decoration:underline}
+#accountSyncNote[data-state="error"]{color:#efa896}
 .video-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:0 2px}
 .browse-link{
   display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:500;color:var(--muted);
@@ -1070,6 +1081,8 @@ input[type="range"].bg-vol::-moz-range-thumb{
   <symbol id="i-expand" viewBox="0 0 24 24"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M16 3h3a2 2 0 0 1 2 2v3"/><path d="M8 21H5a2 2 0 0 1-2-2v-3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></symbol>
   <symbol id="i-compress" viewBox="0 0 24 24"><path d="M3 8h3a2 2 0 0 0 2-2V3"/><path d="M21 8h-3a2 2 0 0 1-2-2V3"/><path d="M3 16h3a2 2 0 0 1 2 2v3"/><path d="M21 16h-3a2 2 0 0 0-2 2v3"/></symbol>
   <symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a2.8 2.8 0 1 1 4.2 2.5c-.9.5-1.4 1.1-1.4 2.2"/><path d="M12 17.2h.01"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M4.8 20c.7-3.6 3.7-5.9 7.2-5.9s6.5 2.3 7.2 5.9"/></symbol>
+  <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7.5 18.5a4.2 4.2 0 0 1-.4-8.4 6 6 0 0 1 11.5 1.6 3.4 3.4 0 0 1-.6 6.8Z"/><path d="M12 15.6V9.8"/><path d="m9.6 12.1 2.4-2.3 2.4 2.3"/></symbol>
   <symbol id="i-minus" viewBox="0 0 24 24"><path d="M5 12h14"/></symbol>
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6" cy="6" r="1.35"/><circle cx="12" cy="6" r="1.35"/><circle cx="18" cy="6" r="1.35"/><circle cx="6" cy="12" r="1.35"/><circle cx="12" cy="12" r="1.35"/><circle cx="18" cy="12" r="1.35"/><circle cx="6" cy="18" r="1.35"/><circle cx="12" cy="18" r="1.35"/><circle cx="18" cy="18" r="1.35"/></symbol>
@@ -1121,6 +1134,9 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="save-state" id="dashSaveState" data-state="saved" title="Saved on this device">
         <span class="save-dot"></span><span class="save-text">Saved</span>
       </div>
+      <button class="btn btn-ghost btn-sm account-btn" id="accountBtn" title="Account and cloud backup">
+        <svg class="icon sm"><use href="#i-user"/></svg><span id="accountBtnLabel">Sign in</span>
+      </button>
       <button class="btn btn-ghost btn-sm" id="dashImportBtn"><svg class="icon sm"><use href="#i-upload"/></svg>Import</button>
       <button class="btn btn-ghost btn-sm" id="dashExportBtn"><svg class="icon sm"><use href="#i-download"/></svg>Export all</button>
       <button class="btn btn-primary btn-sm" id="dashNewSubjectBtn"><svg class="icon sm"><use href="#i-plus"/></svg>New subject</button>
@@ -1367,6 +1383,37 @@ input[type="range"].bg-vol::-moz-range-thumb{
   </div>
 </div>
 
+<!-- account dialog -->
+<div class="modal-layer" id="accountModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="accountTitle">
+    <button class="modal-close" id="accountClose" aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow" id="accountEyebrow">Account</div>
+    <h2 id="accountTitle">Keep your notes safe</h2>
+    <p id="accountCopy">Sign in to copy this workspace to your account. Your notes stay on this device as well.</p>
+    <form id="accountForm" novalidate>
+      <label class="auth-label" for="accountEmail">Email</label>
+      <div class="input-shell">
+        <input id="accountEmail" type="email" autocomplete="email" placeholder="you@example.com" spellcheck="false" required>
+      </div>
+      <label class="auth-label" for="accountPass">Password</label>
+      <div class="input-shell">
+        <input id="accountPass" type="password" autocomplete="current-password" placeholder="At least 6 characters" required>
+      </div>
+      <p class="field-error" id="accountError"></p>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="accountRestoreBtn" type="button" hidden><svg class="icon sm"><use href="#i-download"/></svg>Restore</button>
+        <button class="btn btn-ghost" id="accountSignOutBtn" type="button" hidden>Sign out</button>
+        <button class="btn btn-primary" id="accountSubmit" type="submit">Sign in</button>
+      </div>
+    </form>
+    <div class="modal-note" id="accountSyncNote" hidden>
+      <svg class="icon"><use href="#i-cloud"/></svg><span id="accountSyncText">Not backed up yet</span>
+    </div>
+    <p class="auth-switch" id="accountSwitchRow">No account yet? <button type="button" class="link-btn" id="accountSwitch">Create one</button></p>
+  </div>
+</div>
+
 <!-- shortcuts dialog -->
 <div class="modal-layer" id="shortcutsModal" hidden>
   <div class="modal-scrim" data-close></div>
@@ -1484,6 +1531,12 @@ input[type="range"].bg-vol::-moz-range-thumb{
 <div class="bg-stage" id="bgStage" aria-hidden="true">
   <div id="bgMount"></div>
 </div>
+
+<!-- Firebase compat SDK: keeps the app a single classic script, no bundler.
+     Deferred so a slow or offline network can never hold up the notes. -->
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+<script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
 
 <script>
 (() => {
@@ -2415,7 +2468,18 @@ function nearestEndPair(a, b) {
 function bestSeam(a, b, maxGap) {
   const pair = nearestEndPair(a, b);
   if (!pair || pair.d > maxGap) return null;
-  if (!pair.aDir || !pair.bDir) return null;
+  /* A dot (or a two-sample flick) has no reliable tangent, so the direction
+     test cannot judge it. Let it stitch on distance alone, but demand it sit
+     closer than a full-length stroke would, so a stray mark in the middle of
+     a line is not swallowed. */
+  if (!pair.aDir || !pair.bDir) {
+    const degenerate = a.points.length < 2 || b.points.length < 2;
+    if (!degenerate) return null;
+    if (pair.d > maxGap * 0.75) return null;
+    pair.aDir = pair.aDir || { x: 0, y: 0 };
+    pair.bDir = pair.bDir || { x: 0, y: 0 };
+    return pair;
+  }
   /* Outward tangent of one should be ~opposite the outward tangent of the
      other: dot(dA, dB) near -1 means the ends face one another. */
   const dot = pair.aDir.x * pair.bDir.x + pair.aDir.y * pair.bDir.y;
@@ -2599,6 +2663,7 @@ async function saveNow() {
     await saveWorkspace();
     savePrefs();
     setSaveState('saved');
+    if (typeof scheduleCloudSync === 'function') scheduleCloudSync();
   } catch (err) {
     onStorageError(err, 'page');
   }
@@ -4033,6 +4098,7 @@ el.overlay.addEventListener('pointerleave', (e) => {
 el.overlay.addEventListener('auxclick', (e) => { if (e.button === 1) e.preventDefault(); });
 el.overlay.addEventListener('contextmenu', (e) => e.preventDefault());
 
+el.stage.addEventListener('wheel', (e) => {
   if (e.target.closest('.context,.dock,.show-video')) return;
   /* Eraser must not trigger zoom/pan gestures */
   if (state.tool === 'eraser') { e.preventDefault(); return; }
@@ -6477,6 +6543,7 @@ async function boot() {
     toast('This browser is blocking local storage. Work may not persist — export a backup.');
   }
   loadPrefs();
+  try { initAccount(); } catch { /* the account is optional; never block boot */ }
   if (el.assistBtn) el.assistBtn.setAttribute('aria-pressed', String(state.inkAssist));
   if (el.app) el.app.dataset.inkAssist = state.inkAssist ? 'on' : 'off';
 
@@ -6540,7 +6607,460 @@ function setDashSaveState(kind) {
   if (label) label.textContent = kind === 'saving' ? 'Saving…' : kind === 'saved' ? 'Saved' : 'Save failed';
 }
 
+/* ============================================================ ACCOUNT
+   Email + password through Firebase Auth, plus a simple cloud copy of the
+   whole workspace. IndexedDB stays the source of truth: the account is an
+   extra safety net, never the only home of your notes.
+
+   Rules this section follows, because losing notes is the one unforgivable
+   bug:
+     - signing up copies whatever is already on this device into the account
+     - restoring always writes a local backup first
+     - nothing here deletes local data
+*/
+const FB_CONFIG = {
+  apiKey: 'AIzaSyC1VKNem8Zf5NSfMl769DAwpQYxMp9QXlg',
+  authDomain: 'white-ecc41.firebaseapp.com',
+  projectId: 'white-ecc41',
+  storageBucket: 'white-ecc41.firebasestorage.app',
+  messagingSenderId: '411551131983',
+  appId: '1:411551131983:web:a7142222b065c1ebeb7d3a',
+  measurementId: 'G-M5PKZFFWKT'
+};
+const CLOUD_COLLECTION = 'marginBackups';
+const CLOUD_DEBOUNCE = 4000;
+
+let fbApp = null;
+let fbAuth = null;
+let fbDb = null;
+let fbUser = null;
+let fbMode = 'signin';
+let cloudTimer = 0;
+let cloudBusy = false;
+let cloudAt = 0;
+let cloudWarned = false;
+/* Page ids that the account had when we signed in but this device does not.
+   While that list is non-empty we refuse to overwrite the account: its copy
+   is strictly bigger than ours, so an upload would delete notes. */
+let cloudRemotePages = [];
+
+const fbEl = {};
+
+function accountEls() {
+  if (fbEl.modal) return fbEl;
+  fbEl.modal = document.getElementById('accountModal');
+  fbEl.btn = document.getElementById('accountBtn');
+  fbEl.btnLabel = document.getElementById('accountBtnLabel');
+  fbEl.close = document.getElementById('accountClose');
+  fbEl.form = document.getElementById('accountForm');
+  fbEl.email = document.getElementById('accountEmail');
+  fbEl.pass = document.getElementById('accountPass');
+  fbEl.error = document.getElementById('accountError');
+  fbEl.submit = document.getElementById('accountSubmit');
+  fbEl.signOut = document.getElementById('accountSignOutBtn');
+  fbEl.restore = document.getElementById('accountRestoreBtn');
+  fbEl.switchBtn = document.getElementById('accountSwitch');
+  fbEl.switchRow = document.getElementById('accountSwitchRow');
+  fbEl.copy = document.getElementById('accountCopy');
+  fbEl.title = document.getElementById('accountTitle');
+  fbEl.eyebrow = document.getElementById('accountEyebrow');
+  fbEl.note = document.getElementById('accountSyncNote');
+  fbEl.noteText = document.getElementById('accountSyncText');
+  return fbEl;
+}
+
+function initAccount() {
+  const a = accountEls();
+  if (!a.modal || !a.btn) return;
+  a.btn.addEventListener('click', openAccount);
+  a.close.addEventListener('click', closeAccount);
+  const scrim = a.modal.querySelector('.modal-scrim');
+  if (scrim) scrim.addEventListener('click', closeAccount);
+  a.form.addEventListener('submit', (e) => { e.preventDefault(); submitAccount(); });
+  a.switchBtn.addEventListener('click', () => {
+    fbMode = fbMode === 'signup' ? 'signin' : 'signup';
+    setAccountError('');
+    syncAccountUi();
+  });
+  a.signOut.addEventListener('click', signOutAccount);
+  a.restore.addEventListener('click', restoreFromCloud);
+
+  /* The SDK is deferred, so it may arrive after boot. Try now, then on load,
+     then twice more; whichever attempt finds it wins and the rest no-op. */
+  connectAccount();
+  if (window.addEventListener) window.addEventListener('load', connectAccount, { once: true });
+  setTimeout(connectAccount, 1500);
+  setTimeout(connectAccount, 5000);
+}
+
+function connectAccount() {
+  if (fbAuth) return;
+  if (typeof window.firebase === 'undefined') {
+    const a = accountEls();
+    if (a.btn && !a.btn.dataset.pending) {
+      a.btn.dataset.pending = '1';
+      a.btnLabel.textContent = 'Sign in';
+      a.btn.title = 'Account service loading. Your notes are saved on this device.';
+    }
+    return;
+  }
+  const a = accountEls();
+  try {
+    fbApp = (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FB_CONFIG);
+    fbAuth = firebase.auth();
+    fbDb = typeof firebase.firestore === 'function' ? firebase.firestore() : null;
+    delete a.btn.dataset.pending;
+    syncAccountUi();
+    fbAuth.onAuthStateChanged((user) => { handleAuthChange(user); });
+  } catch (err) {
+    a.btnLabel.textContent = 'Offline';
+    a.btn.title = 'Account service could not start. Your notes are still saved on this device.';
+  }
+}
+
+function openAccount() {
+  const a = accountEls();
+  a.modal.hidden = false;
+  setAccountError('');
+  syncAccountUi();
+  if (!fbUser) setTimeout(() => { try { a.email.focus(); } catch { /* ok */ } }, 30);
+}
+
+function closeAccount() {
+  const a = accountEls();
+  a.modal.hidden = true;
+}
+
+function setAccountError(msg) {
+  const a = accountEls();
+  if (!a.error) return;
+  a.error.textContent = msg || '';
+  a.error.dataset.visible = msg ? 'true' : 'false';
+}
+
+function friendlyAuthError(err) {
+  const code = (err && err.code) || '';
+  if (code === 'auth/invalid-email') return 'That email address is not valid.';
+  if (code === 'auth/missing-password') return 'Enter a password.';
+  if (code === 'auth/weak-password') return 'Passwords need at least 6 characters.';
+  if (code === 'auth/email-already-in-use') return 'An account already exists for that email. Sign in instead.';
+  if (code === 'auth/user-not-found' || code === 'auth/wrong-password' || code === 'auth/invalid-credential')
+    return 'That email and password do not match an account.';
+  if (code === 'auth/too-many-requests') return 'Too many attempts. Wait a moment and try again.';
+  if (code === 'auth/network-request-failed') return 'No connection. Check your internet and try again.';
+  if (code === 'auth/operation-not-allowed') return 'Email sign-in is not enabled for this project yet.';
+  return (err && err.message) ? err.message : 'Something went wrong. Try again.';
+}
+
+function setCloudNote(text, state) {
+  const a = accountEls();
+  if (!a.note || !a.noteText) return;
+  a.noteText.textContent = text;
+  a.note.hidden = !text;
+  a.note.dataset.state = state || '';
+}
+
+function syncAccountUi() {
+  const a = accountEls();
+  if (!a.btn) return;
+  const signed = !!fbUser;
+  a.btn.dataset.signed = String(signed);
+  a.btnLabel.textContent = signed ? (fbUser.email || 'Account') : 'Sign in';
+  a.btn.title = signed ? 'Signed in as ' + (fbUser.email || '') + ' — cloud backup' : 'Account and cloud backup';
+  a.signOut.hidden = !signed;
+  a.restore.hidden = !(signed && !!fbDb);
+  a.email.disabled = signed;
+  a.pass.disabled = signed;
+  a.submit.hidden = signed;
+  a.switchRow.hidden = signed;
+  if (signed) {
+    a.eyebrow.textContent = 'Account';
+    a.title.textContent = 'Your notes are backed up';
+    a.copy.textContent = 'Signed in as ' + (fbUser.email || '') + '. Everything on this device is copied to your account after edits.';
+  } else {
+    const signup = fbMode === 'signup';
+    a.eyebrow.textContent = signup ? 'Create account' : 'Account';
+    a.title.textContent = signup ? 'Make an account' : 'Keep your notes safe';
+    a.copy.textContent = signup
+      ? 'Sign up to copy this workspace to your account. Whatever is already on this device moves with you.'
+      : 'Sign in to copy this workspace to your account. Your notes stay on this device as well.';
+    a.submit.textContent = signup ? 'Create account' : 'Sign in';
+    a.switchRow.firstChild.textContent = signup ? 'Already have an account? ' : 'No account yet? ';
+    a.switchBtn.textContent = signup ? 'Sign in' : 'Create one';
+    a.pass.setAttribute('autocomplete', signup ? 'new-password' : 'current-password');
+  }
+  if (!fbAuth) {
+    /* SDK may still be loading; submitAccount reports a clear error if it
+       never arrives, so never leave the form permanently disabled. */
+    a.submit.disabled = false;
+    if (!fbUser && a.noteText && !a.noteText.textContent) setCloudNote('Connecting to the account service…');
+  }
+}
+
+async function submitAccount() {
+  const a = accountEls();
+  const email = a.email.value.trim();
+  const pass = a.pass.value;
+  setAccountError('');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setAccountError('Enter a valid email address.'); return; }
+  if (pass.length < 6) { setAccountError('Passwords need at least 6 characters.'); return; }
+  if (!fbAuth) { setAccountError('Account service is not available right now.'); return; }
+  a.submit.disabled = true;
+  const label = fbMode === 'signup' ? 'Creating account…' : 'Signing in…';
+  const prev = a.submit.textContent;
+  a.submit.textContent = label;
+  try {
+    if (fbMode === 'signup') await fbAuth.createUserWithEmailAndPassword(email, pass);
+    else await fbAuth.signInWithEmailAndPassword(email, pass);
+  } catch (err) {
+    setAccountError(friendlyAuthError(err));
+  } finally {
+    a.submit.disabled = false;
+    if (!fbUser) a.submit.textContent = prev;
+    syncAccountUi();
+  }
+}
+
+async function signOutAccount() {
+  try { if (fbAuth) await fbAuth.signOut(); } catch { /* ok */ }
+  fbUser = null;
+  cloudAt = 0;
+  cloudRemotePages = [];
+  setCloudNote('');
+  syncAccountUi();
+  toast('Signed out — your notes stay on this device');
+}
+
+async function handleAuthChange(user) {
+  fbUser = user || null;
+  syncAccountUi();
+  if (!user) { setCloudNote(''); return; }
+  const a = accountEls();
+  a.pass.value = '';
+  if (!fbDb) { setCloudNote('Signed in. Cloud backup is unavailable right now.', 'error'); return; }
+  await afterSignIn();
+}
+
+/* First thing after signing in: look at what the account already holds and
+   decide between uploading (new account, this device has notes) and pulling
+   (empty device, account has notes). Anything else is left to the user. */
+async function afterSignIn() {
+  let doc = null;
+  try {
+    doc = await fbDb.collection(CLOUD_COLLECTION).doc(fbUser.uid).get();
+  } catch (err) {
+    setCloudNote('Signed in, but the cloud could not be reached. Your notes are still saved on this device.', 'error');
+    return;
+  }
+  const remoteHas = !!(doc && doc.exists && doc.data() && doc.data().workspace);
+  const remoteAt = remoteHas ? (doc.data().at || 0) : 0;
+  const remoteData = remoteHas ? doc.data() : null;
+  const localHas = !!(wsOk() && workspace.subjects.length);
+  const localEmpty = !localHas;
+
+  if (!remoteHas && !localEmpty) {
+    await uploadCloud('migration');
+    toast('Your notes were copied to your new account');
+    return;
+  }
+  if (remoteHas) {
+    cloudAt = remoteAt;
+    cloudRemotePages = cloudPageIds(remoteData);
+    const localPages = Object.keys(bundlePageIds(workspace));
+    const missing = cloudRemotePages.filter((id) => localPages.indexOf(id) === -1);
+    if (remoteHas && localEmpty) {
+      setCloudNote('This account has notes from ' + shortWhen(remoteAt) + '. Use Restore to bring them to this device.');
+      return;
+    }
+    if (missing.length) {
+      setCloudNote('This account holds ' + missing.length + ' page(s) that are not on this device. Use Restore before writing here.', 'error');
+      return;
+    }
+    setCloudNote('Signed in. Account copy from ' + shortWhen(remoteAt) + '. New edits are backed up automatically.');
+    return;
+  }
+  /* both empty */
+  setCloudNote('Signed in. Your notes will be backed up as you write.');
+}
+
+function bundlePageIds(ws) {
+  const out = {};
+  if (!ws || !ws.pages) return out;
+  for (const id of Object.keys(ws.pages)) out[id] = true;
+  return out;
+}
+
+function cloudPageIds(data) {
+  if (!data) return [];
+  if (Array.isArray(data.pageIds)) {
+    return data.pageIds.filter((k) => typeof k === 'string' && k.indexOf('refs:') !== 0);
+  }
+  if (data.pages && typeof data.pages === 'object') {
+    return Object.keys(data.pages).filter((k) => k.indexOf('refs:') !== 0);
+  }
+  return [];
+}
+
+function shortWhen(ts) {
+  if (!ts) return 'an earlier session';
+  try {
+    const d = new Date(ts);
+    const now = new Date();
+    const sameDay = d.toDateString() === now.toDateString();
+    return sameDay
+      ? 'today at ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+      : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' at ' + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  } catch { return 'an earlier session'; }
+}
+
+async function buildCloudBundle() {
+  const pages = {};
+  const ids = new Set(Object.keys((workspace && workspace.pages) || {}));
+  for (const t of ((workspace && workspace.trash) || [])) {
+    if (t.kind === 'page' && t.id) ids.add(t.id);
+    if (t.kind === 'subject' && Array.isArray(t.pageIds)) for (const p of t.pageIds) ids.add(p);
+  }
+  for (const id of ids) {
+    try {
+      const c = await store.get(PAGE_PREFIX + id);
+      if (c !== undefined) pages[id] = c;
+      const r = await store.get('pagerefs:' + id);
+      if (r !== undefined) pages['refs:' + id] = r;
+    } catch { /* skip a page we cannot read; the rest still gets backed up */ }
+  }
+  return { workspace, pages };
+}
+
+function scheduleCloudSync() {
+  if (!fbUser || !fbDb) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => { uploadCloud('auto'); }, CLOUD_DEBOUNCE);
+}
+
+async function uploadCloud(reason) {
+  if (!fbUser || !fbDb || !wsOk()) return false;
+  if (window.__marginStorageHeld) return false;
+  if (cloudBusy) { scheduleCloudSync(); return false; }
+  cloudBusy = true;
+  setCloudNote('Backing up…');
+  try {
+    const bundle = await buildCloudBundle();
+    const missingRemote = cloudRemotePages.filter((id) => !(id in bundle.pages));
+    if (missingRemote.length) {
+      cloudWarned = true;
+      setCloudNote('This account holds ' + missingRemote.length + ' page(s) that are not on this device, so it was not overwritten. Use Restore to bring them here.', 'error');
+      return false;
+    }
+    const json = JSON.stringify(bundle);
+    const base = fbDb.collection(CLOUD_COLLECTION).doc(fbUser.uid);
+    const at = Date.now();
+    if (json.length < 850000) {
+      await base.set({
+        v: 1, at, reason: reason || 'auto', chunked: false,
+        email: fbUser.email || '',
+        workspace: bundle.workspace,
+        pages: bundle.pages
+      });
+      try {
+        const sub = base.collection('pages');
+        const old = await sub.get();
+        const kill = [];
+        old.forEach((d) => kill.push(d.ref.delete()));
+        await Promise.all(kill);
+      } catch { /* leftovers are harmless */ }
+    } else {
+      await base.set({
+        v: 1, at, reason: reason || 'auto', chunked: true,
+        email: fbUser.email || '',
+        workspace: bundle.workspace,
+        pageIds: Object.keys(bundle.pages)
+      });
+      const sub = base.collection('pages');
+      const wanted = new Set();
+      for (const [k, v] of Object.entries(bundle.pages)) {
+        const id = encodeURIComponent(k);
+        wanted.add(id);
+        await sub.doc(id).set({ k, v });
+      }
+      const old = await sub.get();
+      const kill = [];
+      old.forEach((d) => { if (!wanted.has(d.id)) kill.push(d.ref.delete()); });
+      await Promise.all(kill);
+    }
+    cloudAt = at;
+    cloudWarned = false;
+    setCloudNote('Backed up ' + shortWhen(at));
+    return true;
+  } catch (err) {
+    const msg = (err && err.code === 'permission-denied')
+      ? 'The account cannot write backups yet — check the Firestore rules.'
+      : 'Backup failed. Your notes are still saved on this device.';
+    setCloudNote(msg, 'error');
+    if (!cloudWarned) { cloudWarned = true; toast(msg); }
+    return false;
+  } finally {
+    cloudBusy = false;
+  }
+}
+
+async function restoreFromCloud() {
+  if (!fbUser || !fbDb) return;
+  setCloudNote('Looking for your backup…');
+  let doc;
+  try {
+    doc = await fbDb.collection(CLOUD_COLLECTION).doc(fbUser.uid).get();
+  } catch {
+    setCloudNote('Could not reach the cloud. Try again in a moment.', 'error');
+    return;
+  }
+  if (!doc || !doc.exists || !doc.data() || !doc.data().workspace) {
+    setCloudNote('This account has no backup yet.', 'error');
+    return;
+  }
+  const data = doc.data();
+  const pages = data.pages || {};
+  if (data.chunked) {
+    try {
+      const snap = await doc.ref.collection('pages').get();
+      snap.forEach((d) => {
+        const v = d.data();
+        if (v && typeof v.k === 'string') pages[v.k] = v.v;
+      });
+    } catch { /* fall through with what we have */ }
+  }
+  const when = shortWhen(data.at || 0);
+  const ok = await confirmDialog({
+    title: 'Restore from your account?',
+    body: 'This replaces the notes on this device with the copy saved ' + when + '. A safety backup of what is here now is taken first, so nothing is lost.',
+    confirm: 'Restore'
+  });
+  if (!ok) { setCloudNote('Kept what is on this device.'); return; }
+
+  await createBackup('cloud-restore');
+  const incoming = sanitizeWorkspace(data.workspace);
+  try {
+    for (const id of Object.keys(incoming.pages)) {
+      const p = pages[id];
+      if (p && typeof p === 'object' && Array.isArray(p.elements)) await writeVerified(PAGE_PREFIX + id, { v: 1, ...p });
+      const r = pages['refs:' + id];
+      if (r !== undefined) await writeVerified('pagerefs:' + id, r);
+    }
+    if (activePageId) { activePageId = null; el.app.hidden = true; el.dashboard.hidden = false; }
+    workspace = incoming;
+    await saveWorkspace();
+    renderDashboard();
+    cloudAt = data.at || Date.now();
+    cloudRemotePages = [];
+    setCloudNote('Restored from ' + when);
+    toast('Notes restored from your account');
+  } catch (err) {
+    onStorageError(err, 'restore');
+    setCloudNote('Restore failed partway. Your earlier device copy is in the local backups.', 'error');
+  }
+}
+
 window.addEventListener('beforeunload', () => { try { if (saveTimer) saveNow(); savePrefs(); } catch { /* ok */ } });
+
 
 boot();
 
