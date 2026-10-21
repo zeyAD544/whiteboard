@@ -450,7 +450,7 @@ kbd{
 .ctx-sep{width:100%;height:1px;background:rgba(240,233,221,.1);flex:none}
 .ctx-size,.ctx-opacity{width:100%}
 .ctx-size input[type="range"],.ctx-opacity input[type="range"]{flex:1;width:auto;min-width:80px}
-.ctx-colors,.ctx-fill,.ctx-erase-hint,.ctx-select{flex-direction:column;align-items:flex-start;gap:7px}
+.ctx-colors,.ctx-fill,.ctx-erase-hint,.ctx-select,.ctx-hand-hint{flex-direction:column;align-items:flex-start;gap:7px}
 .swatches{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
 .swatch{
   width:19px;height:19px;border-radius:50%;flex:none;position:relative;
@@ -487,7 +487,7 @@ input[type="range"]::-webkit-slider-thumb:hover{transform:scale(1.15)}
 input[type="range"]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:#f4efe4;border:1px solid rgba(0,0,0,.25)}
 input[type="range"]::-moz-range-track{height:3px;border-radius:99px;background:rgba(240,233,221,.13)}
 input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;background:var(--accent)}
-.ctx-erase-hint,.ctx-select{display:none}
+.ctx-erase-hint,.ctx-select,.ctx-hand-hint{display:none}
 .ctx-note{font-size:11px;color:var(--faint);white-space:nowrap}
 .ctx-select .ctx-note{color:var(--faint)}
 .sel-actions{display:flex;align-items:center;gap:2px}
@@ -515,6 +515,12 @@ input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;backgroun
 .app[data-tool="eraser"] .ctx-opacity,
 .app[data-tool="eraser"] .ctx-fill{display:none}
 .app[data-tool="eraser"] .ctx-erase-hint{display:flex}
+.app[data-tool="hand"] .ctx-colors,
+.app[data-tool="hand"] .ctx-sep,
+.app[data-tool="hand"] .ctx-size,
+.app[data-tool="hand"] .ctx-opacity,
+.app[data-tool="hand"] .ctx-fill{display:none}
+.app[data-tool="hand"] .ctx-hand-hint{display:flex}
 .app[data-tool="pen"] .ctx-fill,
 .app[data-tool="highlighter"] .ctx-fill,
 .app[data-tool="line"] .ctx-fill,
@@ -532,6 +538,22 @@ input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;backgroun
 }
 .dock-btn{width:28px;height:26px;border-radius:6px;display:grid;place-items:center;color:var(--muted);transition:background .13s,color .13s}
 .dock-btn:hover{background:rgba(240,233,221,.07);color:var(--text)}
+.dock-toggle[aria-pressed="true"]{background:rgba(224,114,77,.16);color:var(--accent-bright)}
+.dock-toggle[aria-pressed="true"] .icon{filter:drop-shadow(0 0 6px rgba(224,114,77,.5))}
+/* Ink Assist pulse: a soft ring that flashes where the writing settled. */
+.assist-ring{
+  position:absolute;left:0;top:0;width:0;height:0;z-index:3;
+  pointer-events:none;border-radius:50%;
+  border:2px solid var(--accent-bright);
+  transform:translate3d(var(--ax,0),var(--ay,0),0) scale(.2);
+  opacity:0;
+}
+.assist-ring.is-on{animation:assistRing .5s ease-out}
+@keyframes assistRing{
+  0%{opacity:.55;transform:translate3d(var(--ax,0),var(--ay,0),0) scale(.15)}
+  70%{opacity:.28}
+  100%{opacity:0;transform:translate3d(var(--ax,0),var(--ay,0),0) scale(1)}
+}
 .dock-btn .icon{width:15px;height:15px}
 .dock-btn[data-tip]::after{left:50%;top:auto;bottom:calc(100% + 9px);transform:translate(-50%,4px)}
 .dock-btn[data-tip]:hover::after{transform:translate(-50%,0)}
@@ -1036,7 +1058,9 @@ input[type="range"].bg-vol::-moz-range-thumb{
   <symbol id="i-pen" viewBox="0 0 24 24"><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/><path d="m14.5 5.5 3 3"/></symbol>
   <symbol id="i-highlighter" viewBox="0 0 24 24"><path d="m9 11-6 6v3h9l3-3"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></symbol>
   <symbol id="i-eraser" viewBox="0 0 24 24"><path d="m7 21-4.3-4.3a2 2 0 0 1 0-2.8l9.6-9.6a2 2 0 0 1 2.8 0l5.6 5.6a2 2 0 0 1 0 2.8L13 21"/><path d="M22 21H7"/><path d="m5 11 9 9"/></symbol>
+  <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8.5 11V5.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M11.7 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M14.9 11.4V6.6a1.6 1.6 0 0 1 3.2 0v8.4a7 7 0 0 1-7 7h-.6a6 6 0 0 1-4.24-1.76L4.5 17a1.7 1.7 0 0 1 2.5-2.3l1.5 1.5V11"/></symbol>
   <symbol id="i-rect" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/></symbol>
+  <symbol id="i-assist" viewBox="0 0 24 24"><path d="M4 15c2.6-4.4 5.4-6.6 8-6.6S17.4 10.6 20 15"/><path d="M4 9.4h4.2"/><path d="M15.8 9.4H20"/><circle cx="12" cy="18.4" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="9.4" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="9.4" r="1.5" fill="currentColor" stroke="none"/></symbol>
   <symbol id="i-ellipse" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/></symbol>
   <symbol id="i-line" viewBox="0 0 24 24"><path d="M5.5 18.5 18.5 5.5"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 19 19 5"/><path d="M12.5 5H19v6.5"/></symbol>
@@ -1181,6 +1205,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <button class="tool" data-tool="pen" data-tip="Pen · P" aria-label="Pen" aria-pressed="true"><svg class="icon"><use href="#i-pen"/></svg></button>
         <button class="tool" data-tool="highlighter" data-tip="Highlighter · H" aria-label="Highlighter" aria-pressed="false"><svg class="icon"><use href="#i-highlighter"/></svg></button>
         <button class="tool" data-tool="eraser" data-tip="Eraser · E" aria-label="Eraser" aria-pressed="false"><svg class="icon"><use href="#i-eraser"/></svg></button>
+        <button class="tool" data-tool="hand" data-tip="Hand · Space / 4" aria-label="Hand" aria-pressed="false"><svg class="icon"><use href="#i-hand"/></svg></button>
       </div>
       <div class="rail-sep" aria-hidden="true"></div>
       <div class="tool-group">
@@ -1220,6 +1245,9 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <div class="ctx-group ctx-erase-hint">
           <span class="ctx-note">Drag across a mark to erase</span>
         </div>
+        <div class="ctx-group ctx-hand-hint">
+          <span class="ctx-note">Drag to move around · nothing gets drawn</span>
+        </div>
         <div class="ctx-group ctx-select">
           <span class="ctx-note" id="selectHint">Nothing selected</span>
           <div class="sel-actions" id="selActions" hidden>
@@ -1233,7 +1261,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
 
       <div class="empty-note" id="emptyNote">
         <p class="en-title">A page, not a blank one.</p>
-        <p class="en-sub">Draw anywhere in the margin to begin.<br><span class="desk-key">Hold <kbd>space</kbd> to pan · <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom</span><span class="touch-key">Two fingers to pan &amp; zoom · two-finger tap to undo</span></p>
+        <p class="en-sub">Draw anywhere in the margin to begin.<br><span class="desk-key">Hold <kbd>space</kbd> to pan · <kbd>4</kbd> for the hand tool · <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom</span><span class="touch-key">Two fingers to pan &amp; zoom · two-finger tap to undo</span></p>
       </div>
 
       <div class="dock">
@@ -1242,6 +1270,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <button class="dock-btn" id="zoomIn" aria-label="Zoom in" data-tip="Zoom in"><svg class="icon"><use href="#i-plus"/></svg></button>
         <span class="dock-sep" aria-hidden="true"></span>
         <button class="dock-btn" id="gridBtn" aria-label="Background: Dots" data-tip="Cycle background · G"><svg class="icon"><use href="#i-dots"/></svg></button>
+        <button class="dock-btn dock-toggle" id="assistBtn" data-act="inkassist" aria-label="Ink Assist" aria-pressed="false" data-tip="Ink Assist · tidy gaps &amp; wobble"><svg class="icon"><use href="#i-assist"/></svg></button>
         <button class="dock-btn" id="fitBtn" aria-label="Fit board to content" data-tip="Fit to content · 1"><svg class="icon"><use href="#i-fit"/></svg></button>
       </div>
       <button class="show-video" id="showVideoBtn" data-available="false"><svg class="icon sm"><use href="#i-youtube"/></svg>Show video</button>
@@ -1352,6 +1381,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="key-row"><span>Pen</span><span class="keys"><kbd>P</kbd></span></div>
       <div class="key-row"><span>Highlighter</span><span class="keys"><kbd>H</kbd></span></div>
       <div class="key-row"><span>Eraser</span><span class="keys"><kbd>E</kbd></span></div>
+      <div class="key-row"><span>Hand</span><span class="keys"><kbd>4</kbd></span></div>
       <div class="key-row"><span>Rectangle</span><span class="keys"><kbd>R</kbd></span></div>
       <div class="key-row"><span>Ellipse</span><span class="keys"><kbd>O</kbd></span></div>
       <div class="key-row"><span>Line</span><span class="keys"><kbd>L</kbd></span></div>
@@ -1366,6 +1396,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="key-row"><span>Delete selection</span><span class="keys"><kbd>⌫</kbd></span></div>
       <div class="key-row"><span>Duplicate</span><span class="keys"><kbd>⌘</kbd><kbd>D</kbd></span></div>
       <div class="key-row"><span>Cycle background</span><span class="keys"><kbd>G</kbd></span></div>
+      <div class="key-row"><span>Ink Assist (tidy gaps &amp; wobble)</span><span class="keys"><kbd>I</kbd></span></div>
       <div class="key-row"><span>Fullscreen</span><span class="keys"><kbd>F</kbd></span></div>
     </div>
     <div class="modal-actions"><button class="btn btn-primary" id="keysDone">Back to the board</button></div>
@@ -1668,18 +1699,37 @@ function sanitizeWorkspace(raw) {
 function emptyContent() { return { v: 1, elements: [], view: null, grid: 'dots', color: '#26211a', eraserSize: 32 }; }
 
 async function readContent(pageId) {
+  const r = await readContentDetailed(pageId);
+  return r.content;
+}
+
+/* Read a page's content AND its load status. The status matters more than the
+   data: an empty page and a page we failed to read look identical, and only one
+   of them is safe to write back. Callers that might save must use this. */
+async function readContentDetailed(pageId) {
+  let raw;
   try {
-    const raw = await store.get(PAGE_PREFIX + pageId);
-    if (!raw || typeof raw !== 'object') return emptyContent();
-    return {
-      v: 1,
-      elements: Array.isArray(raw.elements) ? raw.elements.slice(0, 4000).map(sanitizeElement).filter(Boolean) : [],
-      view: (raw.view && Number.isFinite(raw.view.cx) && Number.isFinite(raw.view.cy) && Number.isFinite(raw.view.scale)) ? { cx: raw.view.cx, cy: raw.view.cy, scale: clamp(raw.view.scale, 0.2, 4) } : null,
-      grid: ['none', 'dots', 'grid'].includes(raw.grid) ? raw.grid : 'dots',
-      color: isHex(raw.color) ? raw.color : '#26211a',
-      eraserSize: Number.isFinite(raw.eraserSize) ? clamp(raw.eraserSize, 8, 120) : 32
-    };
-  } catch { return emptyContent(); }
+    raw = await store.get(PAGE_PREFIX + pageId);
+  } catch (err) {
+    return { content: emptyContent(), status: 'error', existed: false };
+  }
+  if (raw === undefined || raw === null) {
+    /* genuinely absent — a brand new page, safe to treat as empty */
+    return { content: emptyContent(), status: 'absent', existed: false };
+  }
+  if (typeof raw !== 'object' || !Array.isArray(raw.elements)) {
+    /* present but unrecognised shape — do NOT overwrite it */
+    return { content: emptyContent(), status: 'invalid', existed: true };
+  }
+  const content = {
+    v: 1,
+    elements: raw.elements.slice(0, 4000).map(sanitizeElement).filter(Boolean),
+    view: (raw.view && Number.isFinite(raw.view.cx) && Number.isFinite(raw.view.cy) && Number.isFinite(raw.view.scale)) ? { cx: raw.view.cx, cy: raw.view.cy, scale: clamp(raw.view.scale, 0.2, 4) } : null,
+    grid: ['none', 'dots', 'grid'].includes(raw.grid) ? raw.grid : 'dots',
+    color: isHex(raw.color) ? raw.color : '#26211a',
+    eraserSize: Number.isFinite(raw.eraserSize) ? clamp(raw.eraserSize, 8, 120) : 32
+  };
+  return { content, status: 'ok', existed: true };
 }
 
 function contentIsEmpty(c) { return !c.elements.length; }
@@ -1728,15 +1778,67 @@ async function saveWorkspace() {
   }
 }
 
+/* ---- safety backups ---------------------------------------------------------
+   Before any step that could plausibly discard data (migration, first write to
+   an empty tree, a repair pass), drop a full copy of the workspace AND every
+   page's content into indexedDB under backup:<ts>. These are additive and are
+   only ever pruned when they exceed BACKUP_LIMIT, oldest first — never the
+   newest. localStorage also keeps a tiny pointer so a lost IDB can still name
+   the most recent backup. */
+const BACKUP_PREFIX = 'backup:';
+const BACKUP_LIMIT = 5;
+const BACKUP_POINTER = 'margin.backup.latest';
+
+async function listBackupKeys() {
+  try {
+    const all = await store.keys();
+    return all.filter((k) => typeof k === 'string' && k.startsWith(BACKUP_PREFIX)).sort();
+  } catch { return []; }
+}
+
+async function pruneBackups() {
+  const mine = await listBackupKeys();
+  const drop = mine.slice(0, Math.max(0, mine.length - BACKUP_LIMIT));
+  for (const k of drop) { try { await store.del(k); } catch { /* keep going */ } }
+}
+
+async function createBackup(reason) {
+  if (!workspace) return null;
+  try {
+    const bundle = { v: 1, at: Date.now(), reason: reason || 'auto', workspace, pages: {} };
+    const ids = new Set(Object.keys(workspace.pages || {}));
+    for (const t of (workspace.trash || [])) {
+      if (t.kind === 'page' && t.id) ids.add(t.id);
+      if (t.kind === 'subject' && Array.isArray(t.pageIds)) for (const p of t.pageIds) ids.add(p);
+    }
+    for (const id of ids) {
+      const c = await store.get(PAGE_PREFIX + id);
+      if (c !== undefined) bundle.pages[id] = c;
+      const r = await store.get('pagerefs:' + id);
+      if (r !== undefined) bundle.pages['refs:' + id] = r;
+    }
+    const key = BACKUP_PREFIX + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 6);
+    await store.set(key, bundle);
+    try { localStorage.setItem(BACKUP_POINTER, JSON.stringify({ key, at: bundle.at, reason: bundle.reason })); } catch { /* non-critical */ }
+    await pruneBackups();
+    return key;
+  } catch { return null; }
+}
+
 async function loadWorkspace() {
   let raw = undefined;
-  try { raw = await store.get(WS_KEY); } catch { raw = undefined; }
+  let errored = false;
+  try { raw = await store.get(WS_KEY); } catch { errored = true; raw = undefined; }
   if (raw && typeof raw === 'object' && Array.isArray(raw.subjects)) {
     workspace = sanitizeWorkspace(raw);
     return workspace;
   }
+  /* Prefer to hand back a partial read (unknown = protected) rather than a
+     clean null, so boot never mistakes an error for a blank first run. */
+  loadWorkspace.lastStatus = errored ? 'error' : (raw === undefined ? 'absent' : 'invalid');
   return null;
 }
+loadWorkspace.lastStatus = 'unknown';
 
 /* ---- snapshots: rolling content history, bounded ---- */
 async function pushSnapshot(pageId, content) {
@@ -1775,8 +1877,7 @@ async function readSnapshot(key) {
   } catch { return null; }
 }
 
-/* ---- migration from the single-board era (non-destructive) ---- */
-async function migrateLegacyBoard() {
+/* ---- migration from the single-board era (non-destructive) ---- */async function migrateLegacyBoard() {
   let legacy = null;
   try { legacy = JSON.parse(localStorage.getItem(LEGACY_KEY) || 'null'); } catch { legacy = null; }
   if (!legacy || typeof legacy !== 'object') return null;
@@ -1847,7 +1948,7 @@ const el = {
   context: $('#contextBar'), ctxEdge: $('#ctxEdge'),
   dupBtn: $('#dupBtn'), frontBtn: $('#frontBtn'), backBtn: $('#backBtn'), deleteSelBtn: $('#deleteSelBtn'),
   zoomIn: $('#zoomIn'), zoomOut: $('#zoomOut'), zoomLabel: $('#zoomLabel'),
-  gridBtn: $('#gridBtn'), fitBtn: $('#fitBtn'), emptyNote: $('#emptyNote'),
+  gridBtn: $('#gridBtn'), fitBtn: $('#fitBtn'), assistBtn: $('#assistBtn'), emptyNote: $('#emptyNote'),
   showVideoBtn: $('#showVideoBtn'), divider: $('#divider'), dividerPct: $('#dividerPct'),
   workspace: $('#workspace'), videoPanel: $('#videoPanel'),
   openYtBtn: $('#openYtBtn'), collapseVideoBtn: $('#collapseVideoBtn'), browseHeaderBtn: $('#browseHeaderBtn'),
@@ -1902,7 +2003,8 @@ const state = {
   bgTitle: '',
   bgVolume: 45,
   bgMuted: false,
-  recent: []
+  recent: [],
+  inkAssist: false
 };
 let elements = [];
 let hadSavedData = false;
@@ -1926,6 +2028,13 @@ let lastErase = null;
 let saveTimer = 0;
 let lastFocused = null;
 let openModalEl = null;
+/* Ink Assist bookkeeping. assistTimer debounces the post-stroke heal;
+   assistOriginals remembers the pre-heal element list so turning the feature
+   off can put the writing back exactly as it was drawn; assistLastFocus tracks
+   which stroke to tidy next. */
+let assistTimer = 0;
+let assistOriginals = null;
+let assistPending = null;
 
 const sctx = el.scene.getContext('2d', { alpha: false });
 const octx = el.overlay.getContext('2d');
@@ -1966,7 +2075,6 @@ let penProximity = false;
 let lastPenUpAt = 0;
 let penHasPressure = false;
 let smoothing = null;
-let activeStrokeWidth = 0;
 
 /* Coalesced/historical samples give us the true stylus trace; a naive single
    pointermove per frame throws most of it away. */
@@ -2015,9 +2123,306 @@ function oneEuro(f, nx, ny, now) {
   return { x: f.x, y: f.y };
 }
 
-function pressureToWidth(base, p) {
-  const scale = clamp(PEN.widthAtZero + p * (PEN.widthAtOne - PEN.widthAtZero), 0.12, 2.2);
-  return Math.max(0.35, base * scale);
+/* ============================================================ INK ASSIST
+   An optional, purely additive cleanup pass. When it's on, after the pen rests
+   for a moment we look at the strokes near the one just drawn and:
+     * bridge small gaps where a stroke clearly meant to continue another one
+       (endpoint proximity + matching direction + matching style),
+     * nudge the intended line of that local neighbourhood to remove the
+       hand's high-frequency wobble,
+     * absorb accidental specks into the nearest stroke instead of leaving
+       them as stray dots.
+   Nothing here is ever destructive: the pass builds *new* element objects and
+   swaps them in as a single undoable edit, and the pre-heal elements are kept
+   so turning the feature off restores the writing exactly as it was. */
+const INK = {
+  /* How long the pen must rest before a heal runs (ms). Long enough not to fire
+     mid-word, short enough to feel automatic. */
+  settleMs: 420,
+  /* Two endpoints may be stitched when this close together (screen px at 100%,
+     scaled by camera so it stays consistent while zoomed). */
+  gapScreen: 26,
+  /* Endpoint directions must agree within this many degrees for a stitch. */
+  tangentDeg: 62,
+  /* Style tolerance: strokes must match in colour and be within this size ratio
+     to be considered the same pen. */
+  sizeRatio: 1.9,
+  colorMaxDist: 26,
+  /* A stroke shorter than this (screen px of arc length) counts as a speck. */
+  speckScreen: 11,
+  /* Wobble removal: how far a point may move, and the smoothing window. */
+  smoothRadius: 1,
+  smoothAmount: 0.42,
+  /* Cap connectors as a fraction of the stitched endpoints' average width, so a
+     bridge never balloons into a blob. */
+  bridgePtCount: 5
+};
+
+function inkColorDist(a, b) {
+  const pa = hexToRgb(safeColor(a)), pb = hexToRgb(safeColor(b));
+  if (!pa || !pb) return Infinity;
+  return Math.abs(pa.r - pb.r) + Math.abs(pa.g - pb.g) + Math.abs(pa.b - pb.b);
+}
+
+function hexToRgb(hex) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return null;
+  const n = parseInt(m[1], 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/* Arc length of a stroke's centre line, in world units. */
+function strokeLength(pts) {
+  let len = 0;
+  for (let i = 1; i < pts.length; i++) len += dist(pts[i - 1], pts[i]);
+  return len;
+}
+
+/* Direction of the stroke near an endpoint (unit vector pointing *outward*
+   from the stroke). Used to decide whether two ends are a continuation. */
+function endTangent(pts, which) {
+  const n = pts.length;
+  if (n < 2) return null;
+  const back = Math.min(n - 1, 6);
+  const tip = which === 'start' ? pts[0] : pts[n - 1];
+  const inner = which === 'start' ? pts[back] : pts[n - 1 - back];
+  const dx = tip.x - inner.x, dy = tip.y - inner.y;
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return null;
+  return { x: dx / len, y: dy / len };
+}
+
+function inkCompatible(a, b) {
+  if (!!a.marker !== !!b.marker) return false;
+  if (inkColorDist(a.color, b.color) > INK.colorMaxDist) return false;
+  const hi = Math.max(a.size, b.size), lo = Math.min(a.size, b.size) || 1;
+  return hi / lo <= INK.sizeRatio;
+}
+
+/* Remove the hand's high-frequency wobble from a point run by pulling each
+   interior point toward the midpoint of its neighbours. Small radius, gentle
+   amount: the shape the student drew is preserved, the tremor is not. */
+function inkSmoothPoints(pts, amount, radius) {
+  if (pts.length < 3) return pts.slice();
+  const out = pts.map((p) => ({ x: p.x, y: p.y }));
+  for (let i = 1; i < pts.length - 1; i++) {
+    const a = pts[Math.max(0, i - radius)];
+    const b = pts[Math.min(pts.length - 1, i + radius)];
+    const mx = (a.x + b.x) / 2, my = (a.y + b.y) / 2;
+    out[i].x += (mx - out[i].x) * amount;
+    out[i].y += (my - out[i].y) * amount;
+  }
+  return out;
+}
+
+/* Carry a stroke's per-point width channel (pressure or speed) across a heal,
+   interpolating where points were added or merged so the taper survives. */
+function resampleChannel(channel, srcLen, dstLen) {
+  if (!channel || !channel.length) return null;
+  const out = new Array(dstLen);
+  for (let i = 0; i < dstLen; i++) {
+    const t = dstLen === 1 ? 0 : (i / (dstLen - 1)) * (srcLen - 1);
+    const i0 = Math.floor(t), i1 = Math.min(srcLen - 1, i0 + 1);
+    const f = t - i0;
+    out[i] = (channel[i0] || channel[i0] || 0.5) * (1 - f) + (channel[i1] || channel[i0] || 0.5) * f;
+  }
+  return out;
+}
+
+/* Build a smooth bridge between two endpoints. A straight line reads as a
+   scratch; a shallow S-curve reads as the pen never left the paper. */
+function inkBridge(a, aDir, b, bDir, count) {
+  const pts = [];
+  const chord = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+  const bow = Math.min(chord * 0.14, 6);
+  const nx = -(b.y - a.y) / chord, ny = (b.x - a.x) / chord;
+  for (let i = 1; i <= count; i++) {
+    const t = i / (count + 1);
+    const e = t * t * (3 - 2 * t); /* smoothstep eases the join at both ends */
+    let x = a.x + (b.x - a.x) * t;
+    let y = a.y + (b.y - a.y) * t;
+    const s = Math.sin(Math.PI * t);
+    x += nx * bow * s; y += ny * bow * s;
+    pts.push({ x, y });
+    void e;
+  }
+  return pts;
+}
+
+/* Order two strokes into one continuous run and return the merged point list
+   (including the bridge), plus the seam index so width interpolation is sane. */
+function inkMergeStrokes(a, b, aEnd, bEnd, bridge) {
+  let firstPts = a.points, firstChan, secondPts = b.points, secondChan;
+  if (aEnd === 'end') { firstPts = a.points; } else { firstPts = a.points.slice().reverse(); }
+  if (bEnd === 'start') { secondPts = b.points; } else { secondPts = b.points.slice().reverse(); }
+  const bridge2 = bridge.slice();
+  const pts = firstPts.concat(bridge2, secondPts);
+  /* rebuild width channels reversed/concatenated to match the new point order */
+  const chanA = a.pressures || a.speeds;
+  const chanB = b.pressures || b.speeds;
+  const key = a.pressures ? 'pressures' : (a.speeds ? 'speeds' : null);
+  const keyB = b.pressures ? 'pressures' : (b.speeds ? 'speeds' : null);
+  let chan = null;
+  if (key && key === keyB && chanA && chanB) {
+    const ca = aEnd === 'end' ? chanA.slice() : chanA.slice().reverse();
+    const cb = bEnd === 'start' ? chanB.slice() : chanB.slice().reverse();
+    const bridgeVals = bridge2.map((_, i) => {
+      const t = (i + 1) / (bridge2.length + 1);
+      const la = ca[ca.length - 1] ?? 0.5, lb = cb[0] ?? 0.5;
+      return la * (1 - t) + lb * t;
+    });
+    chan = ca.concat(bridgeVals, cb);
+  }
+  void firstChan; void secondChan;
+  return { pts, chan, chanKey: key, firstPts };
+}
+
+/* The heal itself: given the live elements and the stroke that was just
+   finished, produce a new element list — or null when nothing helped. Pure:
+   never mutates its input, so a refusal leaves the board untouched. */
+function inkHealPlan(elements, focusId, view) {
+  const scale = (view && view.scale) || 1;
+  const worldGap = INK.gapScreen / scale;
+  const worldSpeck = INK.speckScreen / scale;
+
+  const focus = elements.find((e) => e.id === focusId);
+  if (!focus || focus.type !== 'stroke' || focus.marker) return null;
+
+  /* Candidate strokes: plain strokes near the focus (plus the focus itself). */
+  const focusBox = bboxOf(focus);
+  const pad = worldGap + focus.size;
+  const near = elements.filter((e) => {
+    if (e.type !== 'stroke' || e.marker) return false;
+    const b = bboxOf(e);
+    return !(b.x + b.w < focusBox.x - pad || b.x > focusBox.x + focusBox.w + pad ||
+             b.y + b.h < focusBox.y - pad || b.y > focusBox.y + focusBox.h + pad);
+  });
+
+  const working = new Map(); /* id -> element (possibly rewritten) */
+  for (const e of near) working.set(e.id, e);
+  let changedAny = false;
+
+  /* --- 1. absorb specks: a tiny short stroke next to a big one is a slip. --- */
+  for (const e of near) {
+    if (strokeLength(e.points) * scale > worldSpeck) continue;
+    let host = e.id === focusId ? null : focus, hostDist = e.id === focusId ? Infinity : endpointGap(e, focus);
+    for (const cand of near) {
+      if (cand === e) continue;
+      if (strokeLength(cand.points) * scale <= worldSpeck) continue;
+      if (!inkCompatible(e, cand)) continue;
+      const d = endpointGap(e, cand);
+      if (d < hostDist) { hostDist = d; host = cand; }
+    }
+    if (!host || hostDist > worldGap * 1.6) continue;
+    /* Fold the speck into the host as a tiny tail rather than deleting it. */
+    const h = working.get(host.id) || host;
+    const seam = nearestEndPair(e, h);
+    if (!seam) continue;
+    const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, 2);
+    const merged = inkMergeStrokes(h, e, seam.aEnd, seam.bEnd, bridge);
+    const next = cloneStroke(h, merged);
+    next.id = h.id;
+    working.set(h.id, next);
+    working.delete(e.id);
+    changedAny = true;
+  }
+
+  /* --- 2. stitch gaps: focus continues, or is continued by, a neighbour. --- */
+  for (const other of near) {
+    if (other === focus) continue;
+    const cur = working.get(focus.id) || focus;
+    const oc = working.get(other.id) || other;
+    if (!cur || !oc || cur === oc) continue;
+    if (!inkCompatible(cur, oc)) continue;
+    const seam = bestSeam(cur, oc, worldGap);
+    if (!seam) continue;
+    const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, INK.bridgePtCount);
+    const merged = inkMergeStrokes(cur, oc, seam.aEnd, seam.bEnd, bridge);
+    const next = cloneStroke(cur, merged);
+    next.id = cur.id; /* keep the earlier stroke's identity */
+    working.set(cur.id, next);
+    working.delete(oc.id);
+    changedAny = true;
+  }
+
+  /* --- 3. de-wobble: gently calm the focus after structural edits. --- */
+  const smoothed = working.get(focus.id);
+  if (smoothed && smoothed.points.length > 4) {
+    const pts = inkSmoothPoints(smoothed.points, INK.smoothAmount, INK.smoothRadius);
+    let moved = 0;
+    for (let i = 0; i < pts.length; i++) moved += dist(pts[i], smoothed.points[i]);
+    if (moved > 0.0001) {
+      const next = cloneStroke(smoothed, { pts, chan: smoothed.pressures || smoothed.speeds, chanKey: smoothed.pressures ? 'pressures' : 'speeds' });
+      next.id = smoothed.id;
+      working.set(smoothed.id, next);
+      changedAny = true;
+    }
+  }
+
+  if (!changedAny) return null;
+
+  const removed = new Set();
+  for (const e of near) if (!working.has(e.id)) removed.add(e.id);
+  const out = elements.filter((e) => !removed.has(e.id)).map((e) => working.get(e.id) || e);
+  return out;
+}
+
+function cloneStroke(src, merged) {
+  const copy = {
+    id: src.id,
+    type: 'stroke',
+    marker: src.marker,
+    points: merged.pts.map((p) => ({ x: p.x, y: p.y })),
+    color: src.color,
+    size: src.size,
+    opacity: src.opacity
+  };
+  if (merged.chanKey && merged.chan && merged.chan.length === merged.pts.length) {
+    copy[merged.chanKey] = merged.chan;
+  } else if (src.pressures && src.pressures.length === src.points.length) {
+    copy.pressures = resampleChannel(src.pressures, src.points.length, merged.pts.length);
+  } else if (src.speeds && src.speeds.length === src.points.length) {
+    copy.speeds = resampleChannel(src.speeds, src.points.length, merged.pts.length);
+  }
+  return copy;
+}
+
+/* Smallest distance between any endpoint of a and any endpoint of b. */
+function endpointGap(a, b) {
+  let best = Infinity;
+  const ae = [a.points[0], a.points[a.points.length - 1]];
+  const be = [b.points[0], b.points[b.points.length - 1]];
+  for (const p of ae) for (const q of be) best = Math.min(best, dist(p, q));
+  return best;
+}
+
+/* The closest start/end pairing between two strokes, with outward tangents. */
+function nearestEndPair(a, b) {
+  const endsA = [['start', a.points[0]], ['end', a.points[a.points.length - 1]]];
+  const endsB = [['start', b.points[0]], ['end', b.points[b.points.length - 1]]];
+  let best = null, bestD = Infinity;
+  for (const [wa, pa] of endsA) for (const [wb, pb] of endsB) {
+    const d = dist(pa, pb);
+    if (d < bestD) {
+      bestD = d;
+      best = { aEnd: wa, bEnd: wb, aPt: pa, bPt: pb, aDir: endTangent(a.points, wa), bDir: endTangent(b.points, wb), d };
+    }
+  }
+  return best;
+}
+
+/* A stitch is only natural when the ends are close AND their outward
+   directions roughly oppose (i.e. the two ends point at each other). */
+function bestSeam(a, b, maxGap) {
+  const pair = nearestEndPair(a, b);
+  if (!pair || pair.d > maxGap) return null;
+  if (!pair.aDir || !pair.bDir) return null;
+  /* Outward tangent of one should be ~opposite the outward tangent of the
+     other: dot(dA, dB) near -1 means the ends face one another. */
+  const dot = pair.aDir.x * pair.bDir.x + pair.aDir.y * pair.bDir.y;
+  const deg = Math.acos(clamp(dot, -1, 1)) * 180 / Math.PI;
+  if (Math.abs(180 - deg) > INK.tangentDeg) return null;
+  return pair;
 }
 
 /* Smoothed stroke accumulator. Keeps raw *and* smoothed points so we can thin
@@ -2034,7 +2439,6 @@ function resetPenInput() {
   smoothing = null;
   activePenPressure = 0;
   penHasPressure = false;
-  activeStrokeWidth = 0;
 }
 
 
@@ -2093,6 +2497,11 @@ function sanitizeElement(raw) {
    volume, recents) live in a small prefs record; page content lives under
    page:<id>. activePageId is the page the canvas is currently bound to. */
 let activePageId = null;
+/* Write protection. When a page's stored content could not be read cleanly we
+   refuse to write over it — an uncertain read must never become a data loss.
+   `pageWriteGuard` is the id of the page currently protected (or null). */
+let pageWriteGuard = null;
+let pageWriteGuardReason = null;
 
 function loadPrefs() {
   let data = null;
@@ -2105,10 +2514,11 @@ function loadPrefs() {
   }
   if (Number.isFinite(data.bgVolume)) state.bgVolume = clamp(data.bgVolume, 0, 100);
   if (typeof data.bgMuted === 'boolean') state.bgMuted = data.bgMuted;
+  if (typeof data.inkAssist === 'boolean') state.inkAssist = data.inkAssist;
 }
 
 function serializePrefs() {
-  return { v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted };
+  return { v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted, inkAssist: state.inkAssist };
 }
 
 function savePrefs() {
@@ -2174,6 +2584,12 @@ async function saveNow() {
   clearTimeout(saveTimer);
   saveTimer = 0;
   if (!activePageId) { savePrefs(); setSaveState('saved'); return; }
+  /* Safety net: if this page's stored content couldn't be read, writing "now"
+     would replace it with whatever is on screen (probably nothing). Refuse. */
+  if (pageWriteGuard === activePageId) {
+    setSaveState('error');
+    return;
+  }
   try {
     const content = currentContent();
     await writeVerified(PAGE_PREFIX + activePageId, content);
@@ -2532,9 +2948,20 @@ function strokePath(ctx, pts) {
 function drawPressureStroke(ctx, e) {
   const pts = e.points;
   const prs = e.pressures;
+  const spd = e.speeds;
   const base = e.size;
   const n = pts.length;
-  const wAt = (i) => Math.max(0.22, base * clamp(PEN.widthAtZero + (prs[i] || 0.5) * (PEN.widthAtOne - PEN.widthAtZero), 0.12, 2.2)) / 2;
+  /* Two ways to modulate width: real pen pressure, or speed for input without
+     pressure. Both funnel into one normalised 0..1 "fullness" per point. */
+  const fullness = (i) => {
+    if (prs && prs.length === n) return clamp(prs[i] || 0.5, 0.02, 1);
+    if (spd && spd.length === n) {
+      const sp = spd[i] || 0;
+      return clamp(1 - Math.min(sp / PEN.velRef, 1) * 0.55, 0.35, 1);
+    }
+    return 0.5;
+  };
+  const wAt = (i) => Math.max(0.24, base * clamp(PEN.widthAtZero + fullness(i) * (PEN.widthAtOne - PEN.widthAtZero), 0.14, 2.2)) / 2;
 
   if (n === 2) {
     const w = (wAt(0) + wAt(1)) / 2;
@@ -2608,6 +3035,11 @@ function drawElement(ctx, e) {
       return;
     }
     if (e.pressures && e.pressures.length === e.points.length && !e.marker) {
+      drawPressureStroke(ctx, e);
+      ctx.restore();
+      return;
+    }
+    if (e.speeds && e.speeds.length === e.points.length && !e.marker && e.points.length > 2) {
       drawPressureStroke(ctx, e);
       ctx.restore();
       return;
@@ -2817,6 +3249,117 @@ function syncEmptyNote() {
   el.emptyNote.classList.toggle('is-hidden', elements.length > 0 || !!draft);
 }
 
+/* ------------------------------------------------------------ ink assist */
+/* Queue a cleanup pass for the stroke just finished. Debounced so writing a
+   word in overlapping strokes still heals once, after the hand settles. */
+function scheduleInkAssist(focusId) {
+  if (!state.inkAssist || !focusId) return;
+  assistPending = focusId;
+  clearTimeout(assistTimer);
+  assistTimer = setTimeout(runInkAssist, INK.settleMs);
+}
+
+/* Run the pass. The whole heal lands as a single history step; if it can't
+   improve anything the board is left byte-for-byte untouched. */
+function runInkAssist() {
+  assistTimer = 0;
+  const focusId = assistPending;
+  assistPending = null;
+  if (!state.inkAssist || !focusId) return;
+  if (pageWriteGuard === activePageId) return; /* read-only page: never write */
+  if (draft || gesture) { scheduleInkAssist(focusId); return; }
+  if (!elements.some((e) => e.id === focusId)) return;
+
+  const beforeBox = bboxOf(elements.find((e) => e.id === focusId));
+  let plan;
+  try { plan = inkHealPlan(elements, focusId, cam); } catch { plan = null; }
+  if (!plan) return;
+
+  /* Remember the untouched writing the first time we tidy on this page, so
+     disabling the feature can restore it. */
+  if (!assistOriginals) assistOriginals = snapshot();
+  const before = snapshot();
+  undoStack.push(before);
+  if (undoStack.length > 60) undoStack.shift();
+  redoStack = [];
+  syncHistoryUi();
+  elements = plan;
+  bboxCache = new WeakMap();
+  syncEmptyNote();
+  queueScene();
+  scheduleSave();
+  /* A subtle pulse at the healed spot tells the eye *something* settled there
+     without stealing attention from the writing. */
+  pulseAssist(beforeBox);
+}
+
+/* Briefly ring the region that was tidied. Pure decoration — no data touch. */
+function pulseAssist(box) {
+  if (!box || !el.stage) return;
+  let ring = el.stage.querySelector('.assist-ring');
+  if (!ring) {
+    ring = document.createElement('div');
+    ring.className = 'assist-ring';
+    ring.setAttribute('aria-hidden', 'true');
+    el.stage.appendChild(ring);
+  }
+  const s = worldToScreen(box.x + box.w / 2, box.y + box.h / 2);
+  const size = clamp(Math.max(box.w, box.h) * cam.scale + 40, 54, 240);
+  ring.style.width = size + 'px';
+  ring.style.height = size + 'px';
+  ring.style.marginLeft = (-size / 2) + 'px';
+  ring.style.marginTop = (-size / 2) + 'px';
+  ring.style.setProperty('--ax', s.x + 'px');
+  ring.style.setProperty('--ay', s.y + 'px');
+  ring.classList.remove('is-on');
+  void ring.offsetWidth; /* restart the animation */
+  ring.classList.add('is-on');
+}
+
+/* Turn the feature on or off. Switching off restores the original writing if
+   we still hold it and nothing else has happened since. */
+function setInkAssist(on, opts = {}) {
+  state.inkAssist = !!on;
+  const btn = $('[data-act="inkassist"]');
+  if (btn) btn.setAttribute('aria-pressed', String(state.inkAssist));
+  clearTimeout(assistTimer);
+  assistTimer = 0;
+  assistPending = null;
+  if (!state.inkAssist) {
+    if (assistOriginals && !opts.keepOriginal) {
+      /* Put the pristine writing back as one more undoable step. */
+      const current = snapshot();
+      if (current !== assistOriginals) {
+        undoStack.push(current);
+        if (undoStack.length > 60) undoStack.shift();
+        redoStack = [];
+        syncHistoryUi();
+        elements = JSON.parse(assistOriginals);
+        bboxCache = new WeakMap();
+        syncEmptyNote();
+        queueScene();
+        scheduleSave();
+      }
+    }
+    assistOriginals = null;
+    if (!opts.silent) toast('Ink Assist off — your writing is untouched');
+  } else if (!opts.silent) {
+    toast('Ink Assist on — gaps and wobble tidy themselves as you write');
+  }
+  savePrefs();
+  if (el.app) el.app.dataset.inkAssist = state.inkAssist ? 'on' : 'off';
+}
+
+/* When a stroke lands, hand it to the assist queue (if enabled). Kept tiny so
+   the draw path stays allocation-free on the hot path. */
+function noteStrokeForAssist(stroke) {
+  if (!state.inkAssist || !stroke) return;
+  /* Any new user action invalidates the "restore original" memory: from here
+     on, the writing on screen *is* the original. */
+  assistOriginals = null;
+  scheduleInkAssist(stroke.id);
+}
+
 /* ------------------------------------------------------------ pointer down */
 function onPointerDown(e) {
   const isPen = e.pointerType === 'pen';
@@ -2832,12 +3375,14 @@ function onPointerDown(e) {
     activeTouches.add(e.pointerId);
     /* Palm rejection has two triggers: the pen is physically down right now, or
        it just lifted (a resting hand lands in that window). Either way a finger
-       rest must never leave a mark. A second finger still gets through so pinch
-       and two-finger undo keep working. */
+       rest must never leave a mark. The Hand tool and Select are intentional
+       finger tools, so a single finger is allowed through for them. A second
+       finger still gets through so pinch and two-finger undo keep working. */
     const penNear = penActive || penProximity;
     const withinGrace = Date.now() - lastPenUpAt < PEN.palmGraceMs;
-    if (penNear || withinGrace) {
-      if (activeTouches.size === 1 && state.tool !== 'select') {
+    const fingerTool = state.tool === 'select' || state.tool === 'hand';
+    if ((penNear || withinGrace) && !fingerTool) {
+      if (activeTouches.size === 1) {
         e.preventDefault();
         return;
       }
@@ -2868,6 +3413,13 @@ function onPointerDown(e) {
   if (activePointers.size > 2) { twoFingerTap = null; return; }
   if (suppressGesture) return;
 
+  if (state.tool === 'hand') {
+    gesture = { type: 'pan', last: { x: e.clientX, y: e.clientY } };
+    el.stage.classList.add('is-grabbing');
+    e.preventDefault();
+    return;
+  }
+
   if (e.button === 1 || spaceDown) {
     gesture = { type: 'pan', last: { x: e.clientX, y: e.clientY } };
     el.stage.classList.add('is-grabbing');
@@ -2887,7 +3439,6 @@ function startDraw(p, e) {
   beginStrokeFilter(stagePoint(e));
   penHasPressure = !marker && hasRealPressure(e);
   activePenPressure = penHasPressure ? clamp(e.pressure, 0.02, 1) : 0;
-  activeStrokeWidth = marker ? state.sizes.highlighter : (penHasPressure ? pressureToWidth(state.sizes.pen, activePenPressure) : state.sizes.pen);
   draft = {
     id: uid(),
     type: 'stroke',
@@ -2898,7 +3449,13 @@ function startDraw(p, e) {
     opacity: marker ? state.opacities.highlighter : state.opacities.pen,
     pressure: penHasPressure
   };
-  if (penHasPressure) draft.pressures = [activePenPressure];
+  if (penHasPressure) {
+    draft.pressures = [activePenPressure];
+  } else if (!marker) {
+    /* No pressure-capable pen? Give the line a fountain-pen taper driven by
+       speed instead — slower means fuller, faster means thinner. */
+    draft.speeds = [0];
+  }
   gesture = { type: 'draw' };
   hoverEl = null;
   queueOverlay();
@@ -3078,7 +3635,14 @@ function onPointerMove(e) {
             const p = hasRealPressure(ev) ? clamp(ev.pressure, 0.02, 1) : (activePenPressure || clamp(ev.pressure || 0.5, 0.02, 1));
             draft.pressures.push(p);
             activePenPressure = p;
+          } else if (draft.speeds) {
+            /* Screen-space speed of this sample, in px/ms, smoothed a touch. */
+            const dt = Math.max(1, now - (smoothing && smoothing.lastNow ? smoothing.lastNow : now - 8));
+            const sp = Math.hypot(sm.x - (smoothing && smoothing.lastSx != null ? smoothing.lastSx : sm.x), sm.y - (smoothing && smoothing.lastSy != null ? smoothing.lastSy : sm.y)) / dt;
+            const prev = draft.speeds[draft.speeds.length - 1] || 0;
+            draft.speeds.push(prev * 0.6 + sp * 0.4);
           }
+          if (smoothing) { smoothing.lastNow = now; smoothing.lastSx = sm.x; smoothing.lastSy = sm.y; }
           last = w;
           wrote = true;
         }
@@ -3335,6 +3899,7 @@ function finishGesture(e) {
       if (!last || dist(last, w) > 0.35 / cam.scale) {
         draft.points.push(w);
         if (draft.pressures) draft.pressures.push(hasRealPressure(e) ? clamp(e.pressure, 0.02, 1) : (activePenPressure || clamp(e.pressure || 0.5, 0.02, 1)));
+        else if (draft.speeds) draft.speeds.push(draft.speeds[draft.speeds.length - 1] || 0);
       }
     }
     if (draft && draft.points.length) {
@@ -3342,6 +3907,7 @@ function finishGesture(e) {
       pushHistory();
       elements.push(draft);
       bboxCache = new WeakMap();
+      noteStrokeForAssist(draft);
     }
     draft = null;
     resetPenInput();
@@ -3399,6 +3965,7 @@ function updateHover(e) {
 function updateToolCursor() {
   el.overlay.style.cursor =
     state.tool === 'eraser' ? 'none' :
+    state.tool === 'hand' ? (gesture && gesture.type === 'pan' ? 'grabbing' : 'grab') :
     state.tool === 'select' ? 'default' :
     'crosshair';
 }
@@ -3531,7 +4098,7 @@ function initPenControls() {
 }
 
 function setTool(tool) {
-  if (!['select', 'pen', 'highlighter', 'eraser', ...SHAPE_TOOLS].includes(tool)) return;
+  if (!['select', 'pen', 'highlighter', 'eraser', 'hand', ...SHAPE_TOOLS].includes(tool)) return;
   state.tool = tool;
   el.app.dataset.tool = tool;
   for (const b of $$('.tool')) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
@@ -3761,6 +4328,9 @@ function requestClear() {
 function confirmClear() {
   if (!elements.length) { closeModal(el.clearModal); return; }
   pushHistory();
+  /* Keep a recoverable version of the page before it goes blank, so a clear is
+     never a one-way door even after a reload. */
+  try { pushSnapshot(activePageId, { v: 1, elements: elements.slice() }); } catch { /* best effort */ }
   elements = [];
   selected.clear();
   bboxCache = new WeakMap();
@@ -4688,6 +5258,8 @@ window.addEventListener('keydown', (e) => {
     case 'o': setTool('ellipse'); break;
     case 'l': setTool('line'); break;
     case 'a': setTool('arrow'); break;
+    case '4': setTool('hand'); break;
+    case 'i': setInkAssist(!state.inkAssist); break;
     case 'g': cycleGrid(); break;
     case 'f': toggleFullscreen(); break;
     case '0': resetView(); break;
@@ -4753,6 +5325,7 @@ el.zoomOut.addEventListener('click', () => zoomAt(viewW / 2, viewH / 2, 1 / 1.2)
 el.zoomLabel.addEventListener('click', () => setZoom(1));
 el.gridBtn.addEventListener('click', cycleGrid);
 el.fitBtn.addEventListener('click', fitContent);
+el.assistBtn.addEventListener('click', () => setInkAssist(!state.inkAssist));
 
 el.divider.addEventListener('pointerdown', seamPointerDown);
 el.divider.addEventListener('pointermove', seamPointerMove);
@@ -5530,6 +6103,9 @@ async function purgeTrashItem(trashId) {
   const idx = workspace.trash.findIndex((t) => (t.id || t.deletedAt) === trashId);
   if (idx < 0) return;
   const item = workspace.trash[idx];
+  /* A permanent delete is the one truly destructive action — snapshot the whole
+     workspace first so even this is reversible. */
+  await createBackup('purge');
   if (item.kind === 'page') {
     try { await store.del(PAGE_PREFIX + item.id); await store.del('pagerefs:' + item.id); } catch { /* ok */ }
     delete workspace.pages[item.id];
@@ -5549,7 +6125,35 @@ async function purgeTrashItem(trashId) {
 }
 
 async function emptyTrash() {
-  for (const item of workspace.trash.slice()) await purgeTrashItem(item.id || item.deletedAt);
+  if (!workspace || !workspace.trash.length) return;
+  const ok = await confirmDialog({
+    title: 'Permanently delete everything in the trash?',
+    body: 'This is the only action that truly erases work. A safety backup of your whole workspace is saved first, and Recently deleted pages can be restored until this runs.',
+    confirm: 'Delete permanently',
+    danger: true
+  });
+  if (!ok) return;
+  await createBackup('empty-trash');
+  for (const item of workspace.trash.slice()) {
+    const idx = workspace.trash.findIndex((t) => (t.id || t.deletedAt) === (item.id || item.deletedAt));
+    if (idx < 0) continue;
+    const it = workspace.trash[idx];
+    if (it.kind === 'page') {
+      try { await store.del(PAGE_PREFIX + it.id); await store.del('pagerefs:' + it.id); } catch { /* ok */ }
+      delete workspace.pages[it.id];
+      const keys = await store.keys();
+      for (const k of keys) { if (typeof k === 'string' && k.startsWith(SNAP_PREFIX + it.id + ':')) { try { await store.del(k); } catch { /* ok */ } } }
+    } else {
+      for (const pid of (it.pageIds || [])) {
+        delete workspace.pages[pid];
+        try { await store.del(PAGE_PREFIX + pid); await store.del('pagerefs:' + pid); } catch { /* ok */ }
+      }
+    }
+    workspace.trash.splice(idx, 1);
+  }
+  await saveWorkspace();
+  renderDashboard();
+  toast('Trash emptied — a safety backup was kept');
 }
 
 /* ---- version history ---- */
@@ -5674,10 +6278,16 @@ async function importWorkspace() {
       confirm: 'Import'
     });
     if (!ok) return;
+    /* Safety copy of the current state before merging anything in. */
+    await createBackup('import');
     /* merge: keep existing, append imported subjects/pages */
     const idMap = {};
-    for (const id of Object.keys(incoming.pages)) { const nid = newId('pg'); idMap[id] = nid; incoming.pages[nid] = { ...incoming.pages[id], id: nid }; }
-    delete incoming.pages[id];
+    for (const id of Object.keys(incoming.pages)) {
+      const nid = newId('pg');
+      idMap[id] = nid;
+      incoming.pages[nid] = { ...incoming.pages[id], id: nid };
+      delete incoming.pages[id];
+    }
     for (const sub of incoming.subjects) {
       sub.id = newId('sb');
       sub.pageIds = sub.pageIds.map((p) => idMap[p]).filter(Boolean);
@@ -5705,7 +6315,16 @@ async function openPage(pageId) {
     try { await snapshotActiveIfPage(activePageId); } catch { /* ok */ }
   }
   activePageId = pageId;
-  const content = await readContent(pageId);
+  const loaded = await readContentDetailed(pageId);
+  const content = loaded.content;
+  /* Enter read-only protection if the stored content was present but unreadable. */
+  if (loaded.status === 'error' || loaded.status === 'invalid') {
+    pageWriteGuard = pageId;
+    pageWriteGuardReason = loaded.status;
+  } else {
+    pageWriteGuard = null;
+    pageWriteGuardReason = null;
+  }
   const refs = await store.get('pagerefs:' + pageId);
   applyContent(content);
   applyPageRefs(refs);
@@ -5722,6 +6341,14 @@ async function openPage(pageId) {
   applyRatio();
   measureStage();
   requestAnimationFrame(() => { if (elements.length) { try { fitContent(); } catch { /* ok */ } } else { resetView(); } });
+  if (loaded.status === 'ok') {
+    setSaveState('saved');
+  } else if (loaded.status === 'absent') {
+    setSaveState('saved');
+  } else {
+    setSaveState('error');
+    toast('Opened read-only — this page could not be read safely, so it will not be overwritten. Try the version history or export a backup.');
+  }
 }
 
 function closeBoard() {
@@ -5729,6 +6356,8 @@ function closeBoard() {
   const closing = activePageId;
   saveNow();
   if (closing) { snapshotActiveIfPage(closing).catch(() => { /* ok */ }); activePageId = null; }
+  pageWriteGuard = null;
+  pageWriteGuardReason = null;
   el.app.hidden = true;
   el.dashboard.hidden = false;
   renderDashboard();
@@ -5758,7 +6387,7 @@ function ensureDashboardReturn() {
   const btn = document.createElement('button');
   btn.className = 'icon-btn';
   btn.id = 'homeBtn';
-  btn.title = 'All subjects & pages — H';
+  btn.title = 'All subjects & pages';
   btn.setAttribute('aria-label', 'Back to workspace');
   btn.innerHTML = '<svg class="icon"><use href="#i-book"/></svg>';
   btn.addEventListener('click', closeBoard);
@@ -5803,9 +6432,12 @@ async function boot() {
     toast('This browser is blocking local storage. Work may not persist — export a backup.');
   }
   loadPrefs();
+  if (el.assistBtn) el.assistBtn.setAttribute('aria-pressed', String(state.inkAssist));
+  if (el.app) el.app.dataset.inkAssist = state.inkAssist ? 'on' : 'off';
 
   /* load existing workspace, else migrate the single-board era, else start fresh */
   let loaded = await loadWorkspace();
+  const wsStatus = loaded ? 'ok' : loadWorkspace.lastStatus;
   if (!loaded) {
     const migrated = await migrateLegacyBoard();
     if (migrated) {
@@ -5814,25 +6446,46 @@ async function boot() {
     }
   }
   if (loaded) workspace = loaded;
-  if (!wsOk()) { workspace = emptyWorkspace(); await saveWorkspace(); }
+
+  if (!wsOk()) {
+    /* Nothing valid loaded. Before creating anything, make sure we are not just
+       failing to READ a workspace that really does exist. If the read was
+       uncertain, back off and start a temporary in-memory workspace WITHOUT
+       writing, so the intact on-disk copy is never clobbered by an empty one. */
+    if (wsStatus === 'error' || wsStatus === 'invalid') {
+      workspace = emptyWorkspace();
+      window.__marginStorageHeld = true;
+      setDashSaveState('error');
+      toast('Could not read your saved workspace. It has NOT been changed — reload once storage is available. Nothing was overwritten.');
+    } else {
+      workspace = emptyWorkspace();
+      await saveWorkspace();
+    }
+  }
 
   /* choose an initial subject */
   if (workspace.subjects.length) {
     activeSubjectId = workspace.subjects[0].id;
   } else {
     /* brand-new workspace: give the student the standard subjects to start */
-    workspace = emptyWorkspace();
-    for (const n of ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English']) {
-      workspace.subjects.push({ id: newId('sb'), name: n, color: '', pageIds: [], createdAt: Date.now(), collapsed: false });
+    if (!workspace.subjects.length) {
+      for (const n of ['Mathematics', 'Physics', 'Chemistry', 'Biology', 'English']) {
+        workspace.subjects.push({ id: newId('sb'), name: n, color: '', pageIds: [], createdAt: Date.now(), collapsed: false });
+      }
+      activeSubjectId = workspace.subjects[0].id;
+      if (!window.__marginStorageHeld) await saveWorkspace();
     }
-    activeSubjectId = workspace.subjects[0].id;
-    await saveWorkspace();
   }
 
   renderDashboard();
   setDashSaveState(storageHealthy ? 'saved' : 'error');
   updateBgNow();
   onBgState('paused');
+  /* Keep a rolling safety copy of everything, once per session, whenever there
+     is real data to protect. Cheap, additive, and never touches the live tree. */
+  if (wsOk() && !window.__marginStorageHeld) {
+    try { await createBackup('boot'); } catch { /* best effort */ }
+  }
 }
 
 function setDashSaveState(kind) {
