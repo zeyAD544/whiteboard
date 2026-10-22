@@ -2199,14 +2199,20 @@ const INK = {
   /* How long the pen must rest before a heal runs (ms). */
   settleMs: 130,
   /* Two endpoints may be stitched when this close together (screen px at 100%,
-     scaled by camera so it stays consistent while zoomed). */
-  gapScreen: 34,
-  /* Endpoint directions must agree within this many degrees for a stitch. */
-  tangentDeg: 68,
+     scaled by camera so it stays consistent while zoomed). A hand lifts the
+     pen a couple of pixels mid-letter, not twenty: this stays small on
+     purpose, because welding nearby-but-separate strokes is far worse than
+     leaving a hairline gap. */
+  gapScreen: 13,
+  /* Endpoint directions must agree within this many degrees for a stitch: a
+     continuation runs on almost straight, so the kink at the joint is tiny. */
+  tangentDeg: 38,
+  /* A join must also be short compared with the strokes it connects. */
+  joinMaxRatio: 1,
   /* Style tolerance: strokes must match in colour and be within this size ratio
      to be considered the same pen. */
-  sizeRatio: 2.2,
-  colorMaxDist: 40,
+  sizeRatio: 1.5,
+  colorMaxDist: 12,
   /* A stroke shorter than this (screen px of arc length) counts as a speck. */
   speckScreen: 14,
   /* Wobble removal: pull strength and window, before shape fitting. */
@@ -2215,7 +2221,7 @@ const INK = {
   /* Cap connectors as a fraction of the stitched endpoints' average width. */
   bridgePtCount: 7,
   /* How many join sweeps before we call the neighbourhood settled. */
-  mergePasses: 6,
+  mergePasses: 4,
   /* Resample spacing (screen px) and the hard point ceiling per stroke. */
   resampleScreen: 5,
   maxPts: 1600,
@@ -2658,7 +2664,8 @@ function inkSnapEndpoint(a, b, reach) {
     const hx = hit.x - e.p.x, hy = hit.y - e.p.y;
     const dd = Math.hypot(hx, hy) || 1;
     const towards = (hx / dd) * e.dir.x + (hy / dd) * e.dir.y;
-    if (towards < 0.2 && hit.d > Math.max(2, (a.size || 2) * 1.5)) continue;
+    /* the pen must have been travelling at the line it is closing onto */
+    if (towards < 0.45) continue;
     if (!best || hit.d < best.d) best = { x: hit.x, y: hit.y, which: e.which, d: hit.d };
   }
   if (!best) return null;
@@ -2735,6 +2742,10 @@ function inkTidy(list, scale, focusId, refineAll) {
         if (!inkCompatible(cur, b)) continue;
         const seam = bestSeam(cur, b, gap);
         if (!seam) continue;
+        /* A connector longer than the shorter of the two strokes is not a
+           continuation, it is a leap across whitespace. */
+        const shorter = Math.min(strokeLength(cur.points), strokeLength(b.points));
+        if (shorter > 0 && seam.d > shorter * INK.joinMaxRatio) continue;
         const bridge = inkBridge(seam.aPt, seam.aDir, seam.bPt, seam.bDir, INK.bridgePtCount);
         const merged = inkMergeStrokes(cur, b, seam.aEnd, seam.bEnd, bridge);
         const next = cloneStroke(cur, merged);
