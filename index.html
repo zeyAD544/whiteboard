@@ -392,7 +392,8 @@ kbd{
 }
 .stage canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none}
 #scene{pointer-events:none}
-#overlay{cursor:crosshair;touch-action:none}
+#overlay{cursor:crosshair;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+html,body{overscroll-behavior:none}
 .stage.is-grabbing #overlay{cursor:grabbing!important}
 .stage.is-grab #overlay{cursor:grab!important}
 .empty-note{
@@ -557,6 +558,49 @@ input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;backgroun
 .dock-btn .icon{width:15px;height:15px}
 .dock-btn[data-tip]::after{left:50%;top:auto;bottom:calc(100% + 9px);transform:translate(-50%,4px)}
 .dock-btn[data-tip]:hover::after{transform:translate(-50%,0)}
+
+/* ---------------------------------------------------------------- writing feel */
+.writing-block{
+  margin-top:15px;padding:13px;border:1px solid rgba(240,233,221,.09);border-radius:11px;
+  background:rgba(240,233,221,.018);
+}
+.writing-head{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:9px}
+.writing-head strong{font-size:12px;font-weight:600;color:#e6e0d4}
+.writing-head output{font-family:var(--font-mono);font-size:9.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent-bright)}
+.writing-sub{margin:0;font-size:10.5px;line-height:1.55;color:var(--faint)}
+.writing-block input[type="range"]{width:100%;margin:3px 0 7px}
+.feel-scale{display:flex;justify-content:space-between;font-family:var(--font-mono);font-size:8.5px;letter-spacing:.04em;text-transform:uppercase;color:#6d6557}
+.writing-row{display:flex;align-items:center;justify-content:space-between;gap:14px}
+.writing-row .writing-copy{min-width:0}
+.writing-row .writing-copy strong{display:block;font-size:12px;font-weight:600;color:#e6e0d4;margin-bottom:2px}
+.writing-row .writing-copy span{display:block;font-size:10.5px;line-height:1.5;color:var(--faint)}
+.switch{
+  position:relative;width:40px;height:23px;border-radius:99px;flex:none;
+  background:rgba(240,233,221,.11);border:1px solid rgba(240,233,221,.12);
+  transition:background .16s,border-color .16s;
+}
+.switch::after{
+  content:"";position:absolute;left:3px;top:3px;width:15px;height:15px;border-radius:50%;
+  background:#b2a998;box-shadow:0 1px 3px rgba(0,0,0,.4);transition:transform .16s,background .16s;
+}
+.switch[aria-pressed="true"]{background:rgba(224,114,77,.28);border-color:rgba(224,114,77,.42)}
+.switch[aria-pressed="true"]::after{transform:translateX(17px);background:var(--accent-bright)}
+.seg{display:flex;gap:3px;padding:3px;border:1px solid rgba(240,233,221,.09);border-radius:9px;background:rgba(12,9,5,.32)}
+.seg button{
+  flex:1;height:29px;border-radius:6px;font-size:10.5px;font-weight:600;color:var(--faint);
+  transition:background .13s,color .13s;
+}
+.seg button:hover{color:var(--text);background:rgba(240,233,221,.05)}
+.seg button[aria-pressed="true"]{background:rgba(224,114,77,.17);color:var(--accent-bright)}
+.writing-langs{margin-top:11px}
+.writing-langs .seg{margin-top:6px}
+.writing-langs[data-off="true"]{opacity:.45;pointer-events:none}
+.ai-badge{
+  position:absolute;right:-2px;top:-2px;width:5px;height:5px;border-radius:50%;
+  background:var(--accent-bright);box-shadow:0 0 0 2px #221d16;
+}
+.dock-btn.has-badge{position:relative}
+.dock-toggle[aria-pressed="false"] .ai-badge{display:none}
 .zoom-label{
   min-width:46px;height:26px;padding:0 4px;border-radius:6px;
   font-family:var(--font-mono);font-size:10.5px;color:var(--muted);
@@ -1072,6 +1116,8 @@ input[type="range"].bg-vol::-moz-range-thumb{
   <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8.5 11V5.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M11.7 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M14.9 11.4V6.6a1.6 1.6 0 0 1 3.2 0v8.4a7 7 0 0 1-7 7h-.6a6 6 0 0 1-4.24-1.76L4.5 17a1.7 1.7 0 0 1 2.5-2.3l1.5 1.5V11"/></symbol>
   <symbol id="i-rect" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/></symbol>
   <symbol id="i-assist" viewBox="0 0 24 24"><path d="M4 15c2.6-4.4 5.4-6.6 8-6.6S17.4 10.6 20 15"/><path d="M4 9.4h4.2"/><path d="M15.8 9.4H20"/><circle cx="12" cy="18.4" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="9.4" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="9.4" r="1.5" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.8l1.6 4.7 4.7 1.6-4.7 1.6L12 15.4l-1.6-4.7-4.7-1.6 4.7-1.6Z"/><path d="M18.7 14.2l.8 2.3 2.3.8-2.3.8-.8 2.3-.8-2.3-2.3-.8 2.3-.8Z"/><path d="M5.2 14.8l.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6Z"/></symbol>
+  <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
   <symbol id="i-ellipse" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/></symbol>
   <symbol id="i-line" viewBox="0 0 24 24"><path d="M5.5 18.5 18.5 5.5"/></symbol>
   <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 19 19 5"/><path d="M12.5 5H19v6.5"/></symbol>
@@ -1207,6 +1253,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
           <button data-action="fullscreen"><svg class="icon"><use href="#i-expand"/></svg>Fullscreen</button>
           <button data-action="sound"><svg class="icon"><use href="#i-music"/></svg>Background sound</button>
           <button data-action="shortcuts"><svg class="icon"><use href="#i-help"/></svg>Keyboard shortcuts</button>
+          <button data-action="writing"><svg class="icon"><use href="#i-sliders"/></svg>Writing feel &amp; AI</button>
           <div class="menu-sep"></div>
           <button data-action="clear" class="danger"><svg class="icon"><use href="#i-trash"/></svg>Clear board</button>
         </div>
@@ -1287,6 +1334,8 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <span class="dock-sep" aria-hidden="true"></span>
         <button class="dock-btn" id="gridBtn" aria-label="Background: Dots" data-tip="Cycle background · G"><svg class="icon"><use href="#i-dots"/></svg></button>
         <button class="dock-btn dock-toggle" id="assistBtn" data-act="inkassist" aria-label="Ink Assist" aria-pressed="false" data-tip="Ink Assist — tidy gaps &amp; wobble (I) · whole page (Shift+I)"><svg class="icon"><use href="#i-assist"/></svg></button>
+        <button class="dock-btn dock-toggle has-badge" id="aiBtn" aria-label="AI letter complete" aria-pressed="false" data-tip="AI letter complete (J) · options in More"><svg class="icon"><use href="#i-spark"/></svg><span class="ai-badge" aria-hidden="true"></span></button>
+        <button class="dock-btn" id="feelBtn" aria-label="Writing feel and AI options" data-tip="Writing feel &amp; AI"><svg class="icon"><use href="#i-sliders"/></svg></button>
         <button class="dock-btn" id="fitBtn" aria-label="Fit board to content" data-tip="Fit to content · 1"><svg class="icon"><use href="#i-fit"/></svg></button>
       </div>
       <button class="show-video" id="showVideoBtn" data-available="false"><svg class="icon sm"><use href="#i-youtube"/></svg>Show video</button>
@@ -1414,6 +1463,44 @@ input[type="range"].bg-vol::-moz-range-thumb{
   </div>
 </div>
 
+<!-- writing feel / on-device letter model -->
+<div class="modal-layer" id="writingModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="writingTitle">
+    <button class="modal-close" id="writingClose" aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">Pen &amp; touch</div>
+    <h2 id="writingTitle">Make every stroke land</h2>
+    <p>Tune the input engine for the screen and stylus in front of you. Higher response keeps fast, cheap styli from dropping detail; lower response trades a little latency for a steadier line.</p>
+
+    <div class="writing-block">
+      <div class="writing-head"><strong>Touch &amp; stylus response</strong><output id="feelVal">Instant</output></div>
+      <input type="range" id="feelRange" min="0" max="2" step="1" value="2" aria-label="Touch and stylus response">
+      <div class="feel-scale"><span>Steady</span><span>Balanced</span><span>Instant</span></div>
+      <p class="writing-sub">Sampling runs at the device's native rate, fills missed reports, and adapts smoothing to speed and contact quality.</p>
+    </div>
+
+    <div class="writing-block">
+      <div class="writing-row">
+        <div class="writing-copy">
+          <strong>AI letter completion</strong>
+          <span>Recognise a partial letter and finish its missing strokes after a short pause.</span>
+        </div>
+        <button class="switch" id="writingAiBtn" aria-label="Toggle AI letter completion" aria-pressed="false"></button>
+      </div>
+      <div class="writing-langs" id="writingLangs" data-off="true">
+        <span class="writing-sub">Alphabet</span>
+        <div class="seg" id="aiLangSeg" role="group" aria-label="Alphabet">
+          <button type="button" data-lang="auto" aria-pressed="true">Auto</button>
+          <button type="button" data-lang="latin" aria-pressed="false">Latin</button>
+          <button type="button" data-lang="arabic" aria-pressed="false">Arabic</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions"><button class="btn btn-primary" id="writingDone">Back to the board</button></div>
+  </div>
+</div>
+
 <!-- shortcuts dialog -->
 <div class="modal-layer" id="shortcutsModal" hidden>
   <div class="modal-scrim" data-close></div>
@@ -1445,6 +1532,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="key-row"><span>Cycle background</span><span class="keys"><kbd>G</kbd></span></div>
       <div class="key-row"><span>Ink Assist (tidy gaps &amp; wobble)</span><span class="keys"><kbd>I</kbd></span></div>
       <div class="key-row"><span>Tidy the whole page</span><span class="keys"><kbd>Shift</kbd><kbd>I</kbd></span></div>
+      <div class="key-row"><span>AI letter completion</span><span class="keys"><kbd>J</kbd></span></div>
       <div class="key-row"><span>Fullscreen</span><span class="keys"><kbd>F</kbd></span></div>
     </div>
     <div class="modal-actions"><button class="btn btn-primary" id="keysDone">Back to the board</button></div>
@@ -2002,7 +2090,10 @@ const el = {
   context: $('#contextBar'), ctxEdge: $('#ctxEdge'),
   dupBtn: $('#dupBtn'), frontBtn: $('#frontBtn'), backBtn: $('#backBtn'), deleteSelBtn: $('#deleteSelBtn'),
   zoomIn: $('#zoomIn'), zoomOut: $('#zoomOut'), zoomLabel: $('#zoomLabel'),
-  gridBtn: $('#gridBtn'), fitBtn: $('#fitBtn'), assistBtn: $('#assistBtn'), emptyNote: $('#emptyNote'),
+  gridBtn: $('#gridBtn'), fitBtn: $('#fitBtn'), assistBtn: $('#assistBtn'), aiBtn: $('#aiBtn'), feelBtn: $('#feelBtn'), emptyNote: $('#emptyNote'),
+  writingModal: $('#writingModal'), writingClose: $('#writingClose'), writingDone: $('#writingDone'),
+  feelRange: $('#feelRange'), feelVal: $('#feelVal'), writingAiBtn: $('#writingAiBtn'), writingLangs: $('#writingLangs'),
+  aiLangSeg: $('#aiLangSeg'),
   showVideoBtn: $('#showVideoBtn'), divider: $('#divider'), dividerPct: $('#dividerPct'),
   workspace: $('#workspace'), videoPanel: $('#videoPanel'),
   openYtBtn: $('#openYtBtn'), collapseVideoBtn: $('#collapseVideoBtn'), browseHeaderBtn: $('#browseHeaderBtn'),
@@ -2058,7 +2149,10 @@ const state = {
   bgVolume: 45,
   bgMuted: false,
   recent: [],
-  inkAssist: false
+  inkAssist: false,
+  penFeel: 2,
+  letterAssist: false,
+  letterLang: 'auto'
 };
 let elements = [];
 let hadSavedData = false;
@@ -2089,6 +2183,12 @@ let openModalEl = null;
 let assistTimer = 0;
 let assistOriginals = null;
 let assistPending = null;
+/* Letter-completion bookkeeping. aiRecent remembers the last strokes (and when
+   they landed) so a letter made of several strokes can be judged as a whole. */
+let aiTimer = 0;
+let aiRecent = [];
+let aiBusy = false;
+let aiLastLang = '';
 
 const sctx = el.scene.getContext('2d', { alpha: false });
 const octx = el.overlay.getContext('2d');
@@ -2109,8 +2209,9 @@ const PEN = {
      that isn't the flat 0.5 a mouse/no-pressure source sends. */
   mousePressure: 0.5,
   pressureMinDelta: 0.0009,
-  /* Points closer than this (in screen px) collapse together. */
-  minStepScreen: 0.62,
+  /* Points closer than this (in screen px) collapse together. The live feel
+     preset overrides this; the value here is the safe fallback. */
+  minStepScreen: 0.46,
   /* Width modulation for pressure-capable pens. */
   widthAtZero: 0.30,
   widthAtOne: 1.30,
@@ -2125,6 +2226,26 @@ const PEN = {
      plus smoothing already covers the perceived latency. */
   usePrediction: false
 };
+/* Three input profiles. "Instant" is the default: the smallest accepted step
+   and the least lag, with missed reports filled in so a slow stylus still
+   produces one continuous ribbon. */
+const PEN_FEELS = [
+  { step: 0.68, minCutoff: 0.82, beta: 0.007, fillGap: 6.5 },
+  { step: 0.46, minCutoff: 1.24, beta: 0.016, fillGap: 4.6 },
+  { step: 0.30, minCutoff: 1.95, beta: 0.034, fillGap: 3.4 }
+];
+function penTuning(pointerType) {
+  const base = PEN_FEELS[clamp(Math.round(state.penFeel) || 0, 0, PEN_FEELS.length - 1)];
+  /* Finger and capacitive-stylus contacts are less precise than an active
+     pen, so keep a touch more smoothing even at "Instant". */
+  const touch = pointerType === 'touch';
+  return {
+    step: base.step,
+    minCutoff: base.minCutoff * (touch ? 0.9 : 1),
+    beta: base.beta * (touch ? 0.9 : 1),
+    fillGap: base.fillGap
+  };
+}
 let penProximity = false;
 let lastPenUpAt = 0;
 let penHasPressure = false;
@@ -2152,8 +2273,12 @@ function hasRealPressure(e) {
 }
 
 /* --- one-euro filter over screen coordinates (x, y) --- */
-function makeOneEuro() {
-  return { x: null, y: null, dx: 0, dy: 0, t: 0 };
+function makeOneEuro(tuning, time) {
+  return {
+    x: null, y: null, dx: 0, dy: 0, t: time || 0,
+    minCutoff: tuning ? tuning.minCutoff : PEN.minCutoff,
+    beta: tuning ? tuning.beta : PEN.beta
+  };
 }
 function alpha(cutoff, dt) {
   const tau = 1 / (2 * Math.PI * cutoff);
@@ -2170,7 +2295,7 @@ function oneEuro(f, nx, ny, now) {
   f.dx += da * (ddx - f.dx);
   f.dy += da * (ddy - f.dy);
   const speed = Math.hypot(f.dx, f.dy);
-  const cutoff = PEN.minCutoff + PEN.beta * speed;
+  const cutoff = f.minCutoff + f.beta * speed;
   const a = alpha(cutoff, dt);
   f.x += a * (nx - f.x);
   f.y += a * (ny - f.y);
@@ -2800,12 +2925,29 @@ function inkTidy(list, scale, focusId, refineAll) {
 
 /* Smoothed stroke accumulator. Keeps raw *and* smoothed points so we can thin
    without losing where the pen actually went. */
-function beginStrokeFilter(startScreen) {
+function beginStrokeFilter(startScreen, time, pointerType) {
+  const tuning = penTuning(pointerType);
+  const t = Number.isFinite(time) ? time : performance.now();
   smoothing = {
-    raw: makeOneEuro(),
-    out: startScreen ? { x: startScreen.x, y: startScreen.y } : null
+    raw: makeOneEuro(tuning, t),
+    out: startScreen ? { x: startScreen.x, y: startScreen.y } : null,
+    tuning,
+    pointerType: pointerType || 'mouse',
+    lastEvT: t,
+    lastSpeedT: t,
+    lastNow: t,
+    lastSx: startScreen ? startScreen.x : null,
+    lastSy: startScreen ? startScreen.y : null
   };
   if (startScreen) { smoothing.raw.x = startScreen.x; smoothing.raw.y = startScreen.y; }
+}
+
+/* DOMHighResTimeStamp is the right clock for coalesced samples: every report
+   in a batch has its own time, so the filter sees real velocity instead of a
+   row of zero-delta frames. */
+function eventTime(e, fallback) {
+  const t = e && e.timeStamp;
+  return Number.isFinite(t) && t > 0 ? t : fallback;
 }
 
 function resetPenInput() {
@@ -2814,6 +2956,543 @@ function resetPenInput() {
   penHasPressure = false;
 }
 
+/* ============================================================ LETTER MODEL
+   A small, on-device handwriting model. It is deliberately transparent:
+   letters are stored as normalised stroke templates, and recognition is a
+   scale-free nearest-template match over every partial subset of a glyph.
+   A partial match yields the missing strokes, which are fitted back onto the
+   user's own letter box. No network, no API key, nothing leaves the page.
+
+   The model only commits when the partial reading is confident and clearly
+   better than the runner-up. A complete letter is never "finished" again. */
+const AI = {
+  settleMs: 760,
+  minConfidence: 0.690,
+  minStrokeSim: 0.660,
+  margin: 0.030,
+  missingPenalty: 0.045,
+  maxMissing: 3,
+  maxStrokes: 4,
+  maxAgeMs: 12000,
+  minScreen: 16,
+  maxScreen: 470
+};
+let aiPageId = null;
+
+function aiSeg(x1, y1, x2, y2) { return [{ x: x1, y: y1 }, { x: x2, y: y2 }]; }
+function aiPoly() {
+  const out = [];
+  for (let i = 0; i + 1 < arguments.length; i += 2) out.push({ x: arguments[i], y: arguments[i + 1] });
+  return out;
+}
+function aiArc(cx, cy, rx, ry, a0, a1, steps) {
+  const n = steps || 20;
+  const out = [];
+  for (let i = 0; i <= n; i++) {
+    const a = a0 + (a1 - a0) * (i / n);
+    out.push({ x: cx + Math.cos(a) * rx, y: cy + Math.sin(a) * ry });
+  }
+  return out;
+}
+function aiEllipse(cx, cy, rx, ry) { return aiArc(cx, cy, rx, ry, 0, Math.PI * 2, 30); }
+function aiDotAt(x, y) { return [{ x, y }, { x: x + 0.0015, y: y + 0.0015 }]; }
+function aiGlyph(ch, lang, strokes) { return { ch, lang, strokes }; }
+
+/* Shared Arabic bases: one skeleton, then the dots that distinguish letters. */
+const aiBoat = aiPoly(0.96, 0.45, 0.78, 0.62, 0.54, 0.67, 0.31, 0.63, 0.12, 0.48);
+const aiHook = aiPoly(0.90, 0.19, 0.72, 0.22, 0.55, 0.35, 0.40, 0.54, 0.42, 0.72, 0.31, 0.90, 0.12, 0.87);
+const aiDal = aiPoly(0.12, 0.50, 0.54, 0.50, 0.78, 0.61, 0.90, 0.78);
+const aiRa = aiPoly(0.12, 0.46, 0.55, 0.52, 0.68, 0.69, 0.49, 0.91);
+const aiSeen = aiPoly(0.05, 0.65, 0.17, 0.55, 0.28, 0.65, 0.39, 0.55, 0.50, 0.65, 0.61, 0.55, 0.72, 0.65, 0.83, 0.55, 0.94, 0.67, 0.82, 0.84, 0.64, 0.91);
+const aiSad = aiPoly(0.14, 0.50, 0.18, 0.34, 0.36, 0.27, 0.55, 0.38, 0.62, 0.57, 0.82, 0.55, 0.93, 0.71, 0.78, 0.90, 0.58, 0.96);
+const aiTah = aiPoly(0.11, 0.68, 0.41, 0.68, 0.62, 0.73, 0.78, 0.88);
+const aiAin = aiPoly(0.15, 0.50, 0.28, 0.32, 0.50, 0.25, 0.72, 0.36, 0.75, 0.55, 0.62, 0.72, 0.45, 0.66, 0.40, 0.55);
+const aiFeh = aiPoly(0.16, 0.50, 0.18, 0.35, 0.38, 0.30, 0.55, 0.40, 0.55, 0.58, 0.35, 0.62, 0.20, 0.55);
+const aiKaf = aiPoly(0.12, 0.50, 0.35, 0.48, 0.55, 0.52, 0.60, 0.68, 0.45, 0.82, 0.20, 0.85);
+const aiLam = aiPoly(0.55, 0.08, 0.55, 0.55, 0.65, 0.75, 0.50, 0.90, 0.25, 0.85);
+const aiMeem = aiPoly(0.15, 0.52, 0.20, 0.35, 0.40, 0.29, 0.56, 0.42, 0.49, 0.59, 0.27, 0.61);
+const aiNoon = aiBoat;
+const aiHeh = aiPoly(0.20, 0.60, 0.10, 0.42, 0.22, 0.25, 0.50, 0.20, 0.75, 0.30, 0.82, 0.55, 0.65, 0.72, 0.40, 0.75, 0.25, 0.65, 0.32, 0.52, 0.55, 0.50);
+const aiWaw = aiPoly(0.20, 0.40, 0.15, 0.25, 0.32, 0.15, 0.55, 0.20, 0.62, 0.38, 0.50, 0.52, 0.32, 0.60, 0.50, 0.52, 0.70, 0.76);
+
+const AI_GLYPHS = [
+  /* ---- Latin uppercase ---- */
+  aiGlyph('A', 'latin', [aiSeg(0.50, 0.03, 0.05, 1.00), aiSeg(0.50, 0.03, 0.95, 1.00), aiSeg(0.19, 0.62, 0.81, 0.62)]),
+  aiGlyph('B', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiPoly(0.08, 0.03, 0.62, 0.03, 0.90, 0.13, 0.90, 0.34, 0.62, 0.48, 0.08, 0.48), aiPoly(0.08, 0.48, 0.70, 0.48, 0.97, 0.61, 0.97, 0.82, 0.70, 0.97, 0.08, 0.97)]),
+  aiGlyph('C', 'latin', [aiPoly(0.92, 0.20, 0.72, 0.06, 0.46, 0.03, 0.22, 0.13, 0.08, 0.35, 0.06, 0.62, 0.18, 0.85, 0.40, 0.98, 0.68, 0.99, 0.92, 0.87)]),
+  aiGlyph('D', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiPoly(0.08, 0.03, 0.55, 0.03, 0.82, 0.18, 0.95, 0.50, 0.82, 0.82, 0.55, 0.97, 0.08, 0.97)]),
+  aiGlyph('E', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiSeg(0.08, 0.03, 0.90, 0.03), aiSeg(0.08, 0.50, 0.72, 0.50), aiSeg(0.08, 0.97, 0.90, 0.97)]),
+  aiGlyph('F', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiSeg(0.08, 0.03, 0.92, 0.03), aiSeg(0.08, 0.50, 0.74, 0.50)]),
+  aiGlyph('G', 'latin', [aiPoly(0.92, 0.20, 0.72, 0.06, 0.46, 0.03, 0.22, 0.13, 0.08, 0.35, 0.06, 0.62, 0.18, 0.85, 0.40, 0.98, 0.68, 0.99, 0.92, 0.84), aiSeg(0.58, 0.50, 0.95, 0.50), aiSeg(0.95, 0.50, 0.95, 0.87)]),
+  aiGlyph('H', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiSeg(0.92, 0.03, 0.92, 0.97), aiSeg(0.08, 0.50, 0.92, 0.50)]),
+  aiGlyph('I', 'latin', [aiSeg(0.18, 0.03, 0.82, 0.03), aiSeg(0.50, 0.03, 0.50, 0.97), aiSeg(0.18, 0.97, 0.82, 0.97)]),
+  aiGlyph('J', 'latin', [aiSeg(0.22, 0.03, 0.88, 0.03), aiPoly(0.78, 0.03, 0.78, 0.78, 0.68, 0.94, 0.48, 1.00, 0.26, 0.91, 0.17, 0.76)]),
+  aiGlyph('K', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiSeg(0.88, 0.03, 0.15, 0.55), aiSeg(0.35, 0.40, 0.94, 0.97)]),
+  aiGlyph('L', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiSeg(0.08, 0.97, 0.90, 0.97)]),
+  aiGlyph('M', 'latin', [aiSeg(0.08, 0.97, 0.08, 0.03), aiSeg(0.08, 0.03, 0.50, 0.63), aiSeg(0.50, 0.63, 0.92, 0.03), aiSeg(0.92, 0.03, 0.92, 0.97)]),
+  aiGlyph('N', 'latin', [aiSeg(0.08, 0.97, 0.08, 0.03), aiSeg(0.08, 0.03, 0.92, 0.97), aiSeg(0.92, 0.97, 0.92, 0.03)]),
+  aiGlyph('O', 'latin', [aiEllipse(0.50, 0.50, 0.45, 0.47)]),
+  aiGlyph('P', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiPoly(0.08, 0.03, 0.62, 0.03, 0.90, 0.15, 0.90, 0.37, 0.62, 0.50, 0.08, 0.50)]),
+  aiGlyph('Q', 'latin', [aiEllipse(0.50, 0.47, 0.44, 0.42), aiSeg(0.58, 0.70, 0.94, 1.03)]),
+  aiGlyph('R', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.97), aiPoly(0.08, 0.03, 0.62, 0.03, 0.90, 0.15, 0.90, 0.37, 0.62, 0.50, 0.08, 0.50), aiSeg(0.42, 0.50, 0.92, 0.97)]),
+  aiGlyph('S', 'latin', [aiPoly(0.90, 0.16, 0.67, 0.04, 0.40, 0.06, 0.20, 0.22, 0.23, 0.43, 0.49, 0.52, 0.77, 0.60, 0.92, 0.78, 0.82, 0.94, 0.55, 1.00, 0.28, 0.92, 0.12, 0.79)]),
+  aiGlyph('T', 'latin', [aiSeg(0.04, 0.03, 0.96, 0.03), aiSeg(0.50, 0.03, 0.50, 0.97)]),
+  aiGlyph('U', 'latin', [aiSeg(0.08, 0.03, 0.08, 0.70), aiPoly(0.08, 0.70, 0.16, 0.90, 0.38, 0.99, 0.62, 0.99, 0.84, 0.90, 0.92, 0.70), aiSeg(0.92, 0.70, 0.92, 0.03)]),
+  aiGlyph('V', 'latin', [aiSeg(0.05, 0.03, 0.50, 0.97), aiSeg(0.50, 0.97, 0.95, 0.03)]),
+  aiGlyph('W', 'latin', [aiSeg(0.03, 0.03, 0.25, 0.97), aiSeg(0.25, 0.97, 0.50, 0.40), aiSeg(0.50, 0.40, 0.75, 0.97), aiSeg(0.75, 0.97, 0.97, 0.03)]),
+  aiGlyph('X', 'latin', [aiSeg(0.06, 0.03, 0.94, 0.97), aiSeg(0.94, 0.03, 0.06, 0.97)]),
+  aiGlyph('Y', 'latin', [aiSeg(0.06, 0.03, 0.50, 0.52), aiSeg(0.94, 0.03, 0.50, 0.52), aiSeg(0.50, 0.52, 0.50, 0.97)]),
+  aiGlyph('Z', 'latin', [aiSeg(0.06, 0.03, 0.94, 0.03), aiSeg(0.94, 0.03, 0.06, 0.97), aiSeg(0.06, 0.97, 0.94, 0.97)]),
+
+  /* ---- Latin lowercase ---- */
+  aiGlyph('a', 'latin', [aiPoly(0.82, 0.38, 0.62, 0.32, 0.38, 0.38, 0.22, 0.56, 0.25, 0.79, 0.42, 0.92, 0.65, 0.90, 0.82, 0.76), aiSeg(0.82, 0.35, 0.82, 0.94)]),
+  aiGlyph('b', 'latin', [aiSeg(0.16, 0.06, 0.16, 0.94), aiPoly(0.16, 0.42, 0.42, 0.32, 0.68, 0.38, 0.82, 0.58, 0.76, 0.82, 0.52, 0.94, 0.16, 0.86)]),
+  aiGlyph('c', 'latin', [aiPoly(0.82, 0.40, 0.62, 0.32, 0.38, 0.36, 0.20, 0.55, 0.22, 0.78, 0.42, 0.92, 0.66, 0.90, 0.83, 0.80)]),
+  aiGlyph('d', 'latin', [aiPoly(0.82, 0.38, 0.60, 0.32, 0.36, 0.38, 0.19, 0.58, 0.24, 0.80, 0.46, 0.93, 0.68, 0.87, 0.82, 0.70), aiSeg(0.82, 0.06, 0.82, 0.94)]),
+  aiGlyph('e', 'latin', [aiPoly(0.18, 0.62, 0.82, 0.60, 0.80, 0.43, 0.62, 0.33, 0.38, 0.36, 0.21, 0.54, 0.24, 0.78, 0.44, 0.92, 0.68, 0.89, 0.82, 0.78)]),
+  aiGlyph('f', 'latin', [aiPoly(0.70, 0.08, 0.48, 0.13, 0.38, 0.34, 0.38, 0.94), aiSeg(0.18, 0.45, 0.66, 0.45)]),
+  aiGlyph('g', 'latin', [aiPoly(0.82, 0.38, 0.60, 0.32, 0.36, 0.39, 0.21, 0.59, 0.28, 0.80, 0.50, 0.88, 0.70, 0.80, 0.82, 0.64), aiPoly(0.82, 0.35, 0.82, 1.10, 0.72, 1.28, 0.48, 1.34, 0.26, 1.25)]),
+  aiGlyph('h', 'latin', [aiSeg(0.16, 0.06, 0.16, 0.94), aiPoly(0.16, 0.55, 0.24, 0.38, 0.46, 0.31, 0.68, 0.39, 0.80, 0.58, 0.80, 0.94)]),
+  aiGlyph('i', 'latin', [aiDotAt(0.50, 0.12), aiSeg(0.50, 0.32, 0.50, 0.94)]),
+  aiGlyph('j', 'latin', [aiDotAt(0.56, 0.12), aiPoly(0.56, 0.32, 0.56, 1.05, 0.46, 1.24, 0.22, 1.26)]),
+  aiGlyph('k', 'latin', [aiSeg(0.18, 0.06, 0.18, 0.94), aiSeg(0.78, 0.35, 0.22, 0.64), aiSeg(0.38, 0.55, 0.82, 0.94)]),
+  aiGlyph('l', 'latin', [aiSeg(0.50, 0.06, 0.50, 0.94)]),
+  aiGlyph('m', 'latin', [aiSeg(0.10, 0.34, 0.10, 0.94), aiPoly(0.10, 0.52, 0.20, 0.37, 0.38, 0.34, 0.45, 0.53, 0.45, 0.94), aiPoly(0.45, 0.52, 0.55, 0.37, 0.73, 0.34, 0.80, 0.53, 0.80, 0.94)]),
+  aiGlyph('n', 'latin', [aiSeg(0.16, 0.34, 0.16, 0.94), aiPoly(0.16, 0.53, 0.28, 0.37, 0.50, 0.32, 0.72, 0.41, 0.80, 0.61, 0.80, 0.94)]),
+  aiGlyph('o', 'latin', [aiEllipse(0.50, 0.63, 0.31, 0.30)]),
+  aiGlyph('p', 'latin', [aiSeg(0.16, 0.34, 0.16, 1.31), aiPoly(0.16, 0.43, 0.42, 0.32, 0.68, 0.38, 0.82, 0.58, 0.76, 0.82, 0.52, 0.93, 0.16, 0.86)]),
+  aiGlyph('q', 'latin', [aiPoly(0.82, 0.38, 0.60, 0.32, 0.36, 0.38, 0.19, 0.58, 0.24, 0.82, 0.46, 0.93, 0.68, 0.86, 0.82, 0.68), aiSeg(0.82, 0.34, 0.82, 1.31)]),
+  aiGlyph('r', 'latin', [aiSeg(0.18, 0.34, 0.18, 0.94), aiPoly(0.18, 0.56, 0.32, 0.38, 0.54, 0.32, 0.76, 0.38)]),
+  aiGlyph('s', 'latin', [aiPoly(0.82, 0.42, 0.62, 0.33, 0.40, 0.36, 0.26, 0.48, 0.36, 0.61, 0.64, 0.66, 0.80, 0.78, 0.74, 0.90, 0.50, 0.95, 0.28, 0.88)]),
+  aiGlyph('t', 'latin', [aiSeg(0.44, 0.10, 0.44, 0.85), aiSeg(0.24, 0.35, 0.68, 0.35)]),
+  aiGlyph('u', 'latin', [aiPoly(0.16, 0.34, 0.16, 0.72, 0.24, 0.89, 0.46, 0.95, 0.68, 0.88, 0.80, 0.70, 0.80, 0.34)]),
+  aiGlyph('v', 'latin', [aiSeg(0.10, 0.34, 0.50, 0.94), aiSeg(0.50, 0.94, 0.90, 0.34)]),
+  aiGlyph('w', 'latin', [aiSeg(0.06, 0.34, 0.27, 0.94), aiSeg(0.27, 0.94, 0.50, 0.55), aiSeg(0.50, 0.55, 0.73, 0.94), aiSeg(0.73, 0.94, 0.94, 0.34)]),
+  aiGlyph('x', 'latin', [aiSeg(0.12, 0.34, 0.88, 0.94), aiSeg(0.88, 0.34, 0.12, 0.94)]),
+  aiGlyph('y', 'latin', [aiSeg(0.12, 0.34, 0.50, 0.88), aiSeg(0.88, 0.34, 0.50, 0.88), aiPoly(0.50, 0.88, 0.42, 1.16, 0.24, 1.30, 0.06, 1.26)]),
+  aiGlyph('z', 'latin', [aiSeg(0.18, 0.34, 0.82, 0.34), aiSeg(0.82, 0.34, 0.18, 0.94), aiSeg(0.18, 0.94, 0.82, 0.94)]),
+
+  /* ---- Arabic (isolated forms) ---- */
+  aiGlyph('ا', 'arabic', [aiSeg(0.50, 0.08, 0.50, 0.92)]),
+  aiGlyph('أ', 'arabic', [aiSeg(0.50, 0.26, 0.50, 0.94), aiPoly(0.40, 0.05, 0.50, 0.14, 0.60, 0.05)]),
+  aiGlyph('إ', 'arabic', [aiSeg(0.50, 0.26, 0.50, 0.94), aiSeg(0.40, 0.15, 0.60, 0.15)]),
+  aiGlyph('آ', 'arabic', [aiSeg(0.50, 0.26, 0.50, 0.94), aiPoly(0.34, 0.10, 0.50, 0.03, 0.66, 0.10)]),
+  aiGlyph('ء', 'arabic', [aiPoly(0.40, 0.42, 0.48, 0.24, 0.62, 0.28, 0.64, 0.48, 0.52, 0.58, 0.44, 0.70)]),
+  aiGlyph('ب', 'arabic', [aiBoat, aiDotAt(0.55, 0.86)]),
+  aiGlyph('ت', 'arabic', [aiBoat, aiDotAt(0.40, 0.15), aiDotAt(0.62, 0.15)]),
+  aiGlyph('ث', 'arabic', [aiBoat, aiDotAt(0.35, 0.20), aiDotAt(0.50, 0.10), aiDotAt(0.65, 0.20)]),
+  aiGlyph('ج', 'arabic', [aiHook, aiDotAt(0.50, 0.10)]),
+  aiGlyph('ح', 'arabic', [aiHook]),
+  aiGlyph('خ', 'arabic', [aiHook, aiDotAt(0.50, 0.10)]),
+  aiGlyph('د', 'arabic', [aiDal]),
+  aiGlyph('ذ', 'arabic', [aiDal, aiDotAt(0.55, 0.20)]),
+  aiGlyph('ر', 'arabic', [aiRa]),
+  aiGlyph('ز', 'arabic', [aiRa, aiDotAt(0.55, 0.18)]),
+  aiGlyph('س', 'arabic', [aiSeen]),
+  aiGlyph('ش', 'arabic', [aiSeen, aiDotAt(0.38, 0.11), aiDotAt(0.52, 0.04), aiDotAt(0.66, 0.11)]),
+  aiGlyph('ص', 'arabic', [aiSad]),
+  aiGlyph('ض', 'arabic', [aiSad, aiDotAt(0.55, 0.10)]),
+  aiGlyph('ط', 'arabic', [aiSeg(0.42, 0.18, 0.42, 0.68), aiTah]),
+  aiGlyph('ظ', 'arabic', [aiSeg(0.42, 0.18, 0.42, 0.68), aiTah, aiDotAt(0.45, 0.05)]),
+  aiGlyph('ع', 'arabic', [aiAin]),
+  aiGlyph('غ', 'arabic', [aiAin, aiDotAt(0.50, 0.08)]),
+  aiGlyph('ف', 'arabic', [aiFeh, aiDotAt(0.55, 0.08)]),
+  aiGlyph('ق', 'arabic', [aiFeh, aiDotAt(0.42, 0.08), aiDotAt(0.66, 0.08)]),
+  aiGlyph('ك', 'arabic', [aiKaf, aiSeg(0.55, 0.52, 0.84, 0.38)]),
+  aiGlyph('ل', 'arabic', [aiLam]),
+  aiGlyph('م', 'arabic', [aiMeem]),
+  aiGlyph('ن', 'arabic', [aiNoon, aiDotAt(0.55, 0.10)]),
+  aiGlyph('ه', 'arabic', [aiHeh]),
+  aiGlyph('ة', 'arabic', [aiHeh, aiDotAt(0.40, 0.08), aiDotAt(0.60, 0.08)]),
+  aiGlyph('و', 'arabic', [aiWaw]),
+  aiGlyph('ى', 'arabic', [aiBoat]),
+  aiGlyph('ي', 'arabic', [aiBoat, aiDotAt(0.40, 0.95), aiDotAt(0.62, 0.95)]),
+  aiGlyph('ؤ', 'arabic', [aiWaw, aiPoly(0.42, 0.04, 0.50, 0.13, 0.58, 0.04)]),
+  aiGlyph('ئ', 'arabic', [aiBoat, aiPoly(0.40, 0.05, 0.50, 0.14, 0.60, 0.05)])
+];
+
+function aiPathPoints(v) { return Array.isArray(v) ? v : v.points; }
+function aiRawBox(paths) {
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  for (const path of paths) {
+    for (const p of aiPathPoints(path)) {
+      if (p.x < minX) minX = p.x;
+      if (p.y < minY) minY = p.y;
+      if (p.x > maxX) maxX = p.x;
+      if (p.y > maxY) maxY = p.y;
+    }
+  }
+  if (!Number.isFinite(minX)) return { x: 0, y: 0, w: 0, h: 0 };
+  return { x: minX, y: minY, w: maxX - minX, h: maxY - minY };
+}
+function aiBoxGap(a, b) {
+  const dx = Math.max(0, a.x - (b.x + b.w), b.x - (a.x + a.w));
+  const dy = Math.max(0, a.y - (b.y + b.h), b.y - (a.y + a.h));
+  return Math.hypot(dx, dy);
+}
+function aiUnionBox(a, b) {
+  const x = Math.min(a.x, b.x), y = Math.min(a.y, b.y);
+  return { x, y, w: Math.max(a.x + a.w, b.x + b.w) - x, h: Math.max(a.y + a.h, b.y + b.h) - y };
+}
+function aiPathLength(path) {
+  let len = 0;
+  for (let i = 1; i < path.length; i++) len += dist(path[i - 1], path[i]);
+  return len;
+}
+function aiResample(path, n) {
+  const pts = path || [];
+  if (!pts.length) return [];
+  if (pts.length === 1 || n <= 1) {
+    const out = [];
+    for (let i = 0; i < Math.max(2, n); i++) out.push({ x: pts[0].x, y: pts[0].y });
+    return out;
+  }
+  const total = aiPathLength(pts);
+  if (total < 1e-9) {
+    const out = [];
+    for (let i = 0; i < n; i++) out.push({ x: pts[0].x, y: pts[0].y });
+    return out;
+  }
+  const out = [{ x: pts[0].x, y: pts[0].y }];
+  let seg = 1, acc = 0;
+  for (let i = 1; i < n - 1; i++) {
+    const want = (i / (n - 1)) * total;
+    while (seg < pts.length - 1) {
+      const d = dist(pts[seg - 1], pts[seg]);
+      if (acc + d >= want) break;
+      acc += d;
+      seg++;
+    }
+    const a = pts[seg - 1], b = pts[seg] || a;
+    const d = Math.max(1e-9, dist(a, b));
+    const f = clamp((want - acc) / d, 0, 1);
+    out.push({ x: a.x + (b.x - a.x) * f, y: a.y + (b.y - a.y) * f });
+  }
+  out.push({ x: pts[pts.length - 1].x, y: pts[pts.length - 1].y });
+  return out;
+}
+function aiNormalize(paths, box) {
+  const scale = Math.max(box.w, box.h, 1e-6);
+  const cx = box.x + box.w / 2, cy = box.y + box.h / 2;
+  return paths.map((path) => aiResample(path.map((p) => ({ x: (p.x - cx) / scale, y: (p.y - cy) / scale })), 22));
+}
+function aiPointPathDist(p, path) {
+  let best = Infinity;
+  for (let i = 1; i < path.length; i++) {
+    const d = pointSegDist(p.x, p.y, path[i - 1].x, path[i - 1].y, path[i].x, path[i].y);
+    if (d < best) best = d;
+  }
+  return best;
+}
+function aiPathDist(a, b) {
+  let ab = 0, ba = 0;
+  for (const p of a) ab += aiPointPathDist(p, b);
+  for (const p of b) ba += aiPointPathDist(p, a);
+  return (ab / Math.max(1, a.length) + ba / Math.max(1, b.length)) / 2;
+}
+function aiStrokeSim(a, b) {
+  const al = aiPathLength(a), bl = aiPathLength(b);
+  const ad = al < 0.055, bd = bl < 0.055;
+  if (ad !== bd) return 0;
+  if (ad && bd) {
+    const ac = { x: a.reduce((s, p) => s + p.x, 0) / a.length, y: a.reduce((s, p) => s + p.y, 0) / a.length };
+    const bc = { x: b.reduce((s, p) => s + p.x, 0) / b.length, y: b.reduce((s, p) => s + p.y, 0) / b.length };
+    return clamp(1 - dist(ac, bc) / 0.24, 0, 1);
+  }
+  const d = (aiPathDist(a, b) + aiPathDist(b, a)) / 2;
+  const base = clamp(1 - d / 0.40, 0, 1);
+  const ratio = Math.min(al, bl) / Math.max(al, bl, 1e-6);
+  return base * (0.74 + ratio * 0.26);
+}
+function aiCombinations(n, k) {
+  const out = [];
+  const pick = (start, row) => {
+    if (row.length === k) { out.push(row.slice()); return; }
+    for (let i = start; i < n; i++) {
+      row.push(i);
+      pick(i + 1, row);
+      row.pop();
+    }
+  };
+  pick(0, []);
+  return out;
+}
+function aiPermutations(n) {
+  if (n === 1) return [[0]];
+  if (n === 2) return [[0, 1], [1, 0]];
+  if (n === 3) return [[0, 1, 2], [0, 2, 1], [1, 0, 2], [1, 2, 0], [2, 0, 1], [2, 1, 0]];
+  return [
+    [0, 1, 2, 3], [0, 1, 3, 2], [0, 2, 1, 3], [0, 2, 3, 1], [0, 3, 1, 2], [0, 3, 2, 1],
+    [1, 0, 2, 3], [1, 0, 3, 2], [1, 2, 0, 3], [1, 2, 3, 0], [1, 3, 0, 2], [1, 3, 2, 0],
+    [2, 0, 1, 3], [2, 0, 3, 1], [2, 1, 0, 3], [2, 1, 3, 0], [2, 3, 0, 1], [2, 3, 1, 0],
+    [3, 0, 1, 2], [3, 0, 2, 1], [3, 1, 0, 2], [3, 1, 2, 0], [3, 2, 0, 1], [3, 2, 1, 0]
+  ];
+}
+
+function aiTwoLongSides(paths) {
+  if (paths.length !== 2) return false;
+  const all = aiRawBox(paths);
+  if (all.w < 1e-6 || all.h < 1e-6) return false;
+  const centers = [];
+  for (const path of paths) {
+    const b = aiRawBox([path]);
+    if (b.h < all.h * 0.78 || b.w > Math.max(all.w * 0.22, all.h * 0.05)) return false;
+    centers.push(b.x + b.w / 2);
+  }
+  return Math.abs(centers[0] - centers[1]) > all.w * 0.55;
+}
+
+function aiFitMap(templateSubset, observedBox) {
+  const tb = aiRawBox(templateSubset);
+  const sx = tb.w > 1e-5 ? observedBox.w / tb.w : null;
+  const sy = tb.h > 1e-5 ? observedBox.h / tb.h : null;
+  let s = null;
+  if (sx && sy) {
+    if (Math.max(sx, sy) / Math.max(1e-6, Math.min(sx, sy)) > 3.4) return null;
+    s = (sx + sy) / 2;
+  } else if (sx) s = sx;
+  else if (sy) s = sy;
+  else s = Math.max(observedBox.w, observedBox.h);
+  if (!Number.isFinite(s) || s <= 0) return null;
+  return {
+    s,
+    ox: observedBox.x + observedBox.w / 2 - (tb.x + tb.w / 2) * s,
+    oy: observedBox.y + observedBox.h / 2 - (tb.y + tb.h / 2) * s
+  };
+}
+
+function aiRecognizeStrokes(strokes) {
+  if (!strokes || !strokes.length) return null;
+  const paths = strokes.map((s) => s.points || s);
+  if (paths.some((p) => !p || !p.length)) return null;
+  const box = aiRawBox(paths);
+  if (Math.max(box.w, box.h) < 1e-6) return null;
+  const obs = aiNormalize(paths, box);
+  const m = obs.length;
+  if (!m || m > AI.maxStrokes) return null;
+  /* A group of nothing but horizontal lines is far more likely to be an
+     equals sign, a dash or a list rule than an unfinished letter. */
+  if (obs.every((path) => {
+    const b = aiRawBox([path]);
+    return b.h < Math.max(0.06, b.w * 0.22);
+  })) return null;
+  /* One almost straight line is a slash, a rule or a stem. Without a second
+     stroke there is not enough evidence to start adding strokes. */
+  if (m === 1) {
+    const path = obs[0];
+    const len = aiPathLength(path);
+    if (len > 0.05 && dist(path[0], path[path.length - 1]) / len > 0.94) return null;
+  }
+  const perms = aiPermutations(m);
+  const lang = state.letterLang;
+  const bestByChar = new Map();
+
+  for (const glyph of AI_GLYPHS) {
+    if (lang !== 'auto' && glyph.lang !== lang) continue;
+    if (!glyph.strokes.length || glyph.strokes.length < m) continue;
+    for (const subset of aiCombinations(glyph.strokes.length, m)) {
+      const tplPaths = subset.map((i) => glyph.strokes[i]);
+      const tb = aiRawBox(tplPaths);
+      if (Math.max(tb.w, tb.h) < 0.035) continue;
+      const tpl = aiNormalize(tplPaths, tb);
+      for (const perm of perms) {
+        let sum = 0;
+        for (let i = 0; i < m; i++) sum += aiStrokeSim(obs[i], tpl[perm[i]]);
+        const sim = sum / m;
+        const missing = glyph.strokes.length - m;
+        if (missing > AI.maxMissing) continue;
+        const score = sim - missing * AI.missingPenalty + (glyph.lang === 'latin' ? 0.004 : 0);
+        const prev = bestByChar.get(glyph.ch);
+        if (!prev || score > prev.score) {
+          const completion = [];
+          for (let i = 0; i < glyph.strokes.length; i++) if (!subset.includes(i)) completion.push(i);
+          bestByChar.set(glyph.ch, {
+            glyph, sim, score, missing, completion,
+            subset, subsetPaths: tplPaths, box
+          });
+        }
+      }
+    }
+  }
+
+  let ranked = Array.from(bestByChar.values()).sort((a, b) => b.score - a.score);
+  if (!ranked.length) return null;
+  let best = ranked[0];
+  let preferredH = false;
+  /* Two disconnected full-height sides are the usual way people start an H;
+     a U is normally drawn in one pass. Prefer the H reading unless it is far
+     less plausible than the U curve. */
+  if (best.glyph.ch !== 'H' && aiTwoLongSides(obs)) {
+    const h = bestByChar.get('H');
+    if (h && h.missing === 1 && h.score >= best.score - 0.12) {
+      best = h;
+      preferredH = true;
+      ranked = [h, ...ranked.filter((c) => c !== h)];
+    }
+  }
+  if (best.missing <= 0) return null;
+  if (best.sim < AI.minStrokeSim || best.score < AI.minConfidence) return null;
+
+  /* If a complete reading is nearly as good, the user already finished the
+     letter. Never decorate a complete word with a guessed extra stroke. */
+  const complete = ranked.find((c) => c.missing === 0 && c.sim >= Math.max(0.78, best.sim - 0.035));
+  if (complete) return null;
+
+  const runner = ranked.find((c) => c.glyph.ch !== best.glyph.ch);
+  if (!preferredH && runner && best.score - runner.score < AI.margin) return null;
+  return best;
+}
+
+function aiBuildMissingStrokes(candidate, style) {
+  const map = aiFitMap(candidate.subsetPaths, candidate.box);
+  if (!map) return [];
+  const out = [];
+  for (const index of candidate.completion) {
+    const tpl = candidate.glyph.strokes[index];
+    if (!tpl || !tpl.length) continue;
+    const mapped = tpl.map((p) => ({ x: p.x * map.s + map.ox, y: p.y * map.s + map.oy }));
+    const isDot = aiPathLength(tpl) < 0.05;
+    if (isDot) {
+      const p = mapped[0];
+      out.push({
+        id: uid(), type: 'stroke', marker: false,
+        points: [{ x: p.x, y: p.y }],
+        color: style.color, size: Math.max(2.3, style.size * 1.05),
+        opacity: style.opacity, ai: true
+      });
+      continue;
+    }
+    const length = aiPathLength(mapped) * cam.scale;
+    const n = clamp(Math.round(length / 3.2), 3, 56);
+    const points = aiResample(mapped, n);
+    out.push({
+      id: uid(), type: 'stroke', marker: false,
+      points,
+      color: style.color, size: style.size,
+      opacity: style.opacity, ai: true
+    });
+  }
+  return out;
+}
+
+function noteStrokeForHandwriting(stroke) {
+  if (!state.letterAssist || !stroke || stroke.marker || stroke.ai) return;
+  aiRecent.push({ id: stroke.id, at: Date.now(), page: activePageId });
+  if (aiRecent.length > 8) aiRecent.shift();
+  cancelHandwritingAssist();
+  aiPageId = activePageId;
+  aiTimer = setTimeout(runHandwritingAssist, AI.settleMs);
+}
+
+function cancelHandwritingAssist() {
+  clearTimeout(aiTimer);
+  aiTimer = 0;
+}
+
+function collectHandwritingGroup() {
+  const now = Date.now();
+  aiRecent = aiRecent.filter((r) => now - r.at <= AI.maxAgeMs && r.page === activePageId);
+  if (!aiRecent.length) return null;
+  let latest = null;
+  for (let i = aiRecent.length - 1; i >= 0; i--) {
+    const s = elements.find((e) => e.id === aiRecent[i].id);
+    if (s && s.type === 'stroke' && !s.marker && !s.ai) { latest = s; break; }
+  }
+  if (!latest) return null;
+  const group = [latest];
+  let box = aiRawBox([latest]);
+  for (let i = aiRecent.length - 2; i >= 0 && group.length < AI.maxStrokes; i--) {
+    const s = elements.find((e) => e.id === aiRecent[i].id);
+    if (!s || s.type !== 'stroke' || s.marker || s.ai) continue;
+    if (!inkCompatible(s, group[0])) break;
+    const b = aiRawBox([s]);
+    const cs = Math.max(cam.scale, 0.2);
+    const reach = Math.max(36 / cs, Math.max(box.w, box.h) * 1.1);
+    const limit = Math.min(140 / cs, reach);
+    if (aiBoxGap(b, box) > limit) break;
+    const next = aiUnionBox(box, b);
+    if (Math.max(next.w, next.h) / Math.max(1e-6, Math.min(next.w, next.h)) > 6.5) break;
+    group.push(s);
+    box = next;
+  }
+  const screenW = box.w * cam.scale, screenH = box.h * cam.scale;
+  if (Math.max(screenW, screenH) < AI.minScreen || Math.max(screenW, screenH) > AI.maxScreen) return null;
+  if (Math.min(screenW, screenH) < 2.2 && group.length === 1) return null;
+  group.reverse();
+  return { strokes: group, box };
+}
+
+function runHandwritingAssist() {
+  aiTimer = 0;
+  if (!state.letterAssist || aiBusy || draft || gesture) return;
+  if (aiPageId && activePageId && aiPageId !== activePageId) return;
+  if (pageWriteGuard === activePageId) return;
+  const group = collectHandwritingGroup();
+  aiRecent = [];
+  if (!group) return;
+  const candidate = aiRecognizeStrokes(group.strokes);
+  if (!candidate) return;
+  const adds = aiBuildMissingStrokes(candidate, group.strokes[0]);
+  if (!adds.length) return;
+
+  aiBusy = true;
+  try {
+    pushHistory();
+    elements.push(...adds);
+    bboxCache = new WeakMap();
+    syncEmptyNote();
+    queueScene();
+    scheduleSave();
+    aiLastLang = candidate.glyph.lang;
+    aiRecent = [];
+    const label = candidate.glyph.ch;
+    toast('AI completed \u201C' + label + '\u201D');
+    pulseAssist(aiRawBox(adds));
+  } finally {
+    aiBusy = false;
+  }
+}
+
+function setLetterAssist(on, opts = {}) {
+  state.letterAssist = !!on;
+  cancelHandwritingAssist();
+  aiRecent = [];
+  if (!state.letterAssist) aiPageId = null;
+  syncWritingUi();
+  savePrefs();
+  if (!opts.silent) {
+    toast(state.letterAssist
+      ? 'AI letter completion on \u2014 pause after a partial letter'
+      : 'AI letter completion off');
+  }
+}
+
+function setLetterLang(lang) {
+  if (!['auto', 'latin', 'arabic'].includes(lang)) return;
+  state.letterLang = lang;
+  syncWritingUi();
+  savePrefs();
+}
+
+function syncWritingUi() {
+  const feel = clamp(Math.round(state.penFeel) || 0, 0, PEN_FEELS.length - 1);
+  state.penFeel = feel;
+  if (el.feelRange) {
+    el.feelRange.value = String(feel);
+    paintRange(el.feelRange);
+  }
+  if (el.feelVal) el.feelVal.textContent = ['Steady', 'Balanced', 'Instant'][feel];
+  for (const b of [el.aiBtn, el.writingAiBtn]) {
+    if (b) b.setAttribute('aria-pressed', String(state.letterAssist));
+  }
+  if (el.writingLangs) el.writingLangs.dataset.off = String(!state.letterAssist);
+  if (el.aiLangSeg) {
+    for (const b of $$('button[data-lang]', el.aiLangSeg)) {
+      b.setAttribute('aria-pressed', String(b.dataset.lang === state.letterLang));
+    }
+  }
+  if (el.app) el.app.dataset.letterAssist = state.letterAssist ? 'on' : 'off';
+}
 
 /* ------------------------------------------------------------ color utils */
 function hexToRgb(hex) {
@@ -2888,10 +3567,16 @@ function loadPrefs() {
   if (Number.isFinite(data.bgVolume)) state.bgVolume = clamp(data.bgVolume, 0, 100);
   if (typeof data.bgMuted === 'boolean') state.bgMuted = data.bgMuted;
   if (typeof data.inkAssist === 'boolean') state.inkAssist = data.inkAssist;
+  if (Number.isFinite(data.penFeel)) state.penFeel = clamp(Math.round(data.penFeel), 0, 2);
+  if (typeof data.letterAssist === 'boolean') state.letterAssist = data.letterAssist;
+  if (['auto', 'latin', 'arabic'].includes(data.letterLang)) state.letterLang = data.letterLang;
 }
 
 function serializePrefs() {
-  return { v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted, inkAssist: state.inkAssist };
+  return {
+    v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted,
+    inkAssist: state.inkAssist, penFeel: state.penFeel, letterAssist: state.letterAssist, letterLang: state.letterLang
+  };
 }
 
 function savePrefs() {
@@ -3027,6 +3712,8 @@ function redo() {
   afterHistory();
 }
 function afterHistory() {
+  cancelHandwritingAssist();
+  aiRecent = [];
   bboxCache = new WeakMap();
   const ids = new Set(elements.map((e) => e.id));
   for (const id of Array.from(selected)) if (!ids.has(id)) selected.delete(id);
@@ -3792,6 +4479,8 @@ function noteStrokeForAssist(stroke) {
 function onPointerDown(e) {
   const isPen = e.pointerType === 'pen';
   const isTouch = e.pointerType === 'touch';
+  /* A new contact always wins over a pending completion guess. */
+  cancelHandwritingAssist();
 
   if (isPen) {
     penActive = true;
@@ -3864,7 +4553,7 @@ function onPointerDown(e) {
 
 function startDraw(p, e) {
   const marker = state.tool === 'highlighter';
-  beginStrokeFilter(stagePoint(e));
+  beginStrokeFilter(stagePoint(e), eventTime(e, performance.now()), e.pointerType);
   penHasPressure = !marker && hasRealPressure(e);
   activePenPressure = penHasPressure ? clamp(e.pressure, 0.02, 1) : 0;
   draft = {
@@ -4048,34 +4737,82 @@ function onPointerMove(e) {
       if (!draft) break;
       const r = getStageRect();
       const samples = collectSamples(e);
-      const minStep = PEN.minStepScreen / cam.scale;
+      const tuning = smoothing ? smoothing.tuning : penTuning(e.pointerType);
+      const minStepScreen = tuning.step;
+      const minStep = minStepScreen / cam.scale;
       const minStep2 = minStep * minStep;
-      const now = performance.now();
+      const fallbackNow = performance.now();
       let last = draft.points[draft.points.length - 1];
       let wrote = false;
+
+      const append = (pt, pressure, speed) => {
+        if (draft.points.length >= 20000) return;
+        draft.points.push(pt);
+        if (draft.pressures) {
+          draft.pressures.push(clamp(pressure == null ? 0.5 : pressure, 0.02, 1));
+        } else if (draft.speeds) {
+          const prev = draft.speeds[draft.speeds.length - 1] || 0;
+          draft.speeds.push(prev * 0.6 + (speed == null ? 0 : speed) * 0.4);
+        }
+        last = pt;
+        wrote = true;
+      };
+
       for (const ev of samples) {
-        if (draft.points.length > 12000) break;
+        if (draft.points.length >= 20000) break;
         const sx = ev.clientX - r.left;
         const sy = ev.clientY - r.top;
-        const sm = smoothing ? oneEuro(smoothing.raw, sx, sy, now) : { x: sx, y: sy };
+        const t = eventTime(ev, fallbackNow);
+        if (smoothing && t < smoothing.lastEvT - 0.05) continue;
+        const sm = smoothing ? oneEuro(smoothing.raw, sx, sy, t) : { x: sx, y: sy };
         const w = screenToWorld(sm.x, sm.y);
         const dx = w.x - last.x, dy = w.y - last.y;
-        if (dx * dx + dy * dy >= minStep2) {
-          draft.points.push(w);
-          if (draft.pressures) {
-            const p = hasRealPressure(ev) ? clamp(ev.pressure, 0.02, 1) : (activePenPressure || clamp(ev.pressure || 0.5, 0.02, 1));
-            draft.pressures.push(p);
-            activePenPressure = p;
-          } else if (draft.speeds) {
-            /* Screen-space speed of this sample, in px/ms, smoothed a touch. */
-            const dt = Math.max(1, now - (smoothing && smoothing.lastNow ? smoothing.lastNow : now - 8));
-            const sp = Math.hypot(sm.x - (smoothing && smoothing.lastSx != null ? smoothing.lastSx : sm.x), sm.y - (smoothing && smoothing.lastSy != null ? smoothing.lastSy : sm.y)) / dt;
-            const prev = draft.speeds[draft.speeds.length - 1] || 0;
-            draft.speeds.push(prev * 0.6 + sp * 0.4);
-          }
-          if (smoothing) { smoothing.lastNow = now; smoothing.lastSx = sm.x; smoothing.lastSy = sm.y; }
-          last = w;
-          wrote = true;
+        if (dx * dx + dy * dy < minStep2) {
+          if (smoothing) smoothing.lastEvT = t;
+          continue;
+        }
+
+        /* A low-quality stylus can report only every 10-20ms. Linear fills
+           across a large gap keep fast curves continuous instead of faceted,
+           and make the width channel behave as if the report had arrived. */
+        const gapScreen = Math.hypot(dx, dy) * cam.scale;
+        const parts = gapScreen > tuning.fillGap
+          ? clamp(Math.floor(gapScreen / Math.max(minStepScreen * 2.4, tuning.fillGap * 0.88)), 1, 7)
+          : 1;
+
+        let pressure = null;
+        if (draft.pressures) {
+          pressure = hasRealPressure(ev)
+            ? clamp(ev.pressure, 0.02, 1)
+            : (activePenPressure || clamp(ev.pressure || 0.5, 0.02, 1));
+          activePenPressure = pressure;
+        }
+        let speed = null;
+        if (draft.speeds) {
+          const dt = Math.max(1, t - (smoothing && smoothing.lastSpeedT != null ? smoothing.lastSpeedT : t - 8));
+          const sx0 = smoothing && smoothing.lastSx != null ? smoothing.lastSx : sm.x;
+          const sy0 = smoothing && smoothing.lastSy != null ? smoothing.lastSy : sm.y;
+          speed = Math.hypot(sm.x - sx0, sm.y - sy0) / dt;
+        }
+
+        const prevPressure = draft.pressures ? (draft.pressures[draft.pressures.length - 1] || pressure) : null;
+        const prevSpeed = draft.speeds ? (draft.speeds[draft.speeds.length - 1] || speed) : null;
+        const from = { x: last.x, y: last.y };
+        for (let k = 1; k <= parts; k++) {
+          const f = k / parts;
+          const px = from.x + (w.x - from.x) * f;
+          const py = from.y + (w.y - from.y) * f;
+          const pp = pressure == null ? null : prevPressure + (pressure - prevPressure) * f;
+          const ps = speed == null ? null : prevSpeed + (speed - prevSpeed) * f;
+          append({ x: px, y: py }, pp, ps);
+        }
+
+        if (smoothing) {
+          smoothing.lastEvT = t;
+          smoothing.lastSpeedT = t;
+          smoothing.lastNow = t;
+          smoothing.lastSx = sm.x;
+          smoothing.lastSy = sm.y;
         }
       }
       if (wrote) { invalidate(draft); queueOverlay(); }
@@ -4339,6 +5076,7 @@ function finishGesture(e) {
       elements.push(draft);
       bboxCache = new WeakMap();
       noteStrokeForAssist(draft);
+      noteStrokeForHandwriting(draft);
     }
     draft = null;
     resetPenInput();
@@ -4407,11 +5145,13 @@ el.overlay.addEventListener('pointermove', onPointerMove);
    coordinates, ahead of frame-batched pointermove. Use it to drive an active
    stroke; coalesced handling inside onPointerMove keeps it correct. */
 el.overlay.addEventListener('pointerrawupdate', (e) => {
-  if (e.pointerType !== 'pen' && e.pointerType !== 'mouse') return;
   if (gesture && gesture.type === 'draw') onPointerMove(e);
 });
 el.overlay.addEventListener('pointerup', onPointerUp);
 el.overlay.addEventListener('pointercancel', onPointerUp);
+el.overlay.addEventListener('lostpointercapture', (e) => {
+  if (activePointers.has(e.pointerId)) onPointerUp(e);
+});
 el.overlay.addEventListener('pointerleave', (e) => {
   pointerInside = false;
   if (e.pointerType === 'pen') penProximity = false;
@@ -4745,6 +5485,12 @@ function toast(message) {
     node.classList.add('out');
     setTimeout(() => node.remove(), 260);
   }, 2600);
+}
+
+/* ------------------------------------------------------------ writing panel */
+function openWritingPanel() {
+  syncWritingUi();
+  openModal(el.writingModal, el.feelRange);
 }
 
 /* ------------------------------------------------------------ clear */
@@ -5694,6 +6440,7 @@ window.addEventListener('keydown', (e) => {
     case 'a': setTool('arrow'); break;
     case '4': setTool('hand'); break;
     case 'i': setInkAssist(!state.inkAssist); break;
+    case 'j': setLetterAssist(!state.letterAssist); break;
     case 'g': cycleGrid(); break;
     case 'f': toggleFullscreen(); break;
     case '0': resetView(); break;
@@ -5760,6 +6507,19 @@ el.zoomLabel.addEventListener('click', () => setZoom(1));
 el.gridBtn.addEventListener('click', cycleGrid);
 el.fitBtn.addEventListener('click', fitContent);
 el.assistBtn.addEventListener('click', () => setInkAssist(!state.inkAssist));
+el.aiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
+el.feelBtn.addEventListener('click', openWritingPanel);
+el.writingAiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
+el.feelRange.addEventListener('input', () => {
+  state.penFeel = clamp(Number(el.feelRange.value), 0, 2);
+  syncWritingUi();
+  savePrefs();
+});
+for (const b of $$('button[data-lang]', el.aiLangSeg)) {
+  b.addEventListener('click', () => setLetterLang(b.dataset.lang));
+}
+el.writingClose.addEventListener('click', () => closeModal(el.writingModal));
+el.writingDone.addEventListener('click', () => closeModal(el.writingModal));
 
 el.divider.addEventListener('pointerdown', seamPointerDown);
 el.divider.addEventListener('pointermove', seamPointerMove);
@@ -5825,6 +6585,7 @@ for (const item of $$('#moreMenu [data-action]')) {
     else if (action === 'fullscreen') toggleFullscreen();
     else if (action === 'sound') openSound();
     else if (action === 'shortcuts') openModal(el.shortcutsModal, el.keysDone);
+    else if (action === 'writing') openWritingPanel();
     else if (action === 'clear') requestClear();
   });
 }
@@ -6749,6 +7510,9 @@ async function openPage(pageId) {
     try { await snapshotActiveIfPage(activePageId); } catch { /* ok */ }
   }
   activePageId = pageId;
+  cancelHandwritingAssist();
+  aiRecent = [];
+  aiPageId = pageId;
   const loaded = await readContentDetailed(pageId);
   const content = loaded.content;
   /* Enter read-only protection if the stored content was present but unreadable. */
@@ -6787,6 +7551,8 @@ async function openPage(pageId) {
 
 function closeBoard() {
   if (!el.dashboard) return;
+  cancelHandwritingAssist();
+  aiRecent = [];
   const closing = activePageId;
   saveNow();
   if (closing) { snapshotActiveIfPage(closing).catch(() => { /* ok */ }); activePageId = null; }
@@ -6833,6 +7599,7 @@ function ensureDashboardReturn() {
 buildSwatches();
 setTool('pen');
 setColor(state.color);
+syncWritingUi();
 initPenControls();
 syncGridUi();
 syncHistoryUi();
@@ -6866,6 +7633,7 @@ async function boot() {
     toast('This browser is blocking local storage. Work may not persist — export a backup.');
   }
   loadPrefs();
+  syncWritingUi();
   try { initAccount(); } catch { /* the account is optional; never block boot */ }
   if (el.assistBtn) el.assistBtn.setAttribute('aria-pressed', String(state.inkAssist));
   if (el.app) el.app.dataset.inkAssist = state.inkAssist ? 'on' : 'off';
