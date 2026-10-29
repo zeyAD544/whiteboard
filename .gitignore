@@ -1,0 +1,12 @@
+# Local secrets — never commit real keys
+ai-local.js
+.env
+.env.*
+!.env.example
+
+# Tooling / OS
+node_modules/
+.vercel/
+.tmp/
+.DS_Store
+Thumbs.db
