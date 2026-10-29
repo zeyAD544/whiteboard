@@ -1,0 +1,19 @@
+{
+  "name": "Margin — a whiteboard beside the video",
+  "short_name": "Margin",
+  "description": "A paper-like whiteboard for pages of notes, beside the video.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#16130e",
+  "theme_color": "#16130e",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

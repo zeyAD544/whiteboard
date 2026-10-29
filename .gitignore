@@ -10,3 +10,7 @@ node_modules/
 .tmp/
 .DS_Store
 Thumbs.db
+
+# Agent metadata
+.agents/
+.freebuff/

@@ -4,6 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#16130e">
+<script>
+if (location.protocol === 'http:' || location.protocol === 'https:') {
+  const link = document.createElement('link');
+  link.rel = 'manifest';
+  link.href = './manifest.webmanifest';
+  document.head.appendChild(link);
+}
+</script>
+<link rel="icon" type="image/svg+xml" href="./icon.svg">
+<link rel="apple-touch-icon" href="./icon.svg">
+<meta name="description" content="Margin — a paper-like whiteboard for pages of notes, beside the video.">
 <title>Margin — a whiteboard beside the video</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,37 +24,37 @@
 /* Ink on stock. The board is warm paper; the chrome is the graphite desk it
    lies on, and the accent is the red-brown pen you mark it with. */
 :root{
-  --ink-950:#0f0d09;
-  --ink-900:#16130e;
-  --ink-850:#1c1812;
-  --ink-800:#221d16;
-  --ink-750:#28221a;
-  --ink-700:#312a20;
-  --line:rgba(240,233,221,.075);
-  --line-strong:rgba(240,233,221,.15);
-  --text:#efe9dd;
-  --muted:#a89f8f;
-  --faint:#746c5d;
-  --paper:#f4f1e9;
-  --paper-deep:#ebe7dc;
+  --ink-950:#0a0806;
+  --ink-900:#130f0b;
+  --ink-850:#1a1510;
+  --ink-800:#211a14;
+  --ink-750:#29211a;
+  --ink-700:#322820;
+  --line:rgba(240,233,221,.08);
+  --line-strong:rgba(240,233,221,.16);
+  --text:#f2ede3;
+  --muted:#ab9f8e;
+  --faint:#756a59;
+  --paper:#f5f2ea;
+  --paper-deep:#ece7dc;
   --rule:#c9b48f;
-  --rule-soft:rgba(140,116,76,.16);
+  --rule-soft:rgba(140,116,76,.15);
   --rule-ink:#8c744c;
-  --accent:#e0724d;              /* marking ink */
-  --accent-bright:#f08a5f;
-  --accent-ink:#20120c;
-  --accent-soft:rgba(224,114,77,.12);
-  --amber:#e7b76b;
-  --danger:#e0724d;
+  --accent:#df6e48;              /* artisan marking ink */
+  --accent-bright:#f28559;
+  --accent-ink:#1e100a;
+  --accent-soft:rgba(223,110,72,.14);
+  --amber:#e8b96f;
+  --danger:#df6e48;
   --select:#c85838;
-  --radius-xl:16px;
-  --radius-lg:13px;
+  --radius-xl:18px;
+  --radius-lg:14px;
   --radius-md:10px;
   --radius-sm:8px;
   --font-ui:"Instrument Sans","Segoe UI",system-ui,-apple-system,sans-serif;
   --font-display:"Fraunces",Georgia,"Times New Roman",serif;
   --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
-  --shadow-float:0 18px 50px rgba(0,0,0,.5),0 2px 8px rgba(0,0,0,.3);
+  --shadow-float:0 22px 60px rgba(0,0,0,.55),0 4px 12px rgba(0,0,0,.3);
 }
 *,*::before,*::after{box-sizing:border-box}
 html,body{height:100%}
@@ -584,6 +595,11 @@ input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;backgroun
 .app[data-tool="select"] .ctx-opacity,
 .app[data-tool="select"] .ctx-fill{display:none}
 .app[data-tool="select"] .ctx-select{display:flex}
+.app[data-tool="select"] .context,
+.app[data-tool="lasso"] .context{
+  max-width:min(540px,calc(100% - 24px))!important;
+  width:max-content!important;
+}
 .app[data-tool="eraser"] .ctx-colors,
 .app[data-tool="eraser"] .ctx-sep,
 .app[data-tool="eraser"] .ctx-opacity,
@@ -613,6 +629,30 @@ input[type="range"]::-moz-range-progress{height:3px;border-radius:99px;backgroun
 .dock-btn{width:28px;height:26px;border-radius:6px;display:grid;place-items:center;color:var(--muted);transition:background .13s,color .13s}
 .dock-btn:hover{background:rgba(240,233,221,.07);color:var(--text)}
 .dock-toggle[aria-pressed="true"]{background:rgba(224,114,77,.16);color:var(--accent-bright)}
+/* Shared AI progress bar — visible while any model call is in flight. */
+.ai-progress{
+  position:fixed;top:54px;left:50%;z-index:92;width:min(330px,calc(100vw - 32px));
+  padding:9px 12px 10px;border-radius:11px;pointer-events:none;
+  background:rgba(30,25,19,.95);border:1px solid rgba(240,233,221,.14);
+  box-shadow:0 14px 34px rgba(8,6,4,.5),inset 0 1px 0 rgba(240,233,221,.06);
+  backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  color:var(--text);font-size:11px;
+  opacity:0;transform:translate(-50%,-6px);transition:opacity .16s,transform .16s;
+}
+.ai-progress[hidden]{display:none}
+.ai-progress.is-on{opacity:1;transform:translate(-50%,0)}
+.aip-head{display:flex;align-items:center;gap:8px;margin-bottom:7px}
+.aip-label{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.aip-pct{color:var(--muted);font-variant-numeric:tabular-nums;font-size:10px}
+.aip-dot{width:6px;height:6px;flex:none;border-radius:50%;background:var(--accent-bright);box-shadow:0 0 8px rgba(224,114,77,.85);animation:aipPulse 1s ease-in-out infinite}
+.aip-track{height:3px;border-radius:2px;background:rgba(240,233,221,.12);overflow:hidden}
+.aip-fill{display:block;width:0;height:100%;border-radius:2px;background:linear-gradient(90deg,var(--accent),var(--accent-bright));transition:width .24s ease}
+.ai-progress.is-done .aip-dot{animation:none;background:#7fc08b;box-shadow:0 0 8px rgba(127,192,139,.7)}
+@keyframes aipPulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.45;transform:scale(.8)}}
+/* Tidy Board works for a beat while the model clusters the page. */
+.dock-btn.is-working{color:var(--accent-bright);animation:tidyWorking 1s ease-in-out infinite}
+.dock-btn.is-working .icon{filter:drop-shadow(0 0 6px rgba(224,114,77,.5))}
+@keyframes tidyWorking{0%,100%{opacity:1}50%{opacity:.4}}
 .dock-toggle[aria-pressed="true"] .icon{filter:drop-shadow(0 0 6px rgba(224,114,77,.5))}
 /* Ink Assist pulse: a soft ring that flashes where the writing settled. */
 .assist-ring{
@@ -1178,6 +1218,409 @@ input[type="range"].bg-vol::-moz-range-thumb{
 @media (prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important;scroll-behavior:auto!important}
 }
+
+/* ================================================================ pages */
+/* A slim filmstrip turns the board into a document: one sheet at a time,
+   with a visible page count and the same add/duplicate/delete verbs a PDF
+   editor gives you. */
+.page-pill{
+  display:none;align-items:center;gap:6px;height:26px;padding:0 9px;flex:none;
+  border:1px solid var(--line-strong);border-radius:99px;background:rgba(12,9,5,.3);
+  font-family:var(--font-mono);font-size:10px;letter-spacing:.04em;color:var(--muted);
+  transition:background .13s,color .13s,border-color .13s;
+}
+.page-pill:hover{background:rgba(224,114,77,.1);border-color:rgba(224,114,77,.28);color:var(--accent-bright)}
+.app:not([hidden]) .page-pill{display:inline-flex}
+@media (max-width:1100px){.page-pill{display:none!important}}
+@media (max-width:960px){.topbar #paletteBtn,.topbar #shareBtn{display:none}}
+.page-strip{
+  position:absolute;left:50%;bottom:58px;transform:translateX(-50%);
+  z-index:6;display:flex;align-items:center;gap:4px;padding:5px 6px;
+  max-width:min(720px,calc(100% - 190px));
+  background:rgba(34,29,22,.94);
+  border:1px solid rgba(240,233,221,.1);border-radius:12px;
+  box-shadow:0 10px 28px rgba(15,12,8,.38);backdrop-filter:blur(16px);
+  -webkit-backdrop-filter:blur(16px);user-select:none;
+}
+.page-strip[hidden]{display:none!important}
+.pstrip-btn{
+  width:26px;height:26px;border-radius:6px;display:grid;place-items:center;
+  color:var(--muted);flex:none;transition:background .13s,color .13s;
+}
+.pstrip-btn:hover{background:rgba(240,233,221,.07);color:var(--text)}
+.pstrip-btn:disabled{opacity:.28;pointer-events:none}
+.pstrip-btn .icon{width:14px;height:14px}
+.pstrip-list{display:flex;align-items:center;gap:4px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;max-width:100%;padding:1px}
+.pstrip-list::-webkit-scrollbar{display:none}
+.pstrip-page{
+  position:relative;flex:none;width:46px;height:34px;border-radius:5px;overflow:hidden;
+  background:var(--paper);border:1px solid rgba(240,233,221,.12);cursor:pointer;
+  transition:transform .12s,border-color .12s,box-shadow .12s;
+}
+.pstrip-page:hover{transform:translateY(-1px);border-color:rgba(240,233,221,.3)}
+.pstrip-page[aria-current="true"]{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent),0 4px 10px rgba(0,0,0,.35)}
+.pstrip-page svg{position:absolute;inset:0;width:100%;height:100%}
+.pstrip-page .pstrip-num{
+  position:absolute;right:2px;bottom:1px;font-family:var(--font-mono);font-size:8px;
+  color:rgba(45,36,24,.55);line-height:1;
+}
+.pstrip-page .pstrip-empty{position:absolute;inset:0;display:grid;place-items:center;color:rgba(120,102,74,.35)}
+.pstrip-page .pstrip-empty .icon{width:13px;height:13px}
+.pstrip-page.is-drop{box-shadow:inset 0 0 0 2px var(--accent)}
+.pstrip-count{
+  font-family:var(--font-mono);font-size:9.5px;letter-spacing:.04em;color:var(--faint);
+  padding:0 4px;flex:none;white-space:nowrap;
+}
+.pstrip-sep{width:1px;height:17px;background:rgba(240,233,221,.1);margin:0 3px;flex:none}
+@media (max-width:880px){
+  .page-strip{max-width:calc(100% - 16px);bottom:48px;padding:4px}
+  .pstrip-page{width:38px;height:28px}
+  .pstrip-count{display:none}
+}
+@media (max-width:600px){
+  .pstrip-list{max-width:34vw}
+}
+
+/* ---------------------------------------------------------------- command palette */
+.palette-layer{
+  position:fixed;inset:0;z-index:90;display:flex;align-items:flex-start;justify-content:center;
+  padding:12vh 20px 20px;background:rgba(8,6,3,.56);backdrop-filter:blur(4px);
+}
+.palette{
+  width:min(620px,100%);background:rgba(28,24,18,.99);
+  border:1px solid var(--line-strong);border-radius:14px;box-shadow:var(--shadow-float);
+  overflow:hidden;animation:modalIn .16s ease;
+}
+.palette-search{display:flex;align-items:center;gap:9px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.palette-search .icon{color:var(--faint);width:17px;height:17px}
+.palette-search input{
+  flex:1;background:transparent;border:0;outline:0;color:var(--text);font-size:14px;
+}
+.palette-search input::placeholder{color:var(--faint)}
+.palette-kbd{font-family:var(--font-mono);font-size:9px;color:var(--faint);border:1px solid var(--line-strong);border-radius:4px;padding:2px 5px}
+.palette-results{max-height:min(56vh,460px);overflow-y:auto;padding:6px;scrollbar-width:thin}
+.palette-group{font-family:var(--font-mono);font-size:8.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--faint);padding:9px 10px 4px}
+.palette-item{
+  display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border-radius:8px;
+  text-align:left;color:var(--text);transition:background .1s;
+}
+.palette-item .icon{width:16px;height:16px;color:var(--faint);flex:none}
+.palette-item .palette-main{min-width:0;flex:1}
+.palette-item .palette-title{font-size:12.5px;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palette-item .palette-sub{font-size:10px;color:var(--faint);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.palette-item .palette-hint{font-family:var(--font-mono);font-size:9px;color:var(--faint);flex:none}
+.palette-item.is-active,.palette-item:hover{background:rgba(224,114,77,.13)}
+.palette-item.is-active .icon{color:var(--accent-bright)}
+.palette-empty{padding:26px 14px;text-align:center;color:var(--faint);font-size:12px;line-height:1.6}
+.palette-foot{display:flex;gap:14px;padding:7px 14px;border-top:1px solid var(--line);font-size:9.5px;color:var(--faint)}
+.palette-foot kbd{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:3px;padding:1px 4px;font-family:var(--font-mono);font-size:9px}
+
+/* ---------------------------------------------------------------- share / live */
+.share-status{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--faint);margin:14px 0 0}
+.share-status .live-dot{width:6px;height:6px;border-radius:50%;background:#3a332a}
+.share-status.is-live .live-dot{background:var(--accent);box-shadow:0 0 0 3px rgba(224,114,77,.16);animation:savePulse 1.6s ease-in-out infinite}
+.share-code{
+  font-family:var(--font-mono);font-size:20px;letter-spacing:.22em;color:var(--accent-bright);
+  background:rgba(12,9,5,.35);border:1px solid var(--line-strong);border-radius:9px;
+  padding:9px 12px;text-align:center;margin:12px 0;user-select:all;
+}
+.share-link-row{display:flex;gap:6px;margin-top:8px}
+.share-link-row .input-shell{flex:1}
+.peer-cursors{position:absolute;inset:0;z-index:5;pointer-events:none;overflow:hidden}
+.peer-cursor{
+  position:absolute;left:0;top:0;transform:translate(-50%,-50%);
+  display:flex;align-items:center;gap:4px;will-change:transform;
+}
+.peer-cursor .peer-dot{width:9px;height:9px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.peer-cursor .peer-name{
+  font-family:var(--font-mono);font-size:8.5px;letter-spacing:.02em;color:#fff;
+  background:rgba(20,16,10,.82);padding:1px 5px;border-radius:4px;white-space:nowrap;
+}
+
+/* ---------------------------------------------------------------- offline + contrast */
+.offline-banner{
+  position:fixed;left:50%;top:8px;transform:translate(-50%,-180%);z-index:95;
+  display:flex;align-items:center;gap:8px;padding:6px 12px;border-radius:99px;
+  background:rgba(34,29,22,.96);border:1px solid rgba(224,114,77,.3);color:var(--muted);
+  font-size:11px;box-shadow:0 8px 24px rgba(0,0,0,.4);transition:transform .24s ease;
+}
+.offline-banner.is-on{transform:translate(-50%,0)}
+.offline-banner .icon{width:13px;height:13px;color:var(--accent)}
+body[data-contrast="high"]{--muted:#d8d0c1;--faint:#b9b0a0;--line:rgba(255,255,255,.18);--line-strong:rgba(255,255,255,.34);--paper:#fbf9f4}
+body[data-contrast="high"] .context,
+body[data-contrast="high"] .dock,
+body[data-contrast="high"] .page-strip,
+body[data-contrast="high"] .menu,
+body[data-contrast="high"] .modal{background:#17130d}
+body[data-contrast="high"] :focus-visible{outline-width:3px}
+body[data-contrast="high"] .tool[aria-pressed="true"]{box-shadow:inset 0 0 0 2px var(--accent-bright)}
+body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
+
+/* ---------------------------------------------------------------- outline */
+.outline-list{display:flex;flex-direction:column;gap:2px;max-height:min(54vh,420px);overflow-y:auto}
+.outline-row{
+  display:flex;align-items:center;gap:9px;width:100%;padding:7px 9px;border-radius:7px;
+  text-align:left;color:var(--text);font-size:11.5px;
+}
+.outline-row:hover,.outline-row:focus-visible{background:rgba(240,233,221,.06)}
+.outline-row .o-type{font-family:var(--font-mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--faint);width:44px;flex:none}
+.outline-row .o-text{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#d8d2c6}
+.outline-row .icon{width:14px;height:14px;color:var(--faint)}
+
+/* print: the PDF export opens a separate window, but the page itself can
+   still be printed as a clean sheet if the browser invokes print. */
+@media print{
+  body{overflow:visible;background:#fff}
+  .topbar,.rail,.video,.divider,.context,.dock,.page-strip,.toast-layer,.show-video,.offline-banner{display:none!important}
+  .workspace{padding:0}
+  .stage{box-shadow:none;border-radius:0}
+}
+
+/* --- AI Studio & Selection Tools (Enhanced UI) --- */
+.sel-ai-pill{
+  display:inline-flex;align-items:center;gap:3px;margin-left:6px;padding:2px 4px 2px 7px;
+  background:rgba(240,233,221,.05);border:1px solid rgba(240,233,221,.12);border-radius:8px;
+  box-shadow:inset 0 1px 0 rgba(240,233,221,.04);
+}
+.sel-ai-pill .mini-btn{
+  color:var(--text);opacity:.85;
+}
+.sel-ai-pill .mini-btn:hover{
+  opacity:1;
+}
+.sel-ai-tag{
+  font-family:var(--font-mono);font-size:8.5px;font-weight:700;letter-spacing:.12em;
+  color:var(--accent-bright);margin-right:3px;text-transform:uppercase;opacity:.85;
+}
+.mini-btn.is-glowing{
+  position:relative;color:#fff;background:rgba(224,114,77,.2);border-radius:6px;
+}
+.mini-btn.is-glowing::after{
+  content:'';position:absolute;inset:-1px;border-radius:7px;
+  background:linear-gradient(135deg,rgba(224,114,77,.4),transparent 70%);
+  pointer-events:none;opacity:.6;
+}
+.mini-btn.ai-btn-math:hover{color:#8ab4f8;background:rgba(138,180,248,.14)}
+.mini-btn.ai-btn-draw:hover{color:#f8d89a;background:rgba(248,216,154,.14)}
+.mini-btn.ai-btn-ocr:hover{color:#a8e6cf;background:rgba(168,230,207,.14)}
+.mini-btn.ai-btn-diagram:hover{color:#ffd3b6;background:rgba(255,211,182,.14)}
+.mini-btn.ai-btn-quiz:hover{color:#d7bbf5;background:rgba(215,187,245,.14)}
+.mini-btn.ai-btn-explain:hover{color:#ffaaa5;background:rgba(255,170,165,.2)}
+
+.ai-drawer{
+  position:absolute;top:14px;right:14px;bottom:14px;width:min(350px,calc(100% - 28px));
+  background:rgba(24,19,13,.92);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+  border:1px solid rgba(240,233,221,.16);border-radius:16px;
+  box-shadow:0 24px 60px rgba(0,0,0,.65),inset 0 1px 0 rgba(240,233,221,.08);
+  display:flex;flex-direction:column;z-index:40;overflow:hidden;
+  animation:modalIn .22s cubic-bezier(.16,1,.3,1);
+}
+.ai-drawer[hidden]{display:none!important}
+.ai-drawer-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid rgba(240,233,221,.08);
+  background:rgba(240,233,221,.02);
+}
+.ai-drawer-title{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:600;color:#f2ece0}
+.ai-drawer-title .icon{color:var(--accent-bright);width:18px;height:18px}
+.ai-prov-tag{
+  font-family:var(--font-mono);font-size:9.5px;padding:2px 7px;border-radius:6px;
+  background:rgba(224,114,77,.18);color:var(--accent-bright);border:1px solid rgba(224,114,77,.25);
+  letter-spacing:.04em;
+}
+.ai-drawer-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
+.ai-drawer-preview{
+  width:100%;max-height:130px;overflow:hidden;border-radius:10px;
+  border:1px solid rgba(240,233,221,.12);background:#f4f1e9;display:grid;place-items:center;
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.15);
+}
+.ai-drawer-preview img{max-width:100%;max-height:130px;object-fit:contain}
+.ai-drawer-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ai-chip{
+  font-size:11px;padding:6px 10px;border-radius:8px;border:1px solid rgba(240,233,221,.1);
+  background:rgba(240,233,221,.04);color:var(--muted);text-align:left;
+  transition:all .15s ease;cursor:pointer;
+}
+.ai-chip:hover{background:rgba(224,114,77,.14);border-color:rgba(224,114,77,.3);color:#fff;transform:translateY(-1px)}
+.ai-drawer-input-row{display:flex;gap:7px}
+.ai-drawer-input-row input{
+  flex:1;min-width:0;background:rgba(0,0,0,.35);border:1px solid rgba(240,233,221,.14);
+  border-radius:9px;padding:8px 12px;font-size:12px;color:var(--text);outline:none;
+  transition:border-color .15s,box-shadow .15s;
+}
+.ai-drawer-input-row input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(224,114,77,.15)}
+.ai-drawer-status{
+  display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--amber);
+  background:rgba(231,183,107,.1);padding:6px 10px;border-radius:7px;border:1px solid rgba(231,183,107,.2);
+}
+.ai-drawer-response{
+  display:flex;flex-direction:column;gap:10px;padding:12px;border-radius:10px;
+  background:rgba(0,0,0,.3);border:1px solid rgba(240,233,221,.1);
+}
+.ai-drawer-text{
+  font-size:12.5px;line-height:1.65;color:#ebe5d9;white-space:pre-wrap;
+  max-height:240px;overflow-y:auto;font-family:var(--font-ui);
+}
+.ai-drawer-text.is-streaming::after{
+  content:'▋';margin-left:3px;color:var(--accent-bright);animation:cursorBlink .8s infinite;
+}
+@keyframes cursorBlink{0%,100%{opacity:1}50%{opacity:0}}
+.ai-drawer-actions{display:flex;justify-content:flex-end;gap:8px;border-top:1px solid rgba(240,233,221,.08);padding-top:10px}
+
+.ai-provider-card{
+  background:rgba(0,0,0,.28);border:1px solid rgba(240,233,221,.12);border-radius:14px;
+  padding:14px 16px;margin-bottom:16px;box-shadow:inset 0 1px 0 rgba(240,233,221,.04);
+}
+.ai-provider-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.ai-provider-sub{display:block;font-size:11px;color:var(--faint);margin-top:3px}
+.ai-provider-meta{
+  margin-top:10px;padding-top:10px;border-top:1px solid rgba(240,233,221,.08);
+  display:flex;gap:12px;align-items:center;font-size:11.5px;
+}
+.ai-meta-tag{color:var(--accent-bright);font-family:var(--font-mono);font-size:11px;font-weight:600}
+.ai-meta-sub{color:var(--muted)}
+
+.ai-tools-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px}
+.ai-tool-card{
+  display:flex;align-items:flex-start;gap:12px;padding:13px 14px;border-radius:12px;
+  background:rgba(240,233,221,.03);border:1px solid rgba(240,233,221,.09);text-align:left;
+  color:var(--text);transition:all .18s cubic-bezier(.16,1,.3,1);cursor:pointer;position:relative;
+}
+.ai-tool-card:hover{
+  background:rgba(224,114,77,.09);border-color:rgba(224,114,77,.35);
+  transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,.35);
+}
+.ai-tc-icon{
+  width:36px;height:36px;border-radius:9px;background:rgba(224,114,77,.15);
+  color:var(--accent-bright);border:1px solid rgba(224,114,77,.2);
+  display:grid;place-items:center;flex:none;transition:transform .15s ease;
+}
+.ai-tool-card:hover .ai-tc-icon{transform:scale(1.08)}
+.ai-tc-body{flex:1;min-width:0}
+.ai-tc-body strong{display:flex;align-items:center;justify-content:space-between;font-size:12.5px;font-weight:600;margin-bottom:4px;color:#f0e9dc}
+.ai-tc-body span{display:block;font-size:11px;line-height:1.5;color:var(--muted)}
+.ai-kbd{
+  font-family:var(--font-mono);font-size:9.5px;padding:1px 5px;border-radius:4px;
+  background:rgba(240,233,221,.08);color:var(--faint);border:1px solid rgba(240,233,221,.1);
+}
+
+.flashcard{
+  background:#fff7d6;color:#2c2214;border-radius:14px;padding:20px 22px;
+  min-height:150px;box-shadow:0 12px 32px rgba(0,0,0,.4);margin:14px 0 12px;
+  display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;
+  border:1px solid rgba(138,106,42,.2);position:relative;
+  transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s ease;
+  background-image:radial-gradient(rgba(140,116,76,.1) 1px,transparent 0);
+  background-size:16px 16px;
+}
+.flashcard:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.45)}
+.fc-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8a6a2a;margin-bottom:8px;font-weight:700}
+.fc-content{font-size:14.5px;line-height:1.6;font-weight:500;white-space:pre-wrap;flex:1;color:#1e1810}
+.fc-flip-btn{
+  margin-top:14px;align-self:flex-start;display:flex;align-items:center;gap:6px;
+  font-size:11.5px;font-weight:600;color:#5a4314;background:rgba(0,0,0,.08);
+  border:1px solid rgba(0,0,0,.06);border-radius:7px;padding:5px 10px;cursor:pointer;
+  transition:background .14s ease;
+}
+.fc-flip-btn:hover{background:rgba(0,0,0,.13)}
+.quiz-counter{font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-bottom:4px}
+.quiz-nav{display:flex;justify-content:space-between;gap:8px}
+
+/* --- Artisanal Scholar's Desk Enhancements --- */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(240,233,221,.16);border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:rgba(240,233,221,.28)}
+
+.topbar{
+  height:54px;
+  background:linear-gradient(180deg,rgba(22,17,13,.96),rgba(17,14,10,.98));
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.brand-name{
+  font-family:var(--font-display);font-style:italic;font-weight:500;font-size:23px;
+  letter-spacing:-.03em;color:#fdfaf3;
+}
+.brand-dot{color:var(--accent-bright);text-shadow:0 0 10px rgba(242,133,89,.5)}
+
+.page-pill{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;border-radius:20px;
+  background:rgba(240,233,221,.05);border:1px solid rgba(240,233,221,.11);
+  color:var(--text);font-family:var(--font-mono);font-size:11px;
+  transition:all .15s ease;
+}
+.page-pill:hover{
+  background:rgba(240,233,221,.09);border-color:rgba(240,233,221,.18);
+  transform:translateY(-0.5px);
+}
+
+.rail{
+  flex:0 0 54px;
+  background:rgba(22,17,13,.75);
+  border:1px solid rgba(240,233,221,.06);
+  border-radius:18px;
+  box-shadow:inset 0 1px 0 rgba(240,233,221,.04),0 12px 36px rgba(0,0,0,.3);
+  padding:8px 0;
+}
+.tool{
+  width:40px;height:38px;border-radius:10px;
+  transition:all .15s cubic-bezier(.16,1,.3,1);
+}
+.tool:hover{
+  background:rgba(240,233,221,.08);color:var(--text);transform:translateY(-1px);
+}
+.tool[aria-pressed="true"]{
+  background:linear-gradient(135deg,rgba(223,110,72,.24),rgba(223,110,72,.08));
+  color:var(--accent-bright);
+  border:1px solid rgba(223,110,72,.38);
+  box-shadow:0 0 14px rgba(223,110,72,.25),inset 0 1px 0 rgba(255,255,255,.08);
+}
+
+.stage{
+  border-radius:18px;
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.3),0 30px 80px -20px rgba(0,0,0,.8),0 10px 24px -10px rgba(0,0,0,.45);
+}
+.gutter{
+  width:38px;
+  background:linear-gradient(90deg,rgba(223,110,72,.07),rgba(223,110,72,0) 90%);
+}
+.gutter::before{
+  left:26px;width:1.5px;
+  background:var(--accent);opacity:.6;
+  box-shadow:0 0 6px rgba(223,110,72,.3);
+}
+
+.dock{
+  left:16px;bottom:16px;
+  padding:5px 6px;gap:2px;
+  background:rgba(24,19,14,.93);
+  border:1px solid rgba(240,233,221,.13);border-radius:15px;
+  box-shadow:0 18px 45px rgba(8,6,4,.6),inset 0 1px 0 rgba(240,233,221,.08);
+  backdrop-filter:blur(22px);-webkit-backdrop-filter:blur(22px);
+}
+.dock-btn{
+  width:30px;height:28px;border-radius:8px;
+  transition:all .14s cubic-bezier(.16,1,.3,1);
+}
+.dock-btn:hover{
+  background:rgba(240,233,221,.09);color:var(--text);transform:scale(1.06);
+}
+.zoom-label{
+  padding:0 8px;min-width:46px;font-size:11px;font-weight:600;
+  border-radius:6px;transition:background .13s;
+}
+.zoom-label:hover{background:rgba(240,233,221,.08)}
+
+.modal{
+  background:linear-gradient(180deg,#221c15,#1a1510);
+  border:1px solid rgba(240,233,221,.15);border-radius:20px;
+  box-shadow:0 42px 110px rgba(0,0,0,.75),inset 0 1px 0 rgba(240,233,221,.08);
+}
+.modal h2{
+  font-family:var(--font-display);font-style:italic;font-weight:500;font-size:25px;
+  letter-spacing:-.025em;color:#fdfaf3;
+}
 </style>
 </head>
 <body>
@@ -1189,7 +1632,14 @@ input[type="range"].bg-vol::-moz-range-thumb{
   <symbol id="i-hand" viewBox="0 0 24 24"><path d="M8.5 11V5.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M11.7 11V4.6a1.6 1.6 0 0 1 3.2 0V11"/><path d="M14.9 11.4V6.6a1.6 1.6 0 0 1 3.2 0v8.4a7 7 0 0 1-7 7h-.6a6 6 0 0 1-4.24-1.76L4.5 17a1.7 1.7 0 0 1 2.5-2.3l1.5 1.5V11"/></symbol>
   <symbol id="i-rect" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/></symbol>
   <symbol id="i-assist" viewBox="0 0 24 24"><path d="M4 15c2.6-4.4 5.4-6.6 8-6.6S17.4 10.6 20 15"/><path d="M4 9.4h4.2"/><path d="M15.8 9.4H20"/><circle cx="12" cy="18.4" r="1.4" fill="currentColor" stroke="none"/><circle cx="4" cy="9.4" r="1.5" fill="currentColor" stroke="none"/><circle cx="20" cy="9.4" r="1.5" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="i-broom" viewBox="0 0 24 24"><path d="M20 4 10.6 13.4"/><path d="M16.4 2.4 21.6 7.6"/><path d="M11 12.4c-2.3-.7-4.4.3-5.4 2.4-.7 1.5-1 3.2-1.3 5.4 2.2-.3 3.9-.6 5.4-1.3 2.1-1 3.1-3.1 2.4-5.4Z"/><path d="M6.6 16.2 4 21"/><path d="M10.2 17.4 8 21.6"/><path d="M4.2 13.6 1.8 17.8"/></symbol>
   <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 2.8l1.6 4.7 4.7 1.6-4.7 1.6L12 15.4l-1.6-4.7-4.7-1.6 4.7-1.6Z"/><path d="M18.7 14.2l.8 2.3 2.3.8-2.3.8-.8 2.3-.8-2.3-2.3-.8 2.3-.8Z"/><path d="M5.2 14.8l.6 1.7 1.7.6-1.7.6-.6 1.7-.6-1.7-1.7-.6 1.7-.6Z"/></symbol>
+  <symbol id="i-math" viewBox="0 0 24 24"><path d="M4 7h6M4 17h6M14 7h6M14 11h6M14 17h6M7 4v6M17 14v6"/></symbol>
+  <symbol id="i-wand" viewBox="0 0 24 24"><path d="m15 4-2 2 5 5 2-2zM3 21l9-9M12.5 5.5l6 6M7 2l.5 1.5L9 4l-1.5.5L7 6l-.5-1.5L5 4l1.5-.5zM19 15l.5 1.5 1.5.5-1.5.5-.5 1.5-.5-1.5-1.5-.5 1.5-.5z"/></symbol>
+  <symbol id="i-text-ai" viewBox="0 0 24 24"><path d="M4 7V4h16v3M9 20h6M12 4v16"/><circle cx="18.5" cy="18.5" r="2.8" fill="var(--accent)" stroke="none"/><path d="m17.5 18.5.8.8 1.4-1.4" stroke="#fff" stroke-width="1.2" fill="none"/></symbol>
+  <symbol id="i-flowchart" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="6" rx="1.5"/><rect x="14" y="3" width="7" height="6" rx="1.5"/><rect x="8.5" y="15" width="7" height="6" rx="1.5"/><path d="M6.5 9v3h11V9M12 12v3"/></symbol>
+  <symbol id="i-quiz" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="M9.5 9a2.5 2.5 0 0 1 4.5 1.4c0 1.6-2 2-2 3.1M12 16.8h.01"/></symbol>
+
   <symbol id="i-sliders" viewBox="0 0 24 24"><path d="M4 7h9M17 7h3M4 17h3M11 17h9"/><circle cx="15" cy="7" r="2.2"/><circle cx="9" cy="17" r="2.2"/></symbol>
   <symbol id="i-ellipse" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/></symbol>
   <symbol id="i-line" viewBox="0 0 24 24"><path d="M5.5 18.5 18.5 5.5"/></symbol>
@@ -1248,6 +1698,17 @@ input[type="range"].bg-vol::-moz-range-thumb{
   <symbol id="i-roundrect" viewBox="0 0 24 24"><rect x="3.5" y="4.5" width="17" height="15" rx="5"/></symbol>
   <symbol id="i-polygon" viewBox="0 0 24 24"><path d="m12 3.5 7.4 4.2v8.6L12 20.5l-7.4-4.2V7.7Z"/></symbol>
   <symbol id="i-magnet" viewBox="0 0 24 24"><path d="M5 4v7a7 7 0 0 0 14 0V4"/><path d="M5 8.5h4.5V4H5zM14.5 4v4.5H19V4"/></symbol>
+  <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5.5" r="2.6"/><circle cx="6" cy="12" r="2.6"/><circle cx="18" cy="18.5" r="2.6"/><path d="m8.4 10.8 7.2-4M8.4 13.2l7.2 4"/></symbol>
+  <symbol id="i-pages" viewBox="0 0 24 24"><rect x="7" y="3.5" width="12" height="15" rx="2"/><path d="M16 21H6.5A1.5 1.5 0 0 1 5 19.5V7"/><path d="M11 8h4M11 11.5h4"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7a3.5 3.5 0 0 1 7 0v3.5"/><path d="M12 14.5v2.5"/></symbol>
+  <symbol id="i-unlock" viewBox="0 0 24 24"><rect x="5" y="10.5" width="14" height="10" rx="2"/><path d="M8.5 10.5V7a3.5 3.5 0 0 1 6.8-1.2"/><path d="M12 14.5v2.5"/></symbol>
+  <symbol id="i-group" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="8" height="8" rx="1.5"/><rect x="12.5" y="12.5" width="8" height="8" rx="1.5"/><path d="M12 7.5h4.5V12M12 16.5H7.5V12"/></symbol>
+  <symbol id="i-align" viewBox="0 0 24 24"><path d="M4 4v16"/><rect x="7" y="6" width="11" height="4" rx="1"/><rect x="7" y="14" width="7" height="4" rx="1"/></symbol>
+  <symbol id="i-chevron-left" viewBox="0 0 24 24"><path d="m14.5 6-6 6 6 6"/></symbol>
+  <symbol id="i-chevron-right" viewBox="0 0 24 24"><path d="m9.5 6 6 6-6 6"/></symbol>
+  <symbol id="i-wifi-off" viewBox="0 0 24 24"><path d="M3 8.5a15 15 0 0 1 5-2.8M14.5 5.4A15 15 0 0 1 21 8.5"/><path d="M6.5 12a11 11 0 0 1 3-1.6M16.8 10.8a11 11 0 0 1 1.7 1.2"/><path d="M9.5 15.4a6 6 0 0 1 5 0"/><path d="M12 18.8h.01"/><path d="m3 3 18 18"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 8V3.5h12V8"/><rect x="3.5" y="8" width="17" height="8" rx="2"/><path d="M6 16v4.5h12V16"/><path d="M6 12h.01"/></symbol>
+  <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
 </defs></svg>
 
 <div class="dashboard" id="dashboard">
@@ -1312,8 +1773,12 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="save-state" id="saveState" data-state="saved" title="Saved in this browser">
         <span class="save-dot"></span><span class="save-text">Saved</span>
       </div>
+      <button class="page-pill" id="pagePill" title="Open the page outline" aria-label="Page position"><svg class="icon sm"><use href="#i-pages"/></svg><span id="pagePillText">Page 1 of 1</span></button>
     </div>
     <div class="topbar-right">
+      <button class="icon-btn" id="paletteBtn" aria-label="Search or run a command" title="Search &amp; commands — ⌘K"><svg class="icon"><use href="#i-search"/></svg></button>
+      <button class="icon-btn" id="shareBtn" aria-label="Share live session" title="Share live session"><svg class="icon"><use href="#i-share"/></svg></button>
+      <span class="topbar-divider" aria-hidden="true"></span>
       <div class="layout-switch" id="layoutSwitch" role="group" aria-label="Workspace layout">
         <button class="layout-btn" data-layout="board" data-tip="Whiteboard only" aria-label="Whiteboard only" aria-pressed="false"><svg class="icon"><use href="#i-board"/></svg></button>
         <button class="layout-btn" data-layout="split" data-tip="Split view" aria-label="Split view" aria-pressed="true"><svg class="icon"><use href="#i-split"/></svg></button>
@@ -1336,8 +1801,16 @@ input[type="range"].bg-vol::-moz-range-thumb{
           <button data-action="fullscreen"><svg class="icon"><use href="#i-expand"/></svg>Fullscreen</button>
           <button data-action="sound"><svg class="icon"><use href="#i-music"/></svg>Background sound</button>
           <button data-action="shortcuts"><svg class="icon"><use href="#i-help"/></svg>Keyboard shortcuts</button>
+          <button data-action="aistudio"><svg class="icon"><use href="#i-spark"/></svg>AI Studio &amp; Tools</button>
           <button data-action="writing"><svg class="icon"><use href="#i-sliders"/></svg>Writing feel &amp; AI</button>
+          <button data-action="apikey"><svg class="icon"><use href="#i-youtube"/></svg>YouTube search key…</button>
+          <button data-action="outline"><svg class="icon"><use href="#i-pages"/></svg>Page outline</button>
+          <button data-action="contrast"><svg class="icon"><use href="#i-eye"/></svg><span id="menuContrast">High contrast</span></button>
+          <button data-action="collab"><svg class="icon"><use href="#i-share"/></svg>Share live session</button>
           <div class="menu-sep"></div>
+          <button data-action="pdf"><svg class="icon"><use href="#i-print"/></svg>Export page as PDF</button>
+          <button data-action="pdfsub"><svg class="icon"><use href="#i-pages"/></svg>Export subject as PDF</button>
+          <button data-action="notes"><svg class="icon"><use href="#i-note"/></svg>Export notes as Markdown</button>
           <button data-action="png"><svg class="icon"><use href="#i-image"/></svg>Export page as PNG</button>
           <button data-action="svg"><svg class="icon"><use href="#i-note"/></svg>Export page as SVG</button>
           <div class="menu-sep"></div>
@@ -1383,7 +1856,42 @@ input[type="range"].bg-vol::-moz-range-thumb{
     <section class="stage" id="stage" aria-label="Drawing board">
       <canvas id="scene" aria-hidden="true"></canvas>
       <canvas id="overlay" aria-label="Interactive drawing canvas" role="img" tabindex="0"></canvas>
+      <div class="peer-cursors" id="peerCursors" aria-hidden="true"></div>
       <div class="gutter" id="gutter" aria-hidden="true"><span class="g-label">margin</span></div>
+      <aside class="ai-drawer" id="aiExplainerDrawer" hidden aria-label="AI Visual Explainer">
+        <div class="ai-drawer-head">
+          <div class="ai-drawer-title">
+            <svg class="icon"><use href="#i-spark"/></svg>
+            <span>AI Explainer</span>
+            <span class="ai-prov-tag" id="aiExplainerTag">OpenRouter</span>
+          </div>
+          <button class="icon-btn sm" id="aiExplainerClose" aria-label="Close explainer"><svg class="icon sm"><use href="#i-close"/></svg></button>
+        </div>
+        <div class="ai-drawer-body">
+          <div class="ai-drawer-preview" id="aiExplainerPreviewWrap">
+            <img id="aiExplainerThumb" alt="Selected canvas region">
+          </div>
+          <div class="ai-drawer-chips">
+            <button type="button" class="ai-chip" data-q="Explain this concept simply with intuition and key takeaways">💡 Explain concept</button>
+            <button type="button" class="ai-chip" data-q="Check for errors or mistakes and explain how to fix them">🔍 Check for errors</button>
+            <button type="button" class="ai-chip" data-q="Summarize this into 3 concise high-yield bullet points">📝 Summarize</button>
+            <button type="button" class="ai-chip" data-q="Ask me a tough question testing my understanding of this">❓ Quiz me</button>
+          </div>
+          <div class="ai-drawer-input-row">
+            <input type="text" id="aiExplainerInput" placeholder="Ask about this selection..." spellcheck="false" autocomplete="off">
+            <button type="button" class="btn btn-primary btn-sm" id="aiExplainerSend">Ask</button>
+          </div>
+          <div class="ai-drawer-status" id="aiExplainerStatus" hidden><span class="save-dot"></span><span>Analyzing selection...</span></div>
+          <div class="ai-drawer-response" id="aiExplainerResponse" hidden>
+            <div class="ai-drawer-text" id="aiExplainerText"></div>
+            <div class="ai-drawer-actions">
+              <button type="button" class="btn btn-ghost btn-sm" id="aiExplainerCopy"><svg class="icon sm"><use href="#i-duplicate"/></svg>Copy</button>
+              <button type="button" class="btn btn-primary btn-sm" id="aiExplainerPin"><svg class="icon sm"><use href="#i-note"/></svg>Pin as note</button>
+            </div>
+          </div>
+        </div>
+      </aside>
+
 
       <div class="context" id="contextBar" role="toolbar" aria-label="Tool options">
         <div class="ctx-group ctx-colors">
@@ -1418,7 +1926,18 @@ input[type="range"].bg-vol::-moz-range-thumb{
             <button class="mini-btn" id="dupBtn" data-tip="Duplicate · ⌘D" aria-label="Duplicate selection"><svg class="icon sm"><use href="#i-duplicate"/></svg></button>
             <button class="mini-btn" id="frontBtn" data-tip="Bring to front" aria-label="Bring to front"><svg class="icon sm"><use href="#i-front"/></svg></button>
             <button class="mini-btn" id="backBtn" data-tip="Send to back" aria-label="Send to back"><svg class="icon sm"><use href="#i-back"/></svg></button>
+            <button class="mini-btn" id="arrangeBtn" data-tip="Align &amp; group" aria-label="Align and group selection"><svg class="icon sm"><use href="#i-align"/></svg></button>
+            <button class="mini-btn" id="lockBtn" data-tip="Lock selection · ⌘⇧L" aria-label="Lock selection" aria-pressed="false"><svg class="icon sm"><use href="#i-lock"/></svg></button>
             <button class="mini-btn danger" id="deleteSelBtn" data-tip="Delete · ⌫" aria-label="Delete selection"><svg class="icon sm"><use href="#i-trash"/></svg></button>
+            <div class="sel-ai-pill" id="selAiPill" role="group" aria-label="AI actions">
+              <span class="sel-ai-tag">AI</span>
+              <button class="mini-btn ai-btn-math" id="aiMathBtn" data-tip="AI: Solve Math · ⇧M" aria-label="Solve math"><svg class="icon sm"><use href="#i-math"/></svg></button>
+              <button class="mini-btn ai-btn-draw" id="aiDrawBtn" data-tip="AI: Auto-Draw Icon" aria-label="Auto-draw icon"><svg class="icon sm"><use href="#i-wand"/></svg></button>
+              <button class="mini-btn ai-btn-ocr" id="aiOcrBtn" data-tip="AI: Handwriting to Text · ⇧T" aria-label="Handwriting to text"><svg class="icon sm"><use href="#i-text-ai"/></svg></button>
+              <button class="mini-btn ai-btn-diagram" id="aiDiagramBtn" data-tip="AI: Beautify Diagram" aria-label="Beautify diagram"><svg class="icon sm"><use href="#i-flowchart"/></svg></button>
+              <button class="mini-btn ai-btn-quiz" id="aiQuizBtn" data-tip="AI: Flashcards &amp; Quiz" aria-label="Generate flashcards"><svg class="icon sm"><use href="#i-quiz"/></svg></button>
+              <button class="mini-btn ai-btn-explain is-glowing" id="aiExplainBtn" data-tip="AI: Explain &amp; Ask · ⇧E" aria-label="Explain selection"><svg class="icon sm"><use href="#i-spark"/></svg></button>
+            </div>
           </div>
         </div>
         <div class="ctx-group ctx-presets">
@@ -1464,6 +1983,16 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <p class="en-sub">Draw anywhere in the margin to begin.<br><span class="desk-key">Hold <kbd>space</kbd> to pan · <kbd>4</kbd> for the hand tool · <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom</span><span class="touch-key">Two fingers to pan &amp; zoom · two-finger tap to undo</span></p>
       </div>
 
+      <div class="page-strip" id="pageStrip" aria-label="Pages">
+        <button class="pstrip-btn" id="pagePrev" data-tip="Previous page — Page Up" aria-label="Previous page"><svg class="icon"><use href="#i-chevron-left"/></svg></button>
+        <div class="pstrip-list" id="pageList" role="tablist" aria-label="Page thumbnails"></div>
+        <button class="pstrip-btn" id="pageNext" data-tip="Next page — Page Down" aria-label="Next page"><svg class="icon"><use href="#i-chevron-right"/></svg></button>
+        <span class="pstrip-count" id="pageCount">1 / 1</span>
+        <span class="pstrip-sep" aria-hidden="true"></span>
+        <button class="pstrip-btn" id="pageMenuBtn" data-tip="Page actions" aria-label="Page actions"><svg class="icon"><use href="#i-more"/></svg></button>
+        <button class="pstrip-btn" id="pageAdd" data-tip="New page" aria-label="New page"><svg class="icon"><use href="#i-plus"/></svg></button>
+      </div>
+
       <div class="dock">
         <button class="dock-btn" id="zoomOut" aria-label="Zoom out" data-tip="Zoom out"><svg class="icon"><use href="#i-minus"/></svg></button>
         <button class="zoom-label" id="zoomLabel" data-tip="Reset to 100%">100%</button>
@@ -1472,7 +2001,8 @@ input[type="range"].bg-vol::-moz-range-thumb{
         <button class="dock-btn" id="gridBtn" aria-label="Background: Dots" data-tip="Cycle background · G"><svg class="icon"><use href="#i-dots"/></svg></button>
         <button class="dock-btn dock-toggle" id="snapBtn" aria-label="Snap to grid" aria-pressed="false" data-tip="Snap to grid · S"><svg class="icon"><use href="#i-magnet"/></svg></button>
         <button class="dock-btn dock-toggle" id="assistBtn" data-act="inkassist" aria-label="Ink Assist" aria-pressed="false" data-tip="Ink Assist — tidy gaps &amp; wobble (I) · whole page (Shift+I)"><svg class="icon"><use href="#i-assist"/></svg></button>
-        <button class="dock-btn dock-toggle has-badge" id="aiBtn" aria-label="AI letter complete" aria-pressed="false" data-tip="AI letter complete (J) · options in More"><svg class="icon"><use href="#i-spark"/></svg><span class="ai-badge" aria-hidden="true"></span></button>
+        <button class="dock-btn dock-toggle has-badge" id="aiBtn" aria-label="AI letter complete" aria-pressed="false" data-tip="AI Studio &amp; Tools (J) · Groq / OpenRouter"><svg class="icon"><use href="#i-spark"/></svg><span class="ai-badge" aria-hidden="true"></span></button>
+        <button class="dock-btn" id="tidyBtn" aria-label="Tidy Board — رتّب اللوح" data-tip="Tidy Board — رتّب اللوح دلالياً · Shift+B"><svg class="icon"><use href="#i-broom"/></svg></button>
         <button class="dock-btn" id="feelBtn" aria-label="Writing feel and AI options" data-tip="Writing feel &amp; AI"><svg class="icon"><use href="#i-sliders"/></svg></button>
         <button class="dock-btn" id="fitBtn" aria-label="Fit board to content" data-tip="Fit to content · 1"><svg class="icon"><use href="#i-fit"/></svg></button>
       </div>
@@ -1601,6 +2131,135 @@ input[type="range"].bg-vol::-moz-range-thumb{
   </div>
 </div>
 
+<!-- AI Studio modal -->
+<div class="modal-layer" id="aiStudioModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="aiStudioTitle">
+    <button class="modal-close" id="aiStudioClose" aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">Artificial Intelligence</div>
+    <h2 id="aiStudioTitle">AI Studio &amp; Tools</h2>
+    <p>Supercharge your whiteboard thinking with AI models for calculation, vision, diagrams, flashcards, and vector icons.</p>
+
+    <div class="ai-provider-card">
+      <div class="ai-provider-head">
+        <div>
+          <strong>AI Provider</strong>
+          <span class="ai-provider-sub">Select active provider for AI tools</span>
+        </div>
+        <div class="seg" id="aiProviderSeg" role="group" aria-label="AI Provider">
+          <button type="button" data-provider="openrouter" aria-pressed="true">OpenRouter (Free)</button>
+          <button type="button" data-provider="groq" aria-pressed="false">Groq (GPT-OSS-120B)</button>
+        </div>
+      </div>
+      <div class="ai-provider-meta" id="aiProviderMeta">
+        <span class="ai-meta-tag">Model: <code id="aiActiveModel">openrouter/free</code></span>
+        <span class="ai-meta-sub" id="aiActiveDesc">Multimodal vision + free reasoning</span>
+      </div>
+    </div>
+
+    <div class="modal-note">
+      <svg class="icon"><use href="#i-lock"/></svg><span>No provider keys ship in this file. Deployed calls go through <code>/api/ai</code> (server env vars); local development reads the gitignored <code>ai-local.js</code>.</span>
+    </div>
+
+    <div class="ai-tools-grid">
+      <button type="button" class="ai-tool-card" id="cardAiMath">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-math"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Math Notes Solver <span class="ai-kbd">⇧M</span></strong>
+          <span>Calculates handwritten or typed equations, places answers and full steps</span>
+        </div>
+      </button>
+
+      <button type="button" class="ai-tool-card" id="cardAiDraw">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-wand"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Sketch-to-Icon / Auto-Draw</strong>
+          <span>Recognizes rough doodles and morphs them into clean vector glyphs</span>
+        </div>
+      </button>
+
+      <button type="button" class="ai-tool-card" id="cardAiOcr">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-text-ai"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Handwriting to Text <span class="ai-kbd">⇧T</span></strong>
+          <span>Transcribes ink into editable typed text cards while preserving placement</span>
+        </div>
+      </button>
+
+      <button type="button" class="ai-tool-card" id="cardAiDiagram">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-flowchart"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Diagram &amp; Flowchart Beautifier</strong>
+          <span>Aligns rough boxes, connects orthogonal arrows, and formats clean trees</span>
+        </div>
+      </button>
+
+      <button type="button" class="ai-tool-card" id="cardAiQuiz">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-quiz"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Flashcards &amp; Quiz Generator</strong>
+          <span>Extracts high-yield study cards from your board or lecture notes</span>
+        </div>
+      </button>
+
+      <button type="button" class="ai-tool-card" id="cardAiExplain">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-spark"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Visual Selection Explainer <span class="ai-kbd">⇧E</span></strong>
+          <span>Lasso any diagram or notes, ask questions, and pin explanations as sticky notes</span>
+        </div>
+      </button>
+
+      <button type="button" class="ai-tool-card" id="cardAiTidy">
+        <div class="ai-tc-icon"><svg class="icon"><use href="#i-broom"/></svg></div>
+        <div class="ai-tc-body">
+          <strong>Tidy Board <span class="ai-kbd">⇧B</span></strong>
+          <span dir="rtl" lang="ar">تجميع دلالي للملاحظات في أعمدة عربية مرتّبة، مع تقويم الأسهم وتنظيم الهوامش.</span>
+        </div>
+      </button>
+    </div>
+
+    <div class="writing-block" style="margin-top:14px">
+      <div class="writing-row">
+        <div class="writing-copy">
+          <strong>Live letter completion</strong>
+          <span>Local on-device stroke finishing for single letters</span>
+        </div>
+        <button class="switch" id="studioAiAssistBtn" aria-label="Toggle on-device letter completion" aria-pressed="false"></button>
+      </div>
+    </div>
+
+    <div class="modal-actions"><button class="btn btn-primary" id="aiStudioDone">Close</button></div>
+  </div>
+</div>
+
+<!-- Flashcard / Quiz modal -->
+<div class="modal-layer" id="aiQuizModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="aiQuizTitle">
+    <button class="modal-close" id="aiQuizClose" aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">Study &amp; Review</div>
+    <h2 id="aiQuizTitle">Flashcards &amp; Quiz</h2>
+    <div class="quiz-counter" id="quizCounter">Card 1 of 3</div>
+
+    <div class="flashcard" id="quizCard">
+      <div class="fc-label" id="quizSideLabel">Question</div>
+      <div class="fc-content" id="quizContent">...</div>
+      <button type="button" class="fc-flip-btn" id="quizFlipBtn"><svg class="icon sm"><use href="#i-redo"/></svg>Click to reveal answer</button>
+    </div>
+
+    <div class="quiz-nav">
+      <button type="button" class="btn btn-ghost" id="quizPrevBtn">Previous</button>
+      <button type="button" class="btn btn-ghost" id="quizNextBtn">Next</button>
+    </div>
+
+    <div class="modal-actions" style="margin-top:16px;justify-content:space-between">
+      <button class="btn btn-ghost" id="quizDoneBtn">Done</button>
+      <button class="btn btn-primary" id="quizPinAllBtn"><svg class="icon sm"><use href="#i-note"/></svg>Place on Whiteboard</button>
+    </div>
+  </div>
+</div>
+
 <!-- writing feel / on-device letter model -->
 <div class="modal-layer" id="writingModal" hidden>
   <div class="modal-scrim" data-close></div>
@@ -1681,7 +2340,13 @@ input[type="range"].bg-vol::-moz-range-thumb{
       <div class="key-row"><span>Cycle background</span><span class="keys"><kbd>G</kbd></span></div>
       <div class="key-row"><span>Ink Assist (tidy gaps &amp; wobble)</span><span class="keys"><kbd>I</kbd></span></div>
       <div class="key-row"><span>Tidy the whole page</span><span class="keys"><kbd>Shift</kbd><kbd>I</kbd></span></div>
+      <div class="key-row"><span>Tidy Board — AI semantic organizer</span><span class="keys"><kbd>Shift</kbd><kbd>B</kbd></span></div>
       <div class="key-row"><span>AI letter completion</span><span class="keys"><kbd>J</kbd></span></div>
+      <div class="key-row"><span>Search &amp; commands</span><span class="keys"><kbd>⌘</kbd><kbd>K</kbd></span></div>
+      <div class="key-row"><span>Previous / next page</span><span class="keys"><kbd>Page Up</kbd><kbd>Page Down</kbd></span></div>
+      <div class="key-row"><span>Copy / cut / paste</span><span class="keys"><kbd>⌘</kbd><kbd>C</kbd><kbd>X</kbd><kbd>V</kbd></span></div>
+      <div class="key-row"><span>Group selection</span><span class="keys"><kbd>⌘</kbd><kbd>Shift</kbd><kbd>G</kbd></span></div>
+      <div class="key-row"><span>Lock selection</span><span class="keys"><kbd>⌘</kbd><kbd>Shift</kbd><kbd>L</kbd></span></div>
       <div class="key-row"><span>Fullscreen</span><span class="keys"><kbd>F</kbd></span></div>
     </div>
     <div class="modal-actions"><button class="btn btn-primary" id="keysDone">Back to the board</button></div>
@@ -1763,7 +2428,92 @@ input[type="range"].bg-vol::-moz-range-thumb{
   </div>
 </div>
 
+<!-- command palette -->
+<div class="palette-layer" id="paletteLayer" hidden>
+  <div class="palette" role="dialog" aria-modal="true" aria-label="Search and commands">
+    <div class="palette-search">
+      <svg class="icon"><use href="#i-search"/></svg>
+      <input id="paletteInput" type="text" placeholder="Search pages, subjects, and commands" aria-label="Search pages, subjects, and commands" autocomplete="off" spellcheck="false">
+      <span class="palette-kbd">Esc</span>
+    </div>
+    <div class="palette-results" id="paletteResults" role="listbox" aria-label="Results"></div>
+    <div class="palette-foot"><span><kbd>↑</kbd><kbd>↓</kbd> move</span><span><kbd>↵</kbd> open</span><span><kbd>⌘K</kbd> anywhere</span></div>
+  </div>
+</div>
+
+<!-- page actions -->
+<div class="modal-layer" id="pageModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pageModalTitle">
+    <button class="modal-close" data-page-close aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">This page</div>
+    <h2 id="pageModalTitle">Page actions</h2>
+    <p class="modal-sub" id="pageModalSub">Page 1 of 1</p>
+    <div class="dash-actions-grid" style="margin-top:14px">
+      <button class="btn btn-ghost" data-page-action="rename"><svg class="icon sm"><use href="#i-pencil"/></svg>Rename</button>
+      <button class="btn btn-ghost" data-page-action="duplicate"><svg class="icon sm"><use href="#i-duplicate"/></svg>Duplicate</button>
+      <button class="btn btn-ghost" data-page-action="left"><svg class="icon sm"><use href="#i-chevron-left"/></svg>Move left</button>
+      <button class="btn btn-ghost" data-page-action="right"><svg class="icon sm"><use href="#i-chevron-right"/></svg>Move right</button>
+      <button class="btn btn-ghost" data-page-action="pdf"><svg class="icon sm"><use href="#i-print"/></svg>Export PDF</button>
+      <button class="btn btn-ghost danger" data-page-action="delete"><svg class="icon sm"><use href="#i-trash"/></svg>Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- outline -->
+<div class="modal-layer" id="outlineModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="outlineTitle">
+    <button class="modal-close" data-outline-close aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">Outline</div>
+    <h2 id="outlineTitle">What's on this page</h2>
+    <p class="modal-sub" id="outlineSub">Text, notes, and images in reading order.</p>
+    <div class="outline-list" id="outlineList"></div>
+  </div>
+</div>
+
+<!-- live share -->
+<div class="modal-layer" id="shareModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="shareTitle">
+    <button class="modal-close" data-share-close aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">Live session</div>
+    <h2 id="shareTitle">Work on this page together</h2>
+    <p class="modal-sub">Share the board in real time. Anyone with the code edits the same page — no account needed.</p>
+    <div class="share-code" id="shareCode">— — — —</div>
+    <div class="share-status" id="shareStatus"><span class="live-dot"></span><span id="shareStatusText">Not sharing</span></div>
+    <div class="share-link-row">
+      <div class="input-shell"><svg class="icon"><use href="#i-link"/></svg><input id="shareLink" type="text" readonly aria-label="Share link" placeholder="Start a session to get a link"></div>
+      <button class="btn btn-ghost btn-sm" id="shareCopy" type="button">Copy</button>
+    </div>
+    <div class="menu-sep" style="margin:14px 0"></div>
+    <label class="ctx-label" for="shareJoin" style="display:block;margin-bottom:6px">Join with a code</label>
+    <form id="shareJoinForm" class="share-link-row" style="margin-top:0">
+      <div class="input-shell"><svg class="icon"><use href="#i-share"/></svg><input id="shareJoin" type="text" placeholder="e.g. K7M2Q4" maxlength="8" aria-label="Session code" spellcheck="false" autocomplete="off"></div>
+      <button class="btn btn-primary btn-sm" type="submit">Join</button>
+    </form>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="shareStop" type="button">Stop sharing</button>
+      <button class="btn btn-primary" id="shareStart" type="button">Start sharing</button>
+      <button class="btn btn-ghost" data-share-close type="button">Done</button>
+    </div>
+    <div class="modal-note"><svg class="icon"><use href="#i-info"/></svg><span>Live sessions use the app's Firebase project. Images larger than about 700 KB may not sync; keep drawings light for the best results.</span></div>
+  </div>
+</div>
+
+<div class="offline-banner" id="offlineBanner" role="status"><svg class="icon"><use href="#i-wifi-off"/></svg><span>Offline — edits are saved on this device</span></div>
+
 <div class="toast-layer" id="toastLayer" aria-live="polite" aria-atomic="false"></div>
+
+<!-- One shared progress bar for every AI tool. -->
+<div class="ai-progress" id="aiProgress" role="status" aria-live="polite" hidden>
+  <div class="aip-head">
+    <span class="aip-dot" aria-hidden="true"></span>
+    <span class="aip-label" id="aiProgressLabel">AI working…</span>
+    <span class="aip-pct" id="aiProgressPct">0%</span>
+  </div>
+  <div class="aip-track" aria-hidden="true"><span class="aip-fill" id="aiProgressFill"></span></div>
+</div>
 
 <!-- Background sound streams through this off-screen player so it never shows video. -->
 <div class="bg-stage" id="bgStage" aria-hidden="true">
@@ -1775,6 +2525,14 @@ input[type="range"].bg-vol::-moz-range-thumb{
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
 <script defer src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+
+<script>
+/* Local-only AI keys (gitignored, never deployed). On a real host this block
+   is skipped entirely and calls go through /api/ai with server-side keys. */
+if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.protocol === 'file:') {
+  document.write('<script src="ai-local.js"><\/script>');
+}
+</script>
 
 <script>
 (() => {
@@ -2250,6 +3008,23 @@ const el = {
   presetRow: $('#presetRow'), presetSaveBtn: $('#presetSaveBtn'),
   noteSwatches: $('#noteSwatches'), calloutSeg: $('#calloutSeg'), polySeg: $('#polySeg'),
   dupBtn: $('#dupBtn'), frontBtn: $('#frontBtn'), backBtn: $('#backBtn'), deleteSelBtn: $('#deleteSelBtn'),
+  aiMathBtn: $('#aiMathBtn'), aiDrawBtn: $('#aiDrawBtn'), aiOcrBtn: $('#aiOcrBtn'),
+  aiDiagramBtn: $('#aiDiagramBtn'), aiQuizBtn: $('#aiQuizBtn'), aiExplainBtn: $('#aiExplainBtn'),
+  aiStudioModal: $('#aiStudioModal'), aiStudioClose: $('#aiStudioClose'), aiStudioDone: $('#aiStudioDone'),
+  aiProviderSeg: $('#aiProviderSeg'), aiActiveModel: $('#aiActiveModel'), aiActiveDesc: $('#aiActiveDesc'),
+  cardAiMath: $('#cardAiMath'), cardAiDraw: $('#cardAiDraw'), cardAiOcr: $('#cardAiOcr'),
+  cardAiDiagram: $('#cardAiDiagram'), cardAiQuiz: $('#cardAiQuiz'), cardAiExplain: $('#cardAiExplain'),
+  cardAiTidy: $('#cardAiTidy'), tidyBtn: $('#tidyBtn'),
+  studioAiAssistBtn: $('#studioAiAssistBtn'),
+  aiExplainerDrawer: $('#aiExplainerDrawer'), aiExplainerClose: $('#aiExplainerClose'),
+  aiExplainerThumb: $('#aiExplainerThumb'), aiExplainerTag: $('#aiExplainerTag'),
+  aiExplainerInput: $('#aiExplainerInput'), aiExplainerSend: $('#aiExplainerSend'),
+  aiExplainerStatus: $('#aiExplainerStatus'), aiExplainerResponse: $('#aiExplainerResponse'),
+  aiExplainerText: $('#aiExplainerText'), aiExplainerCopy: $('#aiExplainerCopy'), aiExplainerPin: $('#aiExplainerPin'),
+  aiQuizModal: $('#aiQuizModal'), aiQuizClose: $('#aiQuizClose'), quizDoneBtn: $('#quizDoneBtn'),
+  quizCounter: $('#quizCounter'), quizSideLabel: $('#quizSideLabel'), quizContent: $('#quizContent'),
+  quizFlipBtn: $('#quizFlipBtn'), quizPrevBtn: $('#quizPrevBtn'), quizNextBtn: $('#quizNextBtn'),
+  quizPinAllBtn: $('#quizPinAllBtn'),
   zoomIn: $('#zoomIn'), zoomOut: $('#zoomOut'), zoomLabel: $('#zoomLabel'),
   gridBtn: $('#gridBtn'), fitBtn: $('#fitBtn'), assistBtn: $('#assistBtn'), aiBtn: $('#aiBtn'), feelBtn: $('#feelBtn'), emptyNote: $('#emptyNote'),
   writingModal: $('#writingModal'), writingClose: $('#writingClose'), writingDone: $('#writingDone'),
@@ -2278,7 +3053,8 @@ const el = {
   bgSound: $('#bgSound'), bgStage: $('#bgStage'), bgMount: $('#bgMount'),
   bgPlayBtn: $('#bgPlayBtn'), bgMuteBtn: $('#bgMuteBtn'), bgVol: $('#bgVol'), bgVolOut: $('#bgVolOut'),
   bgNow: $('#bgNow'), bgPickBtn: $('#bgPickBtn'),
-  toastLayer: $('#toastLayer'),
+  toastLayer: $('#toastLayer'), aiProgress: $('#aiProgress'), aiProgressLabel: $('#aiProgressLabel'),
+  aiProgressPct: $('#aiProgressPct'), aiProgressFill: $('#aiProgressFill'),
   dashboard: $('#dashboard'), subjectList: $('#subjectList'), pageGrid: $('#pageGrid'),
   dashPagesTitle: $('#dashPagesTitle'), dashPagesSub: $('#dashPagesSub'),
   dashPagesActions: $('#dashPagesActions'), dashEmpty: $('#dashEmpty'), dashSaveState: $('#dashSaveState'),
@@ -2286,7 +3062,20 @@ const el = {
   dashRenameSubjectBtn: $('#dashRenameSubjectBtn'), dashDeleteSubjectBtn: $('#dashDeleteSubjectBtn'),
   dashTrashBtn: $('#dashTrashBtn'), dashTrashLabel: $('#dashTrashLabel'),
   dashExportBtn: $('#dashExportBtn'), dashImportBtn: $('#dashImportBtn'),
-  topbarLeft: $('.topbar-left')
+  topbarLeft: $('.topbar-left'),
+  pagePill: $('#pagePill'), pagePillText: $('#pagePillText'),
+  paletteBtn: $('#paletteBtn'), shareBtn: $('#shareBtn'),
+  pageStrip: $('#pageStrip'), pageList: $('#pageList'), pagePrev: $('#pagePrev'), pageNext: $('#pageNext'),
+  pageCount: $('#pageCount'), pageAdd: $('#pageAdd'), pageMenuBtn: $('#pageMenuBtn'),
+  pageModal: $('#pageModal'), pageModalSub: $('#pageModalSub'),
+  paletteLayer: $('#paletteLayer'), paletteInput: $('#paletteInput'), paletteResults: $('#paletteResults'),
+  outlineModal: $('#outlineModal'), outlineList: $('#outlineList'), outlineSub: $('#outlineSub'),
+  shareModal: $('#shareModal'), shareCode: $('#shareCode'), shareStatus: $('#shareStatus'),
+  shareStatusText: $('#shareStatusText'), shareLink: $('#shareLink'), shareCopy: $('#shareCopy'),
+  shareJoinForm: $('#shareJoinForm'), shareJoin: $('#shareJoin'), shareStop: $('#shareStop'), shareStart: $('#shareStart'),
+  offlineBanner: $('#offlineBanner'), peerCursors: $('#peerCursors'),
+  arrangeBtn: $('#arrangeBtn'), lockBtn: $('#lockBtn'),
+  menuContrast: $('#menuContrast')
 };
 
 /* ------------------------------------------------------------ state */
@@ -3623,6 +4412,1421 @@ function runHandwritingAssist() {
   }
 }
 
+
+/* ============================================================ AI STUDIO & TOOLS (TURBO FAST) */
+const AI_CONFIG = {
+  /* Provider keys are NEVER bundled. Deployed requests go through /api/ai,
+     where GROQ_KEY / OPENROUTER_KEY live as encrypted server env vars. Local
+     development may load ai-local.js (gitignored) with window.AI_LOCAL_KEYS. */
+  proxyUrl: '/api/ai',
+  localKeys() {
+    const raw = window.AI_LOCAL_KEYS;
+    return raw && typeof raw === 'object' ? raw : {};
+  },
+  localKey(id) {
+    const v = this.localKeys()[id];
+    return typeof v === 'string' ? v.trim() : '';
+  },
+  hasLocalKey(id) {
+    return !!this.localKey(id);
+  },
+  providers: {
+    groq: {
+      id: 'groq',
+      name: 'Groq (120B Turbo)',
+      model: 'openai/gpt-oss-120b',
+      url: 'https://api.groq.com/openai/v1/chat/completions',
+      vision: false,
+      desc: 'Token-lean low-reasoning mode (openai/gpt-oss-120b) — sub-second replies'
+    },
+    openrouter: {
+      id: 'openrouter',
+      name: 'OpenRouter (Free)',
+      model: 'openrouter/free',
+      url: 'https://openrouter.ai/api/v1/chat/completions',
+      vision: true,
+      desc: 'Multimodal vision + reasoning (openrouter/free)'
+    }
+  },
+  get activeProvider() {
+    return localStorage.getItem('margin.ai_provider') || 'groq';
+  },
+  set activeProvider(p) {
+    if (this.providers[p]) {
+      localStorage.setItem('margin.ai_provider', p);
+    }
+  }
+};
+
+let currentExplainerCapture = null;
+let currentQuizCards = [];
+let currentQuizIndex = 0;
+let currentQuizFlipped = false;
+
+/* 0ms local math evaluator for instant arithmetic */
+function quickLocalMath(text) {
+  if (!text) return null;
+  const clean = text.replace(/=/g, '').trim();
+  // Safe basic arithmetic: numbers, +, -, *, /, %, ^, parentheses
+  if (/^[0-9+\-*/().\s^%]+$/.test(clean) && /[0-9]/.test(clean) && /[+\-*/^%]/.test(clean)) {
+    try {
+      const expr = clean.replace(/\^/g, '**');
+      const val = Function(`'use strict'; return (${expr})`)();
+      if (typeof val === 'number' && Number.isFinite(val)) {
+        const rounded = Math.round(val * 100000) / 100000;
+        return { expression: clean, answer: String(rounded), steps: [`Evaluated: ${clean} = ${rounded}`] };
+      }
+    } catch { /* fallback to AI */ }
+  }
+  return null;
+}
+
+/* Shared AI progress bar: one bar for every tool, driven by the request itself. */
+let aiProgressDepth = 0;
+let aiProgressTick = 0;
+let aiProgressHide = 0;
+let aiProgressPct = 0;
+
+function aiProgressPaint() {
+  if (!el.aiProgressFill) return;
+  el.aiProgressFill.style.width = aiProgressPct.toFixed(1) + '%';
+  if (el.aiProgressPct) el.aiProgressPct.textContent = Math.round(aiProgressPct) + '%';
+}
+function aiProgressStart(label) {
+  if (!el.aiProgress) return;
+  clearTimeout(aiProgressHide);
+  aiProgressDepth += 1;
+  if (el.aiProgress.classList.contains('is-done')) aiProgressPct = 8;
+  aiProgressPct = Math.max(aiProgressPct, 10);
+  if (label) el.aiProgressLabel.textContent = label;
+  el.aiProgress.classList.remove('is-done');
+  el.aiProgress.hidden = false;
+  aiProgressPaint();
+  requestAnimationFrame(() => el.aiProgress.classList.add('is-on'));
+  clearInterval(aiProgressTick);
+  aiProgressTick = setInterval(() => {
+    if (aiProgressPct >= 94) return;
+    aiProgressPct += Math.max(0.8, (94 - aiProgressPct) * 0.055);
+    aiProgressPaint();
+  }, 220);
+}
+function aiProgressEnd() {
+  aiProgressDepth = Math.max(0, aiProgressDepth - 1);
+  if (aiProgressDepth || !el.aiProgress) return;
+  clearInterval(aiProgressTick);
+  aiProgressPct = 100;
+  aiProgressPaint();
+  el.aiProgress.classList.add('is-done');
+  aiProgressHide = setTimeout(() => {
+    if (aiProgressDepth) return;
+    el.aiProgress.classList.remove('is-on');
+    aiProgressHide = setTimeout(() => {
+      if (aiProgressDepth) return;
+      el.aiProgress.hidden = true;
+      el.aiProgress.classList.remove('is-done');
+      aiProgressPct = 0;
+      aiProgressPaint();
+    }, 220);
+  }, 500);
+}
+
+/* Streaming and fast AI fetch */
+async function callAiChat(opts = {}) {
+  aiProgressStart(opts.label);
+  try {
+    return await callAiChatRaw(opts);
+  } finally {
+    aiProgressEnd();
+  }
+}
+
+async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider, jsonMode = false, onStreamChunk, maxTokens }) {
+  let providerKey = forceProvider || AI_CONFIG.activeProvider;
+  let prov = AI_CONFIG.providers[providerKey] || AI_CONFIG.providers.groq;
+
+  // Auto-route vision tasks if provider doesn't support images
+  if (imageBase64 && !prov.vision) {
+    prov = AI_CONFIG.providers.openrouter;
+  }
+
+  const messages = [];
+  messages.push({
+    role: 'system',
+    content: systemPrompt || 'Fast, precise whiteboard assistant. Answer with maximum signal and minimum words. No preamble.'
+  });
+
+  if (imageBase64 && prov.vision) {
+    const url = imageBase64.startsWith('data:') ? imageBase64 : `data:image/jpeg;base64,${imageBase64}`;
+    messages.push({
+      role: 'user',
+      content: [
+        { type: 'text', text: prompt },
+        { type: 'image_url', image_url: { url } }
+      ]
+    });
+  } else {
+    messages.push({ role: 'user', content: prompt });
+  }
+
+  const stream = typeof onStreamChunk === 'function';
+  const cap = clamp(Math.round(maxTokens || (jsonMode ? 600 : 900)), 120, 4000);
+  /* With no local key the request goes through our own proxy, so the provider
+     key never exists in this file or in the browser. */
+  const viaProxy = !!AI_CONFIG.proxyUrl && !AI_CONFIG.hasLocalKey(prov.id);
+
+  const payload = {
+    model: prov.model,
+    messages,
+    temperature: 0.1,
+    stream
+  };
+  if (prov.id === 'groq') {
+    /* Low reasoning keeps the 120B model smart but spends far fewer tokens,
+       and a hard completion cap stops any runaway answer. */
+    payload.reasoning_effort = 'low';
+    payload.max_completion_tokens = cap;
+  }
+  if (jsonMode && prov.id === 'groq') payload.response_format = { type: 'json_object' };
+
+  const proxyBody = { provider: prov.id, messages, jsonMode, maxTokens: cap, stream };
+  const keyList = viaProxy ? [null] : [AI_CONFIG.localKey(prov.id)].filter(Boolean);
+  if (!viaProxy && !keyList.length) {
+    throw new Error('No AI key. Add it to ai-local.js for local use, or set GROQ_KEY on the server for /api/ai.');
+  }
+
+  let res = null;
+  let lastErr = null;
+
+  for (let attempt = 0; attempt < keyList.length; attempt++) {
+    const headers = { 'Content-Type': 'application/json' };
+    if (!viaProxy) headers.Authorization = `Bearer ${keyList[attempt]}`;
+    try {
+      res = await fetch(viaProxy ? AI_CONFIG.proxyUrl : prov.url, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(viaProxy ? proxyBody : payload)
+      });
+
+      if (!res.ok) {
+        const errText = await res.text().catch(() => '');
+        throw new Error(`AI request failed (${res.status}): ${errText.slice(0, 160)}`);
+      }
+      break;
+    } catch (err) {
+      lastErr = err;
+      if (attempt < keyList.length - 1) continue;
+      throw err;
+    }
+  }
+
+  if (!res || !res.ok) {
+    throw lastErr || new Error('All AI fallback attempts exhausted');
+  }
+
+  // Handle SSE streaming for live real-time output
+  if (typeof onStreamChunk === 'function' && res.body) {
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = '';
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop();
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed || !trimmed.startsWith('data:')) continue;
+        const jsonStr = trimmed.slice(5).trim();
+        if (jsonStr === '[DONE]') continue;
+        try {
+          const chunk = JSON.parse(jsonStr);
+          const delta = chunk.choices?.[0]?.delta?.content || '';
+          if (delta) {
+            fullText += delta;
+            onStreamChunk(fullText, delta);
+          }
+        } catch { /* ignore chunk error */ }
+      }
+    }
+    return { text: fullText, provider: prov.name, model: prov.model };
+  }
+
+  const data = await res.json();
+  const text = data?.choices?.[0]?.message?.content || '';
+  return { text, provider: prov.name, model: prov.model };
+}
+
+function parseAiJson(text) {
+  if (!text) return null;
+  let str = text.trim();
+  const m = /```(?:json)?\s*([\s\S]*?)\s*```/i.exec(str);
+  if (m) str = m[1].trim();
+  try {
+    return JSON.parse(str);
+  } catch {
+    const firstBrace = str.search(/[\{\[]/);
+    const lastBrace = Math.max(str.lastIndexOf('}'), str.lastIndexOf(']'));
+    if (firstBrace >= 0 && lastBrace > firstBrace) {
+      try {
+        return JSON.parse(str.slice(firstBrace, lastBrace + 1));
+      } catch { /* ignore */ }
+    }
+    return null;
+  }
+}
+
+/* Ultra-compact image capture (< 10 KB JPEG for fast uploads) */
+function captureSelectionImage(list, options = {}) {
+  const targets = (list && list.length) ? list : elements.filter((e) => selected.has(e.id));
+  if (!targets.length) return null;
+  const bb = unionBBox(targets);
+  if (!bb) return null;
+
+  const pad = options.pad != null ? options.pad : 16;
+  const w = bb.w + pad * 2, h = bb.h + pad * 2;
+  // Downscale to max 380px for sub-second image upload and vision processing
+  const maxDim = options.maxDim || 380;
+  const scale = Math.min(1.6, maxDim / Math.max(w, h, 1));
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  const c = canvas.getContext('2d');
+  c.fillStyle = '#f4f1e9';
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.setTransform(scale, 0, 0, scale, (-bb.x + pad) * scale, (-bb.y + pad) * scale);
+  for (const e of targets) {
+    if (e.type === 'stroke') {
+      const origSize = e.size;
+      e.size = Math.max(origSize * 1.35, 3.2); // make lines clear at low resolution
+      drawElement(c, e);
+      e.size = origSize;
+    } else {
+      drawElement(c, e);
+    }
+  }
+
+  return {
+    dataUrl: canvas.toDataURL('image/jpeg', 0.65),
+    bbox: bb,
+    targets
+  };
+}
+
+function syncAiProviderUi() {
+  const cur = AI_CONFIG.activeProvider;
+  const prov = AI_CONFIG.providers[cur] || AI_CONFIG.providers.groq;
+  if (el.aiProviderSeg) {
+    for (const b of el.aiProviderSeg.querySelectorAll('button[data-provider]')) {
+      b.setAttribute('aria-pressed', String(b.dataset.provider === cur));
+    }
+  }
+  if (el.aiActiveModel) el.aiActiveModel.textContent = prov.model;
+  if (el.aiActiveDesc) el.aiActiveDesc.textContent = prov.desc;
+  if (el.studioAiAssistBtn) el.studioAiAssistBtn.setAttribute('aria-pressed', String(state.letterAssist));
+  if (el.aiExplainerTag) el.aiExplainerTag.textContent = prov.name;
+}
+
+function openAiStudio() {
+  syncAiProviderUi();
+  openModal(el.aiStudioModal, el.aiStudioDone);
+}
+
+/* 1. Math Notes Solver (Instant 0ms local eval + Groq turbo fallback) */
+async function solveMathSelection() {
+  const targets = elements.filter((e) => selected.has(e.id));
+  if (!targets.length && !elements.length) { toast('Select or write math first'); return; }
+
+  const textContext = targets.map(elementPlainText).filter(Boolean).join(' ').trim();
+  const bb = (targets.length ? unionBBox(targets) : null) || selectionBBox() || { x: 100, y: 100, w: 100, h: 40 };
+
+  // 1. Check for instant 0ms local arithmetic
+  const quick = quickLocalMath(textContext);
+  if (quick) {
+    applyMathAnswer(bb, quick.answer, quick.expression, quick.steps);
+    toast(`Solved instantly: ${quick.answer}`);
+    return;
+  }
+
+  // 2. Optimistic visual pulse
+  pulseAssist(bb);
+  toast('AI Math Solver computing...');
+
+  try {
+    let json = null;
+    // If text context is already extracted, send purely to Groq (ultra fast ~300ms!)
+    if (textContext && textContext.length >= 2) {
+      const prompt = `Solve this math problem: "${textContext}".
+Return strictly JSON:
+{
+  "expression": "${textContext}",
+  "answer": "concise final answer (e.g. x = 4)",
+  "steps": ["Step 1", "Step 2"]
+}`;
+      const res = await callAiChat({ prompt, forceProvider: 'groq', jsonMode: true, label: 'Solving math…' });
+      json = parseAiJson(res.text);
+    }
+
+    // Otherwise use vision on the compressed sketch
+    if (!json || !json.answer) {
+      const capture = captureSelectionImage();
+      if (!capture) { toast('No legible equation selected'); return; }
+      const prompt = `Solve the handwritten or typed math equation in this image.
+Return strictly JSON:
+{
+  "expression": "equation",
+  "answer": "final answer",
+  "steps": ["Step 1", "Step 2"]
+}`;
+      const res = await callAiChat({ prompt, imageBase64: capture.dataUrl, jsonMode: true, label: 'Reading the equation…' });
+      json = parseAiJson(res.text);
+    }
+
+    if (!json || !json.answer) throw new Error('Could not calculate answer');
+    applyMathAnswer(bb, json.answer, json.expression, json.steps);
+    toast(`Math solved: ${json.answer}`);
+  } catch (err) {
+    console.error(err);
+    toast('Math Solver: ' + (err.message || 'Check connection'));
+  }
+}
+
+function applyMathAnswer(bb, answerStr, expression, steps) {
+  pushHistory();
+  const ansText = String(answerStr).trim();
+  const textEl = {
+    id: uid(),
+    type: 'text',
+    x1: bb.x + bb.w + 14,
+    y1: bb.y + Math.max(0, (bb.h - 28) / 2),
+    x2: bb.x + bb.w + 14 + Math.max(90, ansText.length * 15),
+    y2: bb.y + Math.max(0, (bb.h - 28) / 2) + 32,
+    text: ansText.startsWith('=') ? ansText : ('= ' + ansText),
+    color: state.color,
+    size: Math.max(18, Math.min(36, Math.round(bb.h * 0.75))),
+    opacity: 1
+  };
+  elements.push(textEl);
+
+  if (steps && steps.length) {
+    elements.push({
+      id: uid(),
+      type: 'note',
+      x1: bb.x,
+      y1: bb.y + bb.h + 20,
+      x2: bb.x + Math.max(220, bb.w),
+      y2: bb.y + bb.h + 20 + Math.min(200, 60 + steps.length * 26),
+      text: `Math Solution: ${expression || ''}\n${ansText}\n\n` + steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      color: '#fff7d6',
+      size: 13,
+      opacity: 1
+    });
+  }
+
+  queueScene();
+  scheduleSave();
+  syncEmptyNote();
+}
+
+/* 2. Sketch-to-Icon / Auto-Draw (Fast compressed vectorizer) */
+async function autoDrawSelection() {
+  const capture = captureSelectionImage();
+  if (!capture) { toast('Select a sketch or doodle first'); return; }
+  pulseAssist(capture.bbox);
+  toast('Auto-Draw vectorizing sketch...');
+  try {
+    const prompt = `Identify the doodle in this image (e.g. star, lightbulb, heart, computer, beaker, tree, rocket, checkmark, cloud, book, gear).
+Generate a clean vector glyph to replace it.
+Return strictly JSON:
+{
+  "label": "icon name",
+  "paths": [
+    // Array of stroke polylines with [x, y] coordinates between 0 and 100.
+    [[10, 10], [50, 90], [90, 10]]
+  ]
+}`;
+    const res = await callAiChat({ prompt, imageBase64: capture.dataUrl, jsonMode: true, label: 'Vectorizing sketch…' });
+    const json = parseAiJson(res.text);
+    if (!json || !Array.isArray(json.paths) || !json.paths.length) throw new Error('Could not vectorize sketch');
+
+    const bb = capture.bbox;
+    const baseColor = capture.targets[0]?.color || state.color;
+    const baseSize = capture.targets[0]?.size || 3.5;
+
+    const newStrokes = json.paths.map((poly) => ({
+      id: uid(),
+      type: 'stroke',
+      marker: false,
+      points: poly.map(([px, py]) => ({
+        x: bb.x + (px / 100) * bb.w,
+        y: bb.y + (py / 100) * bb.h
+      })),
+      color: baseColor,
+      size: baseSize,
+      opacity: 1
+    }));
+
+    pushHistory();
+    const removeSet = new Set(capture.targets.map((t) => t.id));
+    elements = elements.filter((e) => !removeSet.has(e.id));
+    elements.push(...newStrokes);
+
+    selected.clear();
+    newStrokes.forEach((s) => selected.add(s.id));
+
+    queueScene();
+    scheduleSave();
+    syncSelectionUi();
+    toast(`Auto-Draw: Converted to clean ${json.label || 'icon'}`);
+  } catch (err) {
+    console.error(err);
+    toast('Auto-Draw: ' + (err.message || 'Try again'));
+  }
+}
+
+/* 3. Handwriting-to-Text (Fast compressed OCR) */
+async function ocrHandwritingSelection() {
+  const capture = captureSelectionImage();
+  if (!capture) { toast('Select handwriting or notes first'); return; }
+  pulseAssist(capture.bbox);
+  toast('Transcribing handwriting...');
+  try {
+    const prompt = `Transcribe all handwritten words, numbers, or text in this image accurately.
+Maintain line breaks if there are multiple lines.
+Return ONLY the transcribed text. Do not wrap in markdown or add conversational preamble.`;
+    const res = await callAiChat({ prompt, imageBase64: capture.dataUrl, maxTokens: 400, label: 'Transcribing handwriting…' });
+    const text = (res.text || '').trim().replace(/^```[a-z]*\n|```$/gi, '').trim();
+    if (!text) throw new Error('No legible text recognized');
+
+    pushHistory();
+    const bb = capture.bbox;
+    const lineCount = Math.max(1, text.split('\n').length);
+    const fontSize = clamp(Math.round(bb.h / lineCount * 0.72), 14, 60);
+
+    const textEl = {
+      id: uid(),
+      type: 'text',
+      x1: bb.x,
+      y1: bb.y,
+      x2: bb.x + Math.max(bb.w, 160),
+      y2: bb.y + Math.max(bb.h, 44),
+      text,
+      color: capture.targets[0]?.color || state.color,
+      size: fontSize,
+      opacity: 1
+    };
+
+    const removeSet = new Set(capture.targets.map((t) => t.id));
+    elements = elements.filter((e) => !removeSet.has(e.id));
+    elements.push(textEl);
+
+    selected.clear();
+    selected.add(textEl.id);
+
+    queueScene();
+    scheduleSave();
+    syncSelectionUi();
+    toast('Handwriting transcribed to text');
+  } catch (err) {
+    console.error(err);
+    toast('Transcription: ' + (err.message || 'Try again'));
+  }
+}
+
+/* 4. Smart Diagram & Flowchart Beautifier (Groq turbo path) */
+async function beautifyDiagramSelection() {
+  const targets = elements.filter((e) => selected.has(e.id));
+  if (!targets.length) { toast('Select diagram shapes, arrows, or boxes first'); return; }
+
+  const bb = unionBBox(targets);
+  pulseAssist(bb);
+  toast('AI beautifying diagram & flowchart...');
+
+  try {
+    const rawLabels = targets.map(elementPlainText).filter(Boolean);
+    let json = null;
+
+    // Fast-path: if text labels exist, Groq organizes layout in ~300ms!
+    if (rawLabels.length >= 2) {
+      const prompt = `Organize these diagram steps into a clean flowchart: ${JSON.stringify(rawLabels)}.
+Return strictly JSON:
+{
+  "nodes": [
+    { "id": "1", "label": "${rawLabels[0]}", "type": "roundrect", "col": 0, "row": 0 }
+  ],
+  "edges": [
+    { "from": "1", "to": "2" }
+  ]
+}`;
+      const res = await callAiChat({ prompt, forceProvider: 'groq', jsonMode: true, label: 'Beautifying diagram…' });
+      json = parseAiJson(res.text);
+    }
+
+    // Vision fallback if no labels
+    if (!json || !Array.isArray(json.nodes) || !json.nodes.length) {
+      const capture = captureSelectionImage(targets);
+      const prompt = `Analyze this rough flowchart/diagram image and reorganize it cleanly.
+Return strictly JSON:
+{
+  "nodes": [
+    { "id": "1", "label": "Start", "type": "roundrect", "col": 0, "row": 0 }
+  ],
+  "edges": [
+    { "from": "1", "to": "2" }
+  ]
+}`;
+      const res = await callAiChat({ prompt, imageBase64: capture.dataUrl, jsonMode: true, label: 'Beautifying diagram…' });
+      json = parseAiJson(res.text);
+    }
+
+    if (!json || !Array.isArray(json.nodes) || !json.nodes.length) throw new Error('Could not organize diagram');
+
+    pushHistory();
+    const baseColor = targets[0]?.color || state.color;
+    const nodeW = 160, nodeH = 54;
+    const gapX = 50, gapY = 46;
+
+    const nodePositions = new Map();
+    const newElements = [];
+
+    json.nodes.forEach((node) => {
+      const col = Number(node.col) || 0;
+      const row = Number(node.row) || 0;
+      const nx = bb.x + col * (nodeW + gapX);
+      const ny = bb.y + row * (nodeH + gapY);
+
+      nodePositions.set(String(node.id), { cx: nx + nodeW / 2, cy: ny + nodeH / 2, x1: nx, y1: ny, x2: nx + nodeW, y2: ny + nodeH });
+
+      newElements.push({
+        id: uid(),
+        type: (node.type === 'roundrect' || node.type === 'rect') ? node.type : 'roundrect',
+        x1: nx,
+        y1: ny,
+        x2: nx + nodeW,
+        y2: ny + nodeH,
+        fill: true,
+        color: baseColor,
+        size: 2.5,
+        opacity: 1
+      });
+
+      if (node.label) {
+        newElements.push({
+          id: uid(),
+          type: 'text',
+          x1: nx + 8,
+          y1: ny + 14,
+          x2: nx + nodeW - 8,
+          y2: ny + nodeH - 8,
+          text: node.label,
+          color: baseColor,
+          size: 15,
+          opacity: 1
+        });
+      }
+    });
+
+    if (Array.isArray(json.edges)) {
+      json.edges.forEach((edge) => {
+        const from = nodePositions.get(String(edge.from));
+        const to = nodePositions.get(String(edge.to));
+        if (from && to) {
+          const dy = to.cy - from.cy;
+          const dx = to.cx - from.cx;
+          let x1 = from.cx, y1 = from.cy, x2 = to.cx, y2 = to.cy;
+          if (Math.abs(dy) >= Math.abs(dx)) {
+            y1 = dy > 0 ? from.y2 : from.y1;
+            y2 = dy > 0 ? to.y1 : to.y2;
+          } else {
+            x1 = dx > 0 ? from.x2 : from.x1;
+            x2 = dx > 0 ? to.x1 : to.x2;
+          }
+          newElements.push({
+            id: uid(),
+            type: 'arrow',
+            x1, y1, x2, y2,
+            color: baseColor,
+            size: 2.5,
+            opacity: 1
+          });
+        }
+      });
+    }
+
+    const removeSet = new Set(targets.map((t) => t.id));
+    elements = elements.filter((e) => !removeSet.has(e.id));
+    elements.push(...newElements);
+
+    selected.clear();
+    newElements.forEach((e) => selected.add(e.id));
+
+    queueScene();
+    scheduleSave();
+    syncSelectionUi();
+    toast('Diagram beautified and aligned');
+  } catch (err) {
+    console.error(err);
+    toast('Diagram: ' + (err.message || 'Try again'));
+  }
+}
+
+/* 4b. Tidy Board — AI Semantic Organizer (Arabic-only AI output)
+   The board is clustered by meaning, then rebuilt as clean RTL columns with
+   Arabic headings. Loose ink rides along with the note it sits on, and arrows
+   are re-anchored to whatever they used to point at. */
+const TIDY = {
+  colW: 264,
+  gapX: 56,
+  gapY: 20,
+  headerH: 58,
+  noteFont: 14,
+  batch: 40,
+  accents: ['#c85838', '#3f6b52', '#4a5b8c', '#8a5a2b', '#6d4a72']
+};
+const TIDY_TITLES = ['المفاهيم الأساسية', 'القوانين والصيغ', 'الأسئلة', 'ملاحظات مهمة', 'الخطوات', 'أفكار متفرقة'];
+const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
+let tidyBusy = false;
+let tidyMeasureCtx = null;
+
+/* The model is told to answer in Arabic; this guarantees it even if it slips. */
+function tidyArabicText(raw, fallback) {
+  let t = String(raw == null ? '' : raw).trim();
+  if (!t) return fallback;
+  t = t.replace(/[\u0041-\u005A\u0061-\u007A]/g, '');
+  t = t.replace(/[0-9]/g, (d) => ARABIC_DIGITS[Number(d)]);
+  t = t.replace(/[\[\]{}<>|_*#"']/g, ' ').replace(/\s+/g, ' ').trim();
+  t = t.replace(/^[\s،؛:,.!?—–-]+|[\s،؛:,.!?—–-]+$/g, '').trim();
+  if (!t || t.replace(/[^\u0600-\u06FF]/g, '').length < 2) return fallback;
+  return t.slice(0, 44);
+}
+function tidyDigits(str) {
+  return String(str == null ? '' : str).replace(/[٠-٩]/g, (d) => String(ARABIC_DIGITS.indexOf(d)));
+}
+function tidyMeasureBlock(text, size, maxW) {
+  if (!tidyMeasureCtx) tidyMeasureCtx = document.createElement('canvas').getContext('2d');
+  tidyMeasureCtx.font = '500 ' + size + 'px ' + UI_FONT;
+  return wrapLines(tidyMeasureCtx, String(text == null ? '' : text), Math.max(24, maxW));
+}
+function tidyPointRectDist(b, x, y) {
+  const dx = Math.max(b.x - x, 0, x - (b.x + b.w));
+  const dy = Math.max(b.y - y, 0, y - (b.y + b.h));
+  return Math.hypot(dx, dy);
+}
+function tidyRectGap(a, b) {
+  const dx = Math.max(a.x - (b.x + b.w), b.x - (a.x + a.w), 0);
+  const dy = Math.max(a.y - (b.y + b.h), b.y - (a.y + a.h), 0);
+  return Math.hypot(dx, dy);
+}
+
+/* One semantic item: a note, a group, or a lone drawing that travels as a block. */
+function tidyBuildUnits() {
+  const movable = elements.filter((e) => !e.locked && !e.tidy);
+  const arrows = movable.filter((e) => e.type === 'line' || e.type === 'arrow');
+  const nodes = movable.filter((e) => e.type !== 'line' && e.type !== 'arrow');
+  const isTextHost = (e) => e.type === 'text' || e.type === 'note' || (e.type === 'callout' && !!e.label);
+  const used = new Set();
+  const units = [];
+  const groups = new Map();
+
+  for (const e of nodes) {
+    if (!e.groupId) continue;
+    let unit = groups.get(e.groupId);
+    if (!unit) {
+      unit = { els: [], kind: 'group', host: null };
+      groups.set(e.groupId, unit);
+      units.push(unit);
+    }
+    unit.els.push(e);
+    if (isTextHost(e) && !unit.host) unit.host = e;
+    used.add(e.id);
+  }
+
+  const hosts = [];
+  for (const e of nodes) {
+    if (used.has(e.id) || !isTextHost(e)) continue;
+    const unit = { els: [e], kind: 'text', host: e };
+    units.push(unit);
+    hosts.push(unit);
+    used.add(e.id);
+  }
+
+  /* Loose marks snap to the note they sit on; anything else becomes its own
+     card, so no scribble is left stranded in the margins. */
+  for (const e of nodes) {
+    if (used.has(e.id)) continue;
+    const b = bboxOf(e);
+    const cx = b.x + b.w / 2, cy = b.y + b.h / 2;
+    let best = null, bestD = Infinity;
+    for (const u of hosts) {
+      const hb = bboxOf(u.host);
+      const inside = cx >= hb.x - 8 && cx <= hb.x + hb.w + 8 && cy >= hb.y - 8 && cy <= hb.y + hb.h + 8;
+      const d = inside ? 0 : tidyPointRectDist(hb, cx, cy);
+      if (d < bestD) { bestD = d; best = u; }
+    }
+    if (best && bestD <= 28) best.els.push(e);
+    else units.push({ els: [e], kind: 'ink', host: null });
+  }
+
+  for (const u of units) {
+    u.box = unionBBox(u.els);
+    u.text = u.host ? elementPlainText(u.host) : u.els.map(elementPlainText).filter(Boolean).join(' — ');
+    u.placed = null;
+    u.oldBox = u.box ? { ...u.box } : null;
+  }
+
+  return { units: units.filter((u) => u.box), arrows };
+}
+
+/* Group notes by theme. Batched so a huge lecture page still fits a request. */
+async function tidyAskColumns(batch) {
+  const payload = batch.map((b) => ({ id: 'u' + b.index, text: b.text.slice(0, 160) }));
+  const prompt = `أنت منظّم لوحات دراسية خبير. بعد محاضرة سريعة وصلت إليك ملاحظات مبعثرة على لوح أبيض.\n` +
+    `صنّف هذه الملاحظات دلالياً إلى أعمدة موضوعية (مثل: المفاهيم الأساسية، القوانين والصيغ، الأسئلة، التعريفات، الخطوات، أمثلة).\n` +
+    `شروط إلزامية:\n` +
+    `- اكتب كل العناوين بالعربية الفصحى فقط، دون أي حرف لاتيني أو كلمة إنجليزية.\n` +
+    `- استخدم الأرقام العربية (٠١٢٣٤٥٦٧٨٩) عند الحاجة.\n` +
+    `- أنشئ من عمودين إلى خمسة أعمدة فقط، ولكل عمود عنوان قصير واضح.\n` +
+    `- ضع كل معرّف في عمود واحد فقط، ولا تكرّره ولا تختلق معرّفات جديدة.\n` +
+    `- استخدم المعرّفات المعطاة حرفياً كما هي.\n` +
+    `أعد JSON صالحاً فقط بهذه البنية:\n` +
+    `{"columns":[{"title":"عنوان عربي قصير","items":["المعرّف"]}]}\n` +
+    `الملاحظات:\n` + JSON.stringify(payload);
+  const res = await callAiChat({
+    prompt,
+    systemPrompt: 'أنت منظّم لوحات عربي. تكتب بالعربية الفصحى فقط، ولا تستخدم أي كلمة إنجليزية أو حرف لاتيني إطلاقاً.',
+    forceProvider: 'groq',
+    jsonMode: true,
+    maxTokens: 500,
+    label: 'Tidying board — رتّب اللوح…'
+  });
+  const json = parseAiJson(res.text);
+  const cols = json && Array.isArray(json.columns) ? json.columns : null;
+  if (!cols) throw new Error('no columns');
+  return cols;
+}
+
+function tidyColumnForText(text, columns) {
+  if (!columns.length) return null;
+  const norm = (s) => String(s || '').toLowerCase()
+    .replace(/[\u064B-\u0652\u0640]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const words = new Set(norm(text).split(' ').filter((w) => w.length > 2));
+  let best = null, bestScore = 0;
+  for (const col of columns) {
+    const pool = norm(col.title + ' ' + col.units.map((u) => u.text || '').join(' ')).split(' ').filter((w) => w.length > 2);
+    if (!pool.length || !words.size) continue;
+    let score = 0;
+    for (const w of words) if (pool.includes(w)) score += 1;
+    score /= Math.sqrt(pool.length);
+    if (score > bestScore) { bestScore = score; best = col; }
+  }
+  return bestScore > 0 ? best : null;
+}
+
+/* If the model is unreachable, group by shared words so the board still lands
+   in tidy Arabic-titled columns instead of one card per column. */
+function tidyLocalColumns(items) {
+  const norm = (s) => String(s || '').toLowerCase()
+    .replace(/[\u064B-\u0652\u0640]/g, '')
+    .replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+  const buckets = [];
+  for (const item of items) {
+    const words = new Set(norm(item.text).split(' ').filter((w) => w.length > 3));
+    let best = null, bestScore = 0;
+    for (const b of buckets) {
+      let score = 0;
+      for (const w of words) if (b.words.has(w)) score += 1;
+      if (score > bestScore) { bestScore = score; best = b; }
+    }
+    if (best && bestScore > 0) {
+      best.units.push(item.u);
+      words.forEach((w) => best.words.add(w));
+    } else if (buckets.length >= 5) {
+      buckets[buckets.length - 1].units.push(item.u);
+    } else {
+      buckets.push({ title: TIDY_TITLES[buckets.length % TIDY_TITLES.length], words, units: [item.u] });
+    }
+  }
+  return buckets.map((b) => ({ title: b.title, units: b.units }));
+}
+
+async function tidyClusterText(units) {
+  const withText = units
+    .map((u, index) => ({ u, index, text: String(u.text || '').trim() }))
+    .filter((x) => x.text.length >= 2);
+  const byIndex = new Map(withText.map((x) => [x.index, x]));
+  const assigned = new Set();
+  let columns = [];
+
+  for (let start = 0; start < withText.length; start += TIDY.batch) {
+    const batch = withText.slice(start, start + TIDY.batch);
+    let cols = null;
+    try { cols = await tidyAskColumns(batch); } catch (err) { console.warn('Tidy: AI clustering skipped', err); }
+    if (!cols) continue;
+    for (const raw of cols) {
+      if (!raw || typeof raw !== 'object') continue;
+      const items = Array.isArray(raw.items) ? raw.items : [];
+      if (!items.length) continue;
+      const title = tidyArabicText(raw.title, TIDY_TITLES[columns.length % TIDY_TITLES.length]);
+      let col = columns.find((c) => c.title === title);
+      if (!col) { col = { title, units: [] }; columns.push(col); }
+      for (const ref of items) {
+        const idx = Number(tidyDigits(ref).replace(/[^0-9]/g, ''));
+        const item = byIndex.get(idx);
+        if (!item || assigned.has(idx)) continue;
+        col.units.push(item.u);
+        assigned.add(idx);
+      }
+    }
+  }
+
+  if (!columns.length && withText.length) {
+    columns.push(...tidyLocalColumns(withText));
+    withText.forEach((item) => assigned.add(item.index));
+  }
+
+  for (const item of withText) {
+    if (assigned.has(item.index)) continue;
+    let col = tidyColumnForText(item.text, columns);
+    if (!col) {
+      if (columns.length >= 5) {
+        col = columns[columns.length - 1];
+      } else {
+        col = { title: TIDY_TITLES[columns.length % TIDY_TITLES.length], units: [] };
+        columns.push(col);
+      }
+    }
+    col.units.push(item.u);
+    assigned.add(item.index);
+  }
+
+  columns = columns.filter((c) => c.units.length);
+  return { columns, assigned };
+}
+
+function tidyNearestColumn(unit, columns) {
+  let best = columns[0], bestD = Infinity;
+  for (const col of columns) {
+    for (const other of col.units) {
+      const b = other.oldBox || other.box;
+      if (!b) continue;
+      const d = tidyRectGap(b, unit.box);
+      if (d < bestD) { bestD = d; best = col; }
+    }
+  }
+  return best;
+}
+
+function tidyNearestBucket(buckets, unit) {
+  let best = buckets[0], bestD = Infinity;
+  for (const b of buckets) {
+    const d = tidyRectGap(b.box, unit.box);
+    if (d < bestD) { bestD = d; best = b; }
+  }
+  return best;
+}
+
+/* Pure-ink boards: one vision pass names the regions, then marks fall into them. */
+async function tidyVisionRegions() {
+  try {
+    const capture = captureSelectionImage(elements.filter((e) => !e.locked && !e.tidy), { maxDim: 760, pad: 12 });
+    if (!capture) return [];
+    const prompt = 'حلّل صورة لوحة دراسية مكتوبة بخط اليد أو مليئة بالرسوم المبعثرة.\n' +
+      'اقترح من منطقتين إلى أربع مناطق موضوعية تغطي المحتوى، بعناوين عربية فصحى قصيرة.\n' +
+      'يُمنع استخدام أي حرف لاتيني أو كلمة إنجليزية، واستخدم الأرقام العربية عند الحاجة.\n' +
+      'أعد JSON صالحاً فقط:\n' +
+      '{"regions":[{"title":"عنوان عربي","x":0,"y":0,"w":100,"h":100}]}\n' +
+      'حيث x وy أعلى يسار المنطقة وw وh أبعادها كنسبة مئوية من الصورة (٠ إلى ١٠٠).';
+    const res = await callAiChat({
+      prompt,
+      systemPrompt: 'أنت محلّل بصري عربي. تصف لوحات الدراسة بالعربية الفصحى فقط، دون أي كلمة إنجليزية.',
+      imageBase64: capture.dataUrl,
+      jsonMode: true,
+      label: 'Reading the board — قراءة اللوح…'
+    });
+    const json = parseAiJson(res.text);
+    const regions = json && Array.isArray(json.regions) ? json.regions : [];
+    const bb = capture.bbox, pad = 12;
+    const spanW = bb.w + pad * 2, spanH = bb.h + pad * 2;
+    return regions.map((r, i) => {
+      const n = (v) => clamp(Number(tidyDigits(v)) || 0, 0, 100);
+      const rw = (n(r.w) / 100) * spanW;
+      const rh = (n(r.h) / 100) * spanH;
+      return {
+        title: tidyArabicText(r.title, TIDY_TITLES[i % TIDY_TITLES.length]),
+        box: {
+          x: bb.x - pad + (n(r.x) / 100) * spanW,
+          y: bb.y - pad + (n(r.y) / 100) * spanH,
+          w: Math.max(rw, 1),
+          h: Math.max(rh, 1)
+        }
+      };
+    }).filter((r) => r.box.w > 2 && r.box.h > 2);
+  } catch (err) {
+    console.warn('Tidy: vision pass skipped', err);
+    return [];
+  }
+}
+
+function tidyGeometricGroups(inkUnits) {
+  const sorted = inkUnits.slice().sort((a, b) => (a.box.x - b.box.x) || (a.box.y - b.box.y));
+  const count = sorted.length <= 2 ? 1 : clamp(Math.ceil(sorted.length / 5), 2, 4);
+  const per = Math.ceil(sorted.length / count);
+  const groups = [];
+  for (let i = 0; i < sorted.length; i += per) groups.push({ units: sorted.slice(i, i + per) });
+  return groups.filter((g) => g.units.length);
+}
+
+/* One uniform card width per column keeps the grid readable. */
+function tidyNormalizeUnit(unit) {
+  const host = unit.host;
+  if (!host) return;
+  const top = Math.min(host.y1, host.y2);
+  const left = Math.min(host.x1, host.x2);
+  if (host.type === 'note') {
+    host.size = TIDY.noteFont;
+    host.x1 = left;
+    host.x2 = left + TIDY.colW;
+    host.y1 = top;
+    const lines = tidyMeasureBlock(host.text, TIDY.noteFont, TIDY.colW - 24);
+    const chrome = host.at != null ? 34 : 14;
+    host.y2 = top + Math.max(96, chrome + lines.length * TIDY.noteFont * 1.38 + 18);
+  } else if (host.type === 'text') {
+    host.x1 = left;
+    host.x2 = left + TIDY.colW;
+    host.y1 = top;
+    host.size = clamp(host.size || 20, 16, 26);
+    const lines = tidyMeasureBlock(host.text, host.size, TIDY.colW - 8);
+    host.y2 = top + Math.max(host.size * 1.4, lines.length * host.size * 1.35 + 8);
+  }
+  invalidate(host);
+  unit.box = unionBBox(unit.els) || unit.box;
+}
+
+function tidyMoveUnit(unit, targetX, targetY, maxW, allowScale) {
+  const box = unit.box || unit.oldBox;
+  if (!box) return null;
+  let s = 1;
+  if (allowScale && box.w > maxW && box.w > 0) s = maxW / box.w;
+  const ax = box.x, ay = box.y;
+  for (const e of unit.els) {
+    if (e.locked) continue;
+    if (e.type === 'stroke') {
+      e.points = e.points.map((p) => ({ x: ax + (p.x - ax) * s, y: ay + (p.y - ay) * s }));
+      e.size = clamp(e.size * s, 0.6, 400);
+    } else {
+      e.x1 = ax + (e.x1 - ax) * s;
+      e.y1 = ay + (e.y1 - ay) * s;
+      e.x2 = ax + (e.x2 - ax) * s;
+      e.y2 = ay + (e.y2 - ay) * s;
+      if (e.type !== 'image' && Number.isFinite(e.size)) e.size = clamp(e.size * s, 0.6, 300);
+    }
+    invalidate(e);
+  }
+  const dx = targetX - ax, dy = targetY - ay;
+  for (const e of unit.els) {
+    if (e.locked) continue;
+    translateElement(e, dx, dy);
+  }
+  unit.placed = { x: targetX, y: targetY, w: box.w * s, h: box.h * s };
+  unit.box = unit.placed;
+  return unit.placed;
+}
+
+/* Keep a heading on one line by shrinking it, then trimming it if needed. */
+function tidyFitHeader(title) {
+  let text = String(title || '').trim();
+  let size = 21;
+  while (size > 13 && tidyMeasureBlock(text, size, TIDY.colW - 2).length > 1) size -= 1;
+  while (text.length > 3 && tidyMeasureBlock(text + '…', 13, TIDY.colW - 2).length > 1) text = text.slice(0, -1).trim();
+  return { text: text === title ? text : text + '…', size };
+}
+
+/* Columns run right-to-left, the way Arabic is read. */
+function tidyApplyLayout(columns, boardBox) {
+  const colW = TIDY.colW, gapX = TIDY.gapX, gapY = TIDY.gapY;
+  const totalW = columns.length * colW + Math.max(0, columns.length - 1) * gapX;
+  const left = boardBox.x + Math.max(0, (boardBox.w - totalW) / 2);
+  const top = boardBox.y;
+  const headers = [];
+  let maxBottom = top;
+
+  columns.forEach((col, ci) => {
+    const x = left + totalW - colW - ci * (colW + gapX);
+    const accent = TIDY.accents[ci % TIDY.accents.length];
+    const head = tidyFitHeader(col.title);
+    headers.push({
+      id: uid(), type: 'text', x1: x, y1: top, x2: x + colW, y2: top + 32,
+      text: head.text, color: accent, size: head.size, opacity: 1, tidy: true
+    });
+    headers.push({
+      id: uid(), type: 'line', x1: x, y1: top + 40, x2: x + colW, y2: top + 40,
+      color: accent, size: 2.4, opacity: 0.85, tidy: true
+    });
+
+    let y = top + TIDY.headerH;
+    for (const unit of col.units) {
+      if (!unit || !unit.els.length) continue;
+      const isText = !!unit.host;
+      let targetX = x + Math.max(0, (colW - (unit.box ? unit.box.w : 0)) / 2);
+      if (isText) {
+        /* Align the card itself, not the union box, so attached ink never
+           nudges a note out of its column. */
+        const hostLeft = Math.min(unit.host.x1, unit.host.x2);
+        targetX = x - (hostLeft - unit.box.x);
+      }
+      const placed = tidyMoveUnit(unit, targetX, y, colW, !isText);
+      if (!placed) continue;
+      y = placed.y + placed.h + gapY;
+    }
+    maxBottom = Math.max(maxBottom, y - gapY);
+  });
+
+  return { headers, box: { x: left, y: top, w: totalW, h: Math.max(0, maxBottom - top) } };
+}
+
+/* Remember what each arrow pointed at before the board moves. */
+function tidyAnchorArrows(arrows, units) {
+  return arrows.map((a) => ({
+    el: a,
+    ox1: a.x1, oy1: a.y1, ox2: a.x2, oy2: a.y2,
+    from: tidyNearestUnit(units, a.x1, a.y1, 110),
+    to: tidyNearestUnit(units, a.x2, a.y2, 110)
+  }));
+}
+function tidyNearestUnit(units, x, y, maxD) {
+  let best = null, bestD = Infinity;
+  for (const u of units) {
+    const b = u.oldBox || u.box;
+    if (!b) continue;
+    const d = tidyPointRectDist(b, x, y);
+    if (d < bestD) { bestD = d; best = u; }
+  }
+  return bestD <= maxD ? best : null;
+}
+function tidyStraighten(a) {
+  const dx = a.x2 - a.x1, dy = a.y2 - a.y1;
+  if (!dx && !dy) return;
+  const ang = Math.abs(Math.atan2(dy, dx) * 180 / Math.PI);
+  if (ang < 8 || ang > 172) a.y2 = a.y1;
+  else if (Math.abs(ang - 90) < 8) a.x2 = a.x1;
+}
+function tidyRouteArrows(anchors) {
+  const live = new Set(elements);
+  for (const anchor of anchors) {
+    const a = anchor.el;
+    if (!live.has(a) || a.locked) continue;
+    const from = anchor.from && anchor.from.placed ? anchor.from : null;
+    const to = anchor.to && anchor.to.placed ? anchor.to : null;
+    const gap = 6;
+    if (from && to && from !== to) {
+      const fb = from.placed, tb = to.placed;
+      const dcx = (tb.x + tb.w / 2) - (fb.x + fb.w / 2);
+      const dcy = (tb.y + tb.h / 2) - (fb.y + fb.h / 2);
+      if (Math.abs(dcx) >= Math.abs(dcy)) {
+        a.y1 = fb.y + fb.h / 2;
+        a.y2 = tb.y + tb.h / 2;
+        a.x1 = dcx >= 0 ? fb.x + fb.w + gap : fb.x - gap;
+        a.x2 = dcx >= 0 ? tb.x - gap : tb.x + tb.w + gap;
+      } else {
+        a.x1 = fb.x + fb.w / 2;
+        a.x2 = tb.x + tb.w / 2;
+        a.y1 = dcy >= 0 ? fb.y + fb.h + gap : fb.y - gap;
+        a.y2 = dcy >= 0 ? tb.y - gap : tb.y + tb.h + gap;
+      }
+    } else {
+      const unit = from || to;
+      if (unit && unit.oldBox) {
+        const s = unit.oldBox.w > 0 ? unit.placed.w / unit.oldBox.w : 1;
+        a.x1 = unit.placed.x + (anchor.ox1 - unit.oldBox.x) * s;
+        a.y1 = unit.placed.y + (anchor.oy1 - unit.oldBox.y) * s;
+        a.x2 = unit.placed.x + (anchor.ox2 - unit.oldBox.x) * s;
+        a.y2 = unit.placed.y + (anchor.oy2 - unit.oldBox.y) * s;
+        tidyStraighten(a);
+      }
+    }
+    invalidate(a);
+  }
+}
+
+/* Frame the fresh grid so the whole result is visible right after a tidy. */
+function tidyFrame(box) {
+  if (!box || !viewW || !viewH) return;
+  const pad = 56;
+  const fit = Math.min((viewW - pad) / Math.max(box.w, 1), (viewH - pad) / Math.max(box.h, 1));
+  cam.scale = clamp(fit, 0.2, 1.1);
+  cam.x = viewW / 2 - (box.x + box.w / 2) * cam.scale;
+  cam.y = viewH / 2 - (box.y + box.h / 2) * cam.scale;
+  queueScene();
+  updateZoomUi();
+}
+
+function setTidyBusy(on) {
+  tidyBusy = !!on;
+  for (const b of [el.tidyBtn, el.cardAiTidy]) {
+    if (!b) continue;
+    b.disabled = !!on;
+    b.setAttribute('aria-busy', String(!!on));
+  }
+  if (el.tidyBtn) el.tidyBtn.classList.toggle('is-working', !!on);
+}
+
+async function tidyBoardAi() {
+  if (tidyBusy) { toast('الترتيب قيد التنفيذ…'); return; }
+  const movable = elements.filter((e) => !e.locked && !e.tidy);
+  if (!movable.length) { toast('اللوح فارغ — اكتب ملاحظاتك أولاً ثم رتّبها'); return; }
+
+  setTidyBusy(true);
+  toast('جارٍ تحليل اللوحة وترتيبها دلالياً…');
+  try {
+    /* Reuse the previous heading line as the top edge so repeated runs don't
+       creep down (or up) the page. */
+    let boardBox = unionBBox(movable) || unionBBox(elements.filter((e) => !e.locked));
+    const prevHeaders = elements.filter((e) => e.tidy && e.type === 'text');
+    if (boardBox && prevHeaders.length) {
+      boardBox = { ...boardBox, y: Math.min(boardBox.y, Math.min(...prevHeaders.map((h) => h.y1))) };
+    }
+    const { units, arrows } = tidyBuildUnits();
+    if (!units.length && !arrows.length) { toast('لا يوجد محتوى قابل للترتيب على هذه الصفحة'); return; }
+
+    const anchors = tidyAnchorArrows(arrows, units);
+    const clustered = await tidyClusterText(units);
+    let columns = clustered.columns;
+
+    const inkUnits = units.filter((u) => !String(u.text || '').trim());
+    if (inkUnits.length) {
+      if (columns.length) {
+        for (const u of inkUnits) tidyNearestColumn(u, columns).units.push(u);
+      } else {
+        const regions = await tidyVisionRegions();
+        if (regions.length) {
+          const buckets = regions.map((r) => ({ title: r.title, box: r.box, units: [] }));
+          for (const u of inkUnits) {
+            const cx = u.box.x + u.box.w / 2, cy = u.box.y + u.box.h / 2;
+            const inside = buckets.find((b) => cx >= b.box.x && cx <= b.box.x + b.box.w && cy >= b.box.y && cy <= b.box.y + b.box.h);
+            (inside || tidyNearestBucket(buckets, u)).units.push(u);
+          }
+          for (const b of buckets) if (b.units.length) columns.push({ title: b.title, units: b.units });
+        } else {
+          const groups = tidyGeometricGroups(inkUnits);
+          groups.forEach((g, i) => columns.push({ title: TIDY_TITLES[i % TIDY_TITLES.length], units: g.units }));
+        }
+      }
+    }
+
+    columns = columns.filter((c) => c.units.length);
+    if (!columns.length) throw new Error('empty');
+
+    /* Drop anything the user deleted while the model was thinking. */
+    const live = new Set(elements);
+    for (const col of columns) col.units = col.units.filter((u) => u.els.every((e) => live.has(e)));
+    columns = columns.filter((c) => c.units.length);
+    if (!columns.length) throw new Error('empty');
+
+    pushHistory();
+    columns.forEach((c) => c.units.forEach(tidyNormalizeUnit));
+    elements = elements.filter((e) => !e.tidy);
+    const layout = tidyApplyLayout(columns, boardBox || unionBBox(movable));
+    elements.push(...layout.headers);
+    tidyRouteArrows(anchors);
+
+    selected.clear();
+    bboxCache = new WeakMap();
+    queueScene();
+    scheduleSave();
+    syncEmptyNote();
+    syncSelectionUi();
+    pulseAssist(layout.box);
+    toast('تم ترتيب اللوح — ' + columns.length + ' أعمدة و' + units.length + ' عنصراً');
+    requestAnimationFrame(() => { try { tidyFrame(layout.box); } catch { /* view only */ } });
+  } catch (err) {
+    console.error('Tidy Board failed', err);
+    toast('تعذّر ترتيب اللوح — تحقّق من الاتصال وحاول مرة أخرى');
+  } finally {
+    setTidyBusy(false);
+  }
+}
+
+/* 5. Auto-Flashcard & Quiz Generator (Groq ultra-fast text generator) */
+async function generateFlashcardsQuiz(source = 'selection') {
+  let text = '';
+  const picked = (source === 'selection' && selected.size > 0)
+    ? elements.filter((e) => selected.has(e.id))
+    : elements;
+
+  text = picked.map(elementPlainText).filter(Boolean).join('\n').trim();
+  const videoContext = state.bgTitle || (state.videoUrl ? 'Current YouTube study session' : '');
+
+  if (!text && !videoContext) {
+    toast('Add some notes or video study content first');
+    return;
+  }
+
+  toast('AI generating study flashcards...');
+  try {
+    const prompt = `Create 3 to 4 high-yield study flashcards / quiz questions from this content:
+Notes:
+${text.slice(0, 1500)}
+${videoContext ? ('Context: ' + videoContext) : ''}
+Return strictly JSON array:
+[
+  {
+    "question": "Question?",
+    "answer": "Answer explanation."
+  }
+]`;
+    // Groq generates this text in ~300ms!
+    const res = await callAiChat({ prompt, forceProvider: 'groq', jsonMode: true, label: 'Building flashcards…' });
+    const json = parseAiJson(res.text);
+    if (!Array.isArray(json) || !json.length) throw new Error('Could not parse flashcards');
+
+    currentQuizCards = json;
+    currentQuizIndex = 0;
+    currentQuizFlipped = false;
+    renderQuizCard();
+    openModal(el.aiQuizModal, el.quizFlipBtn);
+  } catch (err) {
+    console.error(err);
+    toast('Flashcards: ' + (err.message || 'Try again'));
+  }
+}
+
+function renderQuizCard() {
+  if (!currentQuizCards.length) return;
+  const card = currentQuizCards[currentQuizIndex];
+  if (el.quizCounter) el.quizCounter.textContent = `Card ${currentQuizIndex + 1} of ${currentQuizCards.length}`;
+  if (el.quizSideLabel) el.quizSideLabel.textContent = currentQuizFlipped ? 'Answer' : 'Question';
+  if (el.quizContent) el.quizContent.textContent = currentQuizFlipped ? card.answer : card.question;
+  if (el.quizFlipBtn) el.quizFlipBtn.innerHTML = currentQuizFlipped
+    ? '<svg class="icon sm"><use href="#i-undo"/></svg>Show question'
+    : '<svg class="icon sm"><use href="#i-redo"/></svg>Click to reveal answer';
+  if (el.quizPrevBtn) el.quizPrevBtn.disabled = currentQuizIndex === 0;
+  if (el.quizNextBtn) el.quizNextBtn.disabled = currentQuizIndex === currentQuizCards.length - 1;
+}
+
+function placeFlashcardsOnBoard() {
+  if (!currentQuizCards.length) return;
+  pushHistory();
+  const bb = selectionBBox() || unionBBox(elements) || { x: 100, y: 100, w: 200, h: 200 };
+  const startX = bb.x + bb.w + 36;
+  let startY = bb.y;
+  const colors = ['#fff7d6', '#e2f0d9', '#e8f0fe', '#fce8e6', '#f3e8fd'];
+
+  currentQuizCards.forEach((c, idx) => {
+    const color = colors[idx % colors.length];
+    elements.push({
+      id: uid(),
+      type: 'note',
+      x1: startX,
+      y1: startY,
+      x2: startX + 240,
+      y2: startY + 140,
+      text: `[Q] ${c.question}\n\n[A] ${c.answer}`,
+      color,
+      size: 13,
+      opacity: 1
+    });
+    startY += 160;
+  });
+
+  queueScene();
+  scheduleSave();
+  syncEmptyNote();
+  closeModal(el.aiQuizModal);
+  toast(`${currentQuizCards.length} flashcards placed on board`);
+}
+
+/* 6. Visual Selection Explainer (Live Realtime Streaming) */
+async function openAiExplainer(defaultPrompt) {
+  let capture = captureSelectionImage();
+  if (!capture && elements.length) {
+    capture = captureSelectionImage(elements.slice(-10));
+  }
+  if (!capture) {
+    toast('Select an area or draw something on the board first');
+    return;
+  }
+
+  currentExplainerCapture = capture;
+  pulseAssist(capture.bbox);
+  if (el.aiExplainerThumb) el.aiExplainerThumb.src = capture.dataUrl;
+  if (el.aiExplainerDrawer) el.aiExplainerDrawer.hidden = false;
+  if (el.aiExplainerResponse) el.aiExplainerResponse.hidden = true;
+  if (el.aiExplainerStatus) el.aiExplainerStatus.hidden = true;
+  syncAiProviderUi();
+
+  if (defaultPrompt) {
+    runAiExplainer(defaultPrompt);
+  } else {
+    setTimeout(() => { try { el.aiExplainerInput?.focus(); } catch { /* ok */ } }, 60);
+  }
+}
+
+async function runAiExplainer(query) {
+  const q = (query || (el.aiExplainerInput ? el.aiExplainerInput.value : '')).trim();
+  if (!q) return;
+  if (!currentExplainerCapture) return;
+
+  if (el.aiExplainerStatus) el.aiExplainerStatus.hidden = false;
+  if (el.aiExplainerResponse) el.aiExplainerResponse.hidden = false;
+  if (el.aiExplainerText) el.aiExplainerText.textContent = '';
+
+  try {
+    const textContext = currentExplainerCapture.targets.map(elementPlainText).filter(Boolean).join('\n');
+    const prompt = `You are an expert whiteboard tutor.
+User question: "${q}"
+Context: ${textContext || 'Handwritten drawing'}
+Explain directly, clearly, and concisely with bullet points.`;
+
+    if (el.aiExplainerText) el.aiExplainerText.classList.add('is-streaming');
+    // Realtime streaming: text streams onto screen live as tokens generate!
+    await callAiChat({
+      prompt,
+      imageBase64: currentExplainerCapture.dataUrl,
+      maxTokens: 650,
+      label: 'Explaining selection…',
+      onStreamChunk: (full) => {
+        if (el.aiExplainerText) el.aiExplainerText.textContent = full;
+      }
+    });
+    if (el.aiExplainerText) el.aiExplainerText.classList.remove('is-streaming');
+  } catch (err) {
+    console.error(err);
+    if (el.aiExplainerText) el.aiExplainerText.textContent = 'Error: ' + (err.message || 'Could not reach AI provider');
+  } finally {
+    if (el.aiExplainerStatus) el.aiExplainerStatus.hidden = true;
+  }
+}
+
+function pinExplainerAsNote() {
+  const text = el.aiExplainerText?.textContent?.trim();
+  if (!text || !currentExplainerCapture) return;
+  pushHistory();
+  const bb = currentExplainerCapture.bbox;
+  elements.push({
+    id: uid(),
+    type: 'note',
+    x1: bb.x + bb.w + 20,
+    y1: bb.y,
+    x2: bb.x + bb.w + 260,
+    y2: bb.y + Math.min(260, 60 + text.split('\n').length * 20),
+    text: text.slice(0, 3000),
+    color: '#e8f0fe',
+    size: 13,
+    opacity: 1
+  });
+  queueScene();
+  scheduleSave();
+  syncEmptyNote();
+  if (el.aiExplainerDrawer) el.aiExplainerDrawer.hidden = true;
+  toast('Explanation pinned as sticky note');
+}
+
+
 function setLetterAssist(on, opts = {}) {
   state.letterAssist = !!on;
   cancelHandwritingAssist();
@@ -3678,7 +5882,7 @@ function isHex(c) { return typeof c === 'string' && /^#[\da-f]{6}$/i.test(c); }
 
 /* ------------------------------------------------------------ persistence */
 function safeColor(c) { return isHex(c) ? c : '#26211a'; }
-function sanitizeElement(raw) {
+function sanitizeElementBase(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const num = (v) => typeof v === 'number' && Number.isFinite(v);
   if (raw.type === 'stroke') {
@@ -3762,6 +5966,16 @@ function sanitizeElement(raw) {
     };
   }
   return null;
+}
+function sanitizeElement(raw) {
+  const clean = sanitizeElementBase(raw);
+  if (!clean) return null;
+  if (raw && typeof raw === 'object') {
+    if (typeof raw.groupId === 'string' && raw.groupId.length <= 64) clean.groupId = raw.groupId;
+    if (raw.locked === true) clean.locked = true;
+    if (raw.tidy === true) clean.tidy = true;
+  }
+  return clean;
 }
 
 /* The board now edits ONE page at a time. Global UI prefs (layout, ratios,
@@ -3925,6 +6139,7 @@ function snapshot() { return JSON.stringify(elements); }
 function pushHistory() {
   undoStack.push(snapshot());
   if (undoStack.length > 60) undoStack.shift();
+  trimUndoStack();
   redoStack = [];
   syncHistoryUi();
 }
@@ -3933,6 +6148,7 @@ function commitTx(changed) {
   if (!changed || txSnapshot === null) { txSnapshot = null; return; }
   undoStack.push(txSnapshot);
   if (undoStack.length > 60) undoStack.shift();
+  trimUndoStack();
   redoStack = [];
   txSnapshot = null;
   syncHistoryUi();
@@ -3947,6 +6163,7 @@ function undo() {
 function redo() {
   if (!redoStack.length) return;
   undoStack.push(snapshot());
+  trimUndoStack();
   elements = JSON.parse(redoStack.pop());
   afterHistory();
 }
@@ -4237,7 +6454,10 @@ function hitTestElement(target, p, tol) {
 function topElementAt(p) {
   const tol = 9 / cam.scale;
   for (let i = elements.length - 1; i >= 0; i--) {
-    if (hitTestElement(elements[i], p, tol)) return elements[i];
+    const e = elements[i];
+    const bb = bboxOf(e);
+    if (p.x < bb.x - tol || p.x > bb.x + bb.w + tol || p.y < bb.y - tol || p.y > bb.y + bb.h + tol) continue;
+    if (hitTestElement(e, p, tol)) return e;
   }
   return null;
 }
@@ -4439,6 +6659,9 @@ function wrapLines(ctx, text, maxW) {
   return out;
 }
 function textPad(e) { return e.type === 'note' ? 12 : 4; }
+/* Arabic script (plus its presentation forms) — used to lay text out right-to-left. */
+const ARABIC_RE = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
+function hasArabicText(s) { return ARABIC_RE.test(String(s == null ? '' : s)); }
 function drawTextElement(ctx, e) {
   const x = Math.min(e.x1, e.x2), y = Math.min(e.y1, e.y2);
   const w = Math.max(1, Math.abs(e.x2 - e.x1));
@@ -4447,9 +6670,12 @@ function drawTextElement(ctx, e) {
   ctx.textBaseline = 'top';
   ctx.fillStyle = e.color;
   const pad = textPad(e);
+  const rtl = hasArabicText(e.text);
   const lines = wrapLines(ctx, e.text, Math.max(1, w - pad * 2));
   const lh = fs * 1.35;
-  for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], x + pad, y + pad + i * lh);
+  if (rtl) { ctx.direction = 'rtl'; ctx.textAlign = 'right'; }
+  const tx = rtl ? x + w - pad : x + pad;
+  for (let i = 0; i < lines.length; i++) ctx.fillText(lines[i], tx, y + pad + i * lh);
 }
 function drawNoteElement(ctx, e) {
   const x = Math.min(e.x1, e.x2), y = Math.min(e.y1, e.y2);
@@ -4506,16 +6732,19 @@ function drawNoteElement(ctx, e) {
   ctx.font = '500 ' + fs + 'px ' + UI_FONT;
   ctx.textBaseline = 'top';
   ctx.fillStyle = '#3a3020';
+  const rtl = hasArabicText(e.text);
+  if (rtl) { ctx.direction = 'rtl'; ctx.textAlign = 'right'; }
   const lines = wrapLines(ctx, e.text, Math.max(1, w - 24));
   const lh = fs * 1.38;
   const maxLines = Math.max(1, Math.floor((h - pad - 10) / lh));
+  const tx = rtl ? x + w - 12 : x + 12;
   for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
     let line = lines[i];
     if (i === maxLines - 1 && lines.length > maxLines && ctx.measureText(line).width > w - 34) {
       while (line.length > 1 && ctx.measureText(line + '…').width > w - 24) line = line.slice(0, -1);
       line += '…';
     }
-    ctx.fillText(line, x + 12, y + pad + i * lh);
+    ctx.fillText(line, tx, y + pad + i * lh);
   }
   ctx.restore();
 }
@@ -5414,11 +7643,16 @@ function startSelect(e, p, s) {
         return;
       }
     }
+    const groupIds = hit.groupId
+      ? elements.filter((x) => x.groupId === hit.groupId).map((x) => x.id)
+      : [hit.id];
+    const already = groupIds.every((id) => selected.has(id));
     if (e.shiftKey) {
-      if (selected.has(hit.id)) selected.delete(hit.id); else selected.add(hit.id);
-    } else if (!selected.has(hit.id)) {
+      if (already) for (const id of groupIds) selected.delete(id);
+      else for (const id of groupIds) selected.add(id);
+    } else if (!already) {
       selected.clear();
-      selected.add(hit.id);
+      for (const id of groupIds) selected.add(id);
     }
     syncSelectionUi();
     queueOverlay();
@@ -5427,14 +7661,14 @@ function startSelect(e, p, s) {
       const targets = new Map();
       for (const id of selected) {
         const target = elements.find((x) => x.id === id);
-        if (target) {
+        if (target && !target.locked) {
           originals.set(id, JSON.parse(JSON.stringify(target)));
           targets.set(id, target);
         }
       }
       gesture = { type: 'move', start: p, moved: false, originals, targets, origBox: selectionBBox() };
       beginTx();
-      el.overlay.style.cursor = 'move';
+      el.overlay.style.cursor = originals.size ? 'move' : 'not-allowed';
     }
     return;
   }
@@ -5460,6 +7694,7 @@ function cursorForHandle(name, box) {
 function startResize(handle) {
   const target = elements.find((x) => selected.has(x.id));
   if (!target) return;
+  if (target.locked) { toast('This mark is locked — unlock it first'); return; }
   gesture = {
     type: 'resize',
     handle,
@@ -5789,6 +8024,7 @@ function eraseAlong(a, b) {
   let changed = false;
   const next = [];
   for (const target of elements) {
+    if (target.locked) { next.push(target); continue; }
     if (target.type === 'stroke') {
       const pts = target.points;
       let erased = false;
@@ -6178,6 +8414,17 @@ function syncSelectionUi() {
   el.frontBtn.disabled = !has;
   el.backBtn.disabled = !has;
   el.deleteSelBtn.disabled = !has;
+  if (el.arrangeBtn) el.arrangeBtn.disabled = !has;
+  if (el.lockBtn) {
+    const picked = has ? elements.filter((e) => selected.has(e.id)) : [];
+    const allLocked = picked.length > 0 && picked.every((e) => e.locked);
+    el.lockBtn.disabled = !has;
+    el.lockBtn.setAttribute('aria-pressed', String(allLocked));
+    el.lockBtn.setAttribute('aria-label', allLocked ? 'Unlock selection' : 'Lock selection');
+    el.lockBtn.title = allLocked ? 'Unlock selection' : 'Lock selection · ⌘⇧L';
+    const use = el.lockBtn.querySelector('use');
+    if (use) use.setAttribute('href', allLocked ? '#i-unlock' : '#i-lock');
+  }
 }
 function syncHistoryUi() {
   el.undoBtn.disabled = undoStack.length === 0;
@@ -6194,6 +8441,7 @@ function duplicateSelection() {
     if (!selected.has(item.id)) continue;
     const copy = JSON.parse(JSON.stringify(item));
     copy.id = uid();
+    copy.locked = false;
     if (copy.type === 'stroke') copy.points = copy.points.map((p) => ({ x: p.x + offset, y: p.y + offset }));
     else { copy.x1 += offset; copy.y1 += offset; copy.x2 += offset; copy.y2 += offset; }
     copies.push(copy);
@@ -6226,8 +8474,10 @@ function sendToBack() {
 }
 function deleteSelection() {
   if (!selected.size) return;
+  const removable = elements.filter((e) => selected.has(e.id) && !e.locked);
+  if (!removable.length) { toast('Locked marks cannot be deleted — unlock them first'); return; }
   pushHistory();
-  elements = elements.filter((e) => !selected.has(e.id));
+  elements = elements.filter((e) => !(selected.has(e.id) && !e.locked));
   selected.clear();
   bboxCache = new WeakMap();
   syncSelectionUi();
@@ -6237,9 +8487,10 @@ function deleteSelection() {
 }
 function nudgeSelection(worldStepX, worldStepY) {
   if (!selected.size) return;
+  if (!elements.some((e) => selected.has(e.id) && !e.locked)) { toast('Locked marks cannot move — unlock them first'); return; }
   pushHistory();
   for (const item of elements) {
-    if (!selected.has(item.id)) continue;
+    if (!selected.has(item.id) || item.locked) continue;
     if (item.type === 'stroke') item.points = item.points.map((p) => ({ x: p.x + worldStepX, y: p.y + worldStepY }));
     else { item.x1 += worldStepX; item.y1 += worldStepY; item.x2 += worldStepX; item.y2 += worldStepY; }
     invalidate(item);
@@ -6530,7 +8781,19 @@ document.addEventListener('fullscreenchange', () => {
 });
 
 /* ------------------------------------------------------------ youtube */
-const YT_API_KEY = 'AIzaSyCpd_lSaO40nSBF4X7YInc6z6AKk8S7gI0';
+/* Search keys are public in any client. Prefer a key the user supplies, then
+   a deploy-time override, then the bundled fallback. Restrict the key in the
+   Google Cloud console to the YouTube Data API and to this site's referrers. */
+const YT_API_KEY = (() => {
+  try {
+    const own = localStorage.getItem('margin.ytkey');
+    if (own && own.trim().length > 20) return own.trim();
+  } catch { /* ok */ }
+  if (window.MARGIN_CONFIG && typeof window.MARGIN_CONFIG.ytApiKey === 'string' && window.MARGIN_CONFIG.ytApiKey.trim()) {
+    return window.MARGIN_CONFIG.ytApiKey.trim();
+  }
+  return 'AIzaSyCpd_lSaO40nSBF4X7YInc6z6AKk8S7gI0';
+})();
 
 /* Two independent players can run at once: the main video and an
    audio-only background stream. Each is a controller with its own
@@ -7417,6 +9680,7 @@ window.addEventListener('keydown', (e) => {
     return;
   }
   if (key === 'i' && e.shiftKey) { e.preventDefault(); tidyPage(); return; }
+  if (key === 'b' && e.shiftKey) { e.preventDefault(); tidyBoardAi(); return; }
   if (e.key === '?') { e.preventDefault(); openModal(el.shortcutsModal, el.keysDone); return; }
   switch (key) {
     case 'v': setTool('select'); break;
@@ -7439,7 +9703,9 @@ window.addEventListener('keydown', (e) => {
     case 's': toggleSnap(); break;
     case '4': setTool('hand'); break;
     case 'i': setInkAssist(!state.inkAssist); break;
-    case 'j': setLetterAssist(!state.letterAssist); break;
+    case 'j': openAiStudio(); break;
+    case 'm': if (e.shiftKey) { solveMathSelection(); } break;
+    case 'e': if (e.shiftKey) { openAiExplainer(); } break;
     case 'g': cycleGrid(); break;
     case 'f': toggleFullscreen(); break;
     case '0': resetView(); break;
@@ -7594,7 +9860,7 @@ el.stage.addEventListener('drop', (e) => {
 });
 el.fitBtn.addEventListener('click', fitContent);
 el.assistBtn.addEventListener('click', () => setInkAssist(!state.inkAssist));
-el.aiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
+el.aiBtn.addEventListener('click', openAiStudio);
 el.feelBtn.addEventListener('click', openWritingPanel);
 el.writingAiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
 el.feelRange.addEventListener('input', () => {
@@ -7667,12 +9933,20 @@ for (const item of $$('#moreMenu [data-action]')) {
   item.addEventListener('click', () => {
     const action = item.dataset.action;
     closeMoreMenu();
-    if (action === 'fit') fitContent();
+    if (action === 'aistudio') openAiStudio();
+    else if (action === 'fit') fitContent();
     else if (action === 'grid') cycleGrid();
     else if (action === 'fullscreen') toggleFullscreen();
     else if (action === 'sound') openSound();
     else if (action === 'shortcuts') openModal(el.shortcutsModal, el.keysDone);
     else if (action === 'writing') openWritingPanel();
+    else if (action === 'apikey') setYoutubeKey();
+    else if (action === 'outline') openOutline();
+    else if (action === 'contrast') setHighContrast(document.body.dataset.contrast !== 'high');
+    else if (action === 'collab') openShare();
+    else if (action === 'pdf') exportPagesPdf([activePageId], state.title || 'Page');
+    else if (action === 'pdfsub') exportSubjectPdf();
+    else if (action === 'notes') exportNotesMarkdown();
     else if (action === 'png') exportPagePng();
     else if (action === 'svg') exportPageSvg();
     else if (action === 'clear') requestClear();
@@ -7685,6 +9959,59 @@ for (const layer of $$('.modal-layer')) {
     if (e.target.closest('[data-close]')) closeModal(layer);
   });
 }
+// AI Tools Button Listeners
+if (el.aiMathBtn) el.aiMathBtn.addEventListener('click', solveMathSelection);
+if (el.aiDrawBtn) el.aiDrawBtn.addEventListener('click', autoDrawSelection);
+if (el.aiOcrBtn) el.aiOcrBtn.addEventListener('click', ocrHandwritingSelection);
+if (el.aiDiagramBtn) el.aiDiagramBtn.addEventListener('click', beautifyDiagramSelection);
+if (el.aiQuizBtn) el.aiQuizBtn.addEventListener('click', () => generateFlashcardsQuiz('selection'));
+if (el.aiExplainBtn) el.aiExplainBtn.addEventListener('click', () => openAiExplainer());
+
+if (el.aiStudioClose) el.aiStudioClose.addEventListener('click', () => closeModal(el.aiStudioModal));
+if (el.aiStudioDone) el.aiStudioDone.addEventListener('click', () => closeModal(el.aiStudioModal));
+if (el.cardAiMath) el.cardAiMath.addEventListener('click', () => { closeModal(el.aiStudioModal); solveMathSelection(); });
+if (el.cardAiDraw) el.cardAiDraw.addEventListener('click', () => { closeModal(el.aiStudioModal); autoDrawSelection(); });
+if (el.cardAiOcr) el.cardAiOcr.addEventListener('click', () => { closeModal(el.aiStudioModal); ocrHandwritingSelection(); });
+if (el.cardAiDiagram) el.cardAiDiagram.addEventListener('click', () => { closeModal(el.aiStudioModal); beautifyDiagramSelection(); });
+if (el.cardAiQuiz) el.cardAiQuiz.addEventListener('click', () => { closeModal(el.aiStudioModal); generateFlashcardsQuiz('all'); });
+if (el.cardAiExplain) el.cardAiExplain.addEventListener('click', () => { closeModal(el.aiStudioModal); openAiExplainer(); });
+if (el.cardAiTidy) el.cardAiTidy.addEventListener('click', () => { closeModal(el.aiStudioModal); tidyBoardAi(); });
+if (el.tidyBtn) el.tidyBtn.addEventListener('click', tidyBoardAi);
+
+if (el.studioAiAssistBtn) el.studioAiAssistBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
+
+if (el.aiProviderSeg) {
+  for (const b of el.aiProviderSeg.querySelectorAll('button[data-provider]')) {
+    b.addEventListener('click', () => {
+      AI_CONFIG.activeProvider = b.dataset.provider;
+      syncAiProviderUi();
+      toast('Active AI Provider: ' + AI_CONFIG.providers[b.dataset.provider]?.name);
+    });
+  }
+}
+
+// Explainer drawer controls
+if (el.aiExplainerClose) el.aiExplainerClose.addEventListener('click', () => { el.aiExplainerDrawer.hidden = true; });
+if (el.aiExplainerSend) el.aiExplainerSend.addEventListener('click', () => runAiExplainer());
+if (el.aiExplainerInput) el.aiExplainerInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); runAiExplainer(); } });
+for (const chip of document.querySelectorAll('.ai-chip[data-q]')) {
+  chip.addEventListener('click', () => runAiExplainer(chip.dataset.q));
+}
+if (el.aiExplainerCopy) el.aiExplainerCopy.addEventListener('click', () => {
+  const t = el.aiExplainerText?.textContent || '';
+  navigator.clipboard.writeText(t).then(() => toast('Copied to clipboard')).catch(() => {});
+});
+if (el.aiExplainerPin) el.aiExplainerPin.addEventListener('click', pinExplainerAsNote);
+
+// Quiz modal controls
+if (el.aiQuizClose) el.aiQuizClose.addEventListener('click', () => closeModal(el.aiQuizModal));
+if (el.quizDoneBtn) el.quizDoneBtn.addEventListener('click', () => closeModal(el.aiQuizModal));
+if (el.quizFlipBtn) el.quizFlipBtn.addEventListener('click', () => { currentQuizFlipped = !currentQuizFlipped; renderQuizCard(); });
+if (el.quizCard) el.quizCard.addEventListener('click', () => { currentQuizFlipped = !currentQuizFlipped; renderQuizCard(); });
+if (el.quizPrevBtn) el.quizPrevBtn.addEventListener('click', () => { if (currentQuizIndex > 0) { currentQuizIndex--; currentQuizFlipped = false; renderQuizCard(); } });
+if (el.quizNextBtn) el.quizNextBtn.addEventListener('click', () => { if (currentQuizIndex < currentQuizCards.length - 1) { currentQuizIndex++; currentQuizFlipped = false; renderQuizCard(); } });
+if (el.quizPinAllBtn) el.quizPinAllBtn.addEventListener('click', placeFlashcardsOnBoard);
+
 el.clearCancel.addEventListener('click', () => closeModal(el.clearModal));
 el.clearConfirm.addEventListener('click', confirmClear);
 el.shortcutsClose.addEventListener('click', () => closeModal(el.shortcutsModal));
@@ -7878,6 +10205,7 @@ async function createPage(subjectId, opts = {}) {
   sub.pageIds.push(pid);
   await writeVerified(PAGE_PREFIX + pid, emptyContent());
   await saveWorkspace();
+  schedulePageStripRefresh(0);
   if (!opts.silent) toast('Page created');
   return pid;
 }
@@ -7891,6 +10219,7 @@ async function renamePage(id, name) {
   meta.updatedAt = Date.now();
   if (activePageId === id) { state.title = clean; el.boardTitle.value = clean; }
   await saveWorkspace();
+  schedulePageStripRefresh(0);
   if (el.dashboard.hidden) scheduleSave();
 }
 
@@ -7911,6 +10240,8 @@ async function deletePage(id) {
   delete workspace.pages[id];
   if (activePageId === id) { activePageId = null; }
   await saveWorkspace();
+  stripCache.delete(id);
+  schedulePageStripRefresh(0);
   renderDashboard();
   toast('Page moved to trash');
 }
@@ -7930,7 +10261,9 @@ async function duplicatePage(id) {
   if (refs) await writeVerified('pagerefs:' + nid, refs);
   await saveWorkspace();
   renderDashboard();
+  schedulePageStripRefresh(0);
   toast('Page duplicated');
+  return nid;
 }
 
 async function snapshotActiveIfPage(id) {
@@ -7949,6 +10282,7 @@ async function reorderPage(subjectId, fromId, toId) {
   sub.pageIds.splice(from, 1);
   sub.pageIds.splice(to, 0, fromId);
   await saveWorkspace();
+  schedulePageStripRefresh(0);
   renderPages();
 }
 
@@ -8741,6 +11075,7 @@ async function importWorkspace() {
 /* ---- open / close the board ---- */
 async function openPage(pageId) {
   if (!workspace.pages[pageId]) return;
+  if (share.active && activePageId && activePageId !== pageId) stopShare({ silent: true });
   /* flush and snapshot whatever page is currently open before switching */
   if (activePageId && activePageId !== pageId) {
     try { await saveNow(); } catch { /* ok */ }
@@ -8784,10 +11119,12 @@ async function openPage(pageId) {
     setSaveState('error');
     toast('Opened read-only — this page could not be read safely, so it will not be overwritten. Try the version history or export a backup.');
   }
+  schedulePageStripRefresh(0);
 }
 
 function closeBoard() {
   if (!el.dashboard) return;
+  if (share.active) stopShare({ silent: true });
   cancelHandwritingAssist();
   aiRecent = [];
   const closing = activePageId;
@@ -9396,6 +11733,1157 @@ async function restoreFromCloud() {
 
 window.addEventListener('beforeunload', () => { try { if (saveTimer) saveNow(); savePrefs(); } catch { /* ok */ } });
 
+/* ============================================================ PAGE FILMSTRIP
+   A document is a sequence of pages, not one endless sheet. The strip keeps
+   that sequence visible and one click away, with real thumbnails rather than
+   abstract page numbers. */
+let stripTimer = 0;
+let stripSeq = 0;
+const stripCache = new Map();
+
+function pageSubjectForStrip() {
+  const byPage = activePageId ? findPageSubject(activePageId) : null;
+  return byPage || findSubject(activeSubjectId) || null;
+}
+
+function schedulePageStripRefresh(delay = 140) {
+  clearTimeout(stripTimer);
+  stripTimer = setTimeout(() => { refreshPageStrip().catch(() => {}); }, delay);
+}
+
+async function thumbFor(id, at) {
+  const cached = stripCache.get(id);
+  if (cached && cached.at === at) return cached.svg;
+  let content;
+  try { content = await readContent(id); } catch { return null; }
+  const svg = pageThumbSvg(id, content.elements);
+  stripCache.set(id, { at, svg });
+  return svg;
+}
+
+async function refreshPageStrip() {
+  if (!workspace) { el.pageStrip.hidden = true; return; }
+  const seq = ++stripSeq;
+  const sub = pageSubjectForStrip();
+  if (!sub || !sub.pageIds.length) {
+    el.pageStrip.hidden = true;
+    el.pagePillText.textContent = 'No pages';
+    return;
+  }
+  const ids = sub.pageIds.slice();
+  const meta = ids.map((id) => workspace.pages[id] || { updatedAt: 0 });
+  const svgs = await Promise.all(ids.map((id, i) => thumbFor(id, meta[i].updatedAt || 0)));
+  if (seq !== stripSeq) return;
+  el.pageStrip.hidden = false;
+  el.pageList.innerHTML = '';
+  const idx = Math.max(0, ids.indexOf(activePageId));
+  ids.forEach((id, i) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'pstrip-page';
+    b.draggable = true;
+    b.dataset.id = id;
+    b.setAttribute('role', 'tab');
+    b.setAttribute('aria-selected', String(id === activePageId));
+    b.setAttribute('aria-current', String(id === activePageId));
+    b.title = (workspace.pages[id] && workspace.pages[id].title) || ('Page ' + (i + 1));
+    b.setAttribute('aria-label', b.title + ', page ' + (i + 1) + ' of ' + ids.length);
+    if (svgs[i]) {
+      const clone = svgs[i].cloneNode(true);
+      b.appendChild(clone);
+    } else {
+      const empty = document.createElement('span');
+      empty.className = 'pstrip-empty';
+      empty.innerHTML = '<svg class="icon"><use href="#i-page"/></svg>';
+      b.appendChild(empty);
+    }
+    const num = document.createElement('span');
+    num.className = 'pstrip-num';
+    num.textContent = String(i + 1);
+    b.appendChild(num);
+    b.addEventListener('click', () => {
+      if (id !== activePageId) openPage(id).catch(() => toast('Could not open that page'));
+    });
+    b.addEventListener('dragstart', (e) => {
+      e.dataTransfer.setData('text/page-strip', id);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    b.addEventListener('dragover', (e) => {
+      if (e.dataTransfer.types.includes('text/page-strip')) { e.preventDefault(); b.classList.add('is-drop'); }
+    });
+    b.addEventListener('dragleave', () => b.classList.remove('is-drop'));
+    b.addEventListener('drop', (e) => {
+      b.classList.remove('is-drop');
+      const from = e.dataTransfer.getData('text/page-strip');
+      if (!from || from === id) return;
+      e.preventDefault();
+      reorderPage(sub.id, from, id).then(() => { schedulePageStripRefresh(0); renderPages(); }).catch(() => {});
+    });
+    el.pageList.appendChild(b);
+  });
+  el.pageCount.textContent = (idx + 1) + ' / ' + ids.length;
+  el.pagePillText.textContent = 'Page ' + (idx + 1) + ' of ' + ids.length;
+  el.pagePill.title = sub.name + ' — open the page outline';
+  el.pagePrev.disabled = idx <= 0;
+  el.pageNext.disabled = idx >= ids.length - 1;
+  const cur = el.pageList.querySelector('[aria-current="true"]');
+  if (cur) { try { cur.scrollIntoView({ block: 'nearest', inline: 'nearest' }); } catch { /* ok */ } }
+}
+
+async function stepPage(delta) {
+  const sub = pageSubjectForStrip();
+  if (!sub || !sub.pageIds.length) return;
+  let i = sub.pageIds.indexOf(activePageId);
+  if (i < 0) i = 0;
+  const next = clamp(i + delta, 0, sub.pageIds.length - 1);
+  if (next === i) return;
+  await openPage(sub.pageIds[next]);
+}
+
+async function addPageFromStrip() {
+  const sub = pageSubjectForStrip();
+  if (!sub) { toast('Pick a subject first'); return; }
+  const pid = await createPage(sub.id, { silent: true });
+  if (!pid) return;
+  await openPage(pid);
+  renderPages();
+  toast('Page added');
+}
+
+async function deleteActivePage() {
+  const id = activePageId;
+  if (!id) return;
+  const sub = findPageSubject(id);
+  const idx = sub ? sub.pageIds.indexOf(id) : -1;
+  await deletePage(id);
+  if (activePageId) return;
+  await refreshPageStrip();
+  const next = sub && (sub.pageIds[idx] || sub.pageIds[idx - 1]);
+  if (next) await openPage(next);
+  else closeBoard();
+}
+
+function openPageActions() {
+  if (!activePageId) { toast('Open a page first'); return; }
+  const sub = pageSubjectForStrip();
+  const i = sub ? sub.pageIds.indexOf(activePageId) : -1;
+  el.pageModalSub.textContent = (state.title || 'Untitled page') + (i >= 0 ? ' · page ' + (i + 1) + ' of ' + sub.pageIds.length : '');
+  openModal(el.pageModal, el.pageModal.querySelector('[data-page-action="rename"]'));
+}
+
+el.pageModal.addEventListener('click', async (e) => {
+  if (e.target.closest('[data-page-close]')) { closeModal(el.pageModal); return; }
+  const btn = e.target.closest('[data-page-action]');
+  if (!btn) return;
+  const action = btn.dataset.pageAction;
+  const id = activePageId;
+  if (!id) return;
+  const sub = pageSubjectForStrip();
+  closeModal(el.pageModal);
+  if (action === 'rename') promptRenamePage(id);
+  else if (action === 'duplicate') {
+    const nid = await duplicatePage(id);
+    if (nid) { await openPage(nid); renderPages(); toast('Page duplicated'); }
+  } else if (action === 'left' || action === 'right') {
+    if (!sub) return;
+    const i = sub.pageIds.indexOf(id);
+    const j = action === 'left' ? i - 1 : i + 1;
+    if (j < 0 || j >= sub.pageIds.length) { toast('Already at the ' + (action === 'left' ? 'start' : 'end')); return; }
+    await reorderPage(sub.id, id, sub.pageIds[j]);
+    renderPages();
+    schedulePageStripRefresh(0);
+  } else if (action === 'pdf') exportPagesPdf([id], state.title || 'Page');
+  else if (action === 'delete') deleteActivePage().catch(() => {});
+});
+
+el.pagePill.addEventListener('click', () => openOutline());
+el.pageMenuBtn.addEventListener('click', openPageActions);
+el.pageAdd.addEventListener('click', () => addPageFromStrip());
+el.pagePrev.addEventListener('click', () => stepPage(-1));
+el.pageNext.addEventListener('click', () => stepPage(1));
+
+/* ============================================================ OUTLINE */
+function elementPlainText(e) {
+  if (!e) return '';
+  if (e.type === 'text' || e.type === 'note') return (e.text || '').replace(/\s+/g, ' ').trim();
+  if (e.type === 'callout') return (e.label || '').trim();
+  return '';
+}
+
+function openOutline() {
+  if (!activePageId) { toast('Open a page first'); return; }
+  const items = elements
+    .filter((e) => ['text', 'note', 'callout', 'image'].includes(e.type))
+    .map((e) => ({ e, b: bboxOf(e) }))
+    .sort((a, b) => (a.b.y - b.b.y) || (a.b.x - b.b.x));
+  el.outlineList.innerHTML = '';
+  el.outlineSub.textContent = items.length
+    ? items.length + ' item' + (items.length === 1 ? '' : 's') + ' in reading order'
+    : 'No text, notes, or images on this page yet.';
+  if (!items.length) {
+    const p = document.createElement('div');
+    p.className = 'palette-empty';
+    p.textContent = 'Add a text box or a note and it will appear here.';
+    el.outlineList.appendChild(p);
+  }
+  for (const item of items) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'outline-row';
+    const kind = document.createElement('span');
+    kind.className = 'o-type';
+    kind.textContent = item.e.type === 'note' && item.e.at != null ? 'moment' : item.e.type;
+    const text = document.createElement('span');
+    text.className = 'o-text';
+    text.textContent = elementPlainText(item.e) || (item.e.type === 'image' ? 'Image' : 'Empty ' + item.e.type);
+    b.append(kind, text);
+    b.addEventListener('click', () => {
+      closeModal(el.outlineModal);
+      selected.clear();
+      selected.add(item.e.id);
+      setTool('select');
+      syncSelectionUi();
+      const bb = bboxOf(item.e);
+      const pad = 120;
+      cam.scale = clamp(Math.min((viewW - pad) / Math.max(bb.w, 1), (viewH - pad) / Math.max(bb.h, 1)), 0.3, 1.8);
+      cam.x = viewW / 2 - (bb.x + bb.w / 2) * cam.scale;
+      cam.y = viewH / 2 - (bb.y + bb.h / 2) * cam.scale;
+      queueScene();
+      updateZoomUi();
+      scheduleSave();
+    });
+    el.outlineList.appendChild(b);
+  }
+  openModal(el.outlineModal, el.outlineModal.querySelector('.modal-close'));
+}
+el.outlineModal.querySelector('[data-outline-close]').addEventListener('click', () => closeModal(el.outlineModal));
+
+/* ============================================================ PALETTE */
+let paletteItems = [];
+let paletteActive = 0;
+let paletteIndex = null;
+let paletteIndexing = false;
+
+function paletteCommands() {
+  return [
+    { title: 'AI: Solve Math', sub: 'Calculate handwritten formula or equation', icon: 'i-math', run: solveMathSelection },
+    { title: 'AI: Auto-Draw Icon', sub: 'Convert rough sketch to clean vector icon', icon: 'i-wand', run: autoDrawSelection },
+    { title: 'AI: Handwriting to Text', sub: 'Transcribe ink to editable typed text', icon: 'i-text-ai', run: ocrHandwritingSelection },
+    { title: 'AI: Beautify Diagram', sub: 'Align flowchart boxes and orthogonal arrows', icon: 'i-flowchart', run: beautifyDiagramSelection },
+    { title: 'AI: Flashcards & Quiz', sub: 'Generate study review cards from board', icon: 'i-quiz', run: () => generateFlashcardsQuiz('selection') },
+    { title: 'AI: Explain Selection', sub: 'Ask questions & explain diagrams', icon: 'i-spark', run: () => openAiExplainer() },
+    { title: 'Tidy Board · رتّب اللوح', sub: 'تجميع دلالي للملاحظات في أعمدة عربية مرتّبة', icon: 'i-broom', run: () => tidyBoardAi() },
+    { title: 'AI Studio & Providers', sub: 'Switch between Groq and OpenRouter models', icon: 'i-spark', run: openAiStudio },
+    { title: 'New page', sub: 'Add a page to this subject', icon: 'i-plus', run: () => addPageFromStrip() },
+    { title: 'Duplicate page', sub: 'Copy this page beside itself', icon: 'i-duplicate', run: async () => { const n = await duplicatePage(activePageId); if (n) { await openPage(n); renderPages(); } } },
+    { title: 'Rename page', sub: 'Give this page a better title', icon: 'i-pencil', run: () => promptRenamePage(activePageId) },
+    { title: 'Page outline', sub: 'Jump to text, notes, and images', icon: 'i-pages', run: () => openOutline() },
+    { title: 'Export page as PDF', sub: 'Print or save this page', icon: 'i-print', run: () => exportPagesPdf([activePageId], state.title || 'Page') },
+    { title: 'Export subject as PDF', sub: 'Every page, in order', icon: 'i-book', run: () => exportSubjectPdf() },
+    { title: 'Export notes as Markdown', sub: 'Text and notes from this subject', icon: 'i-note', run: () => exportNotesMarkdown() },
+    { title: 'Share live session', sub: 'Edit the same page together', icon: 'i-share', run: () => openShare() },
+    { title: 'High contrast', sub: 'Boost line and text contrast', icon: 'i-eye', run: () => setHighContrast(document.body.dataset.contrast !== 'high') },
+    { title: 'Fit to content', sub: 'Zoom so everything is visible', icon: 'i-fit', run: () => fitContent() },
+    { title: 'Reset zoom', sub: 'Back to 100%', icon: 'i-compress', run: () => resetView() },
+    { title: 'Cycle background', sub: 'Dots, grid, blank', icon: 'i-dots', run: () => cycleGrid() },
+    { title: 'Undo', sub: 'Step back one change', icon: 'i-undo', run: () => undo() },
+    { title: 'Redo', sub: 'Step forward again', icon: 'i-redo', run: () => redo() },
+    { title: 'Keyboard shortcuts', sub: 'Every key in one place', icon: 'i-help', run: () => openModal(el.shortcutsModal, el.keysDone) },
+    { title: 'All subjects & pages', sub: 'Back to the dashboard', icon: 'i-book', run: () => closeBoard() }
+  ];
+}
+
+async function buildPaletteIndex(force) {
+  if (paletteIndexing) return;
+  if (!force && paletteIndex && Date.now() - paletteIndex.at < 4000) return;
+  paletteIndexing = true;
+  const out = [];
+  try {
+    for (const sub of (workspace ? workspace.subjects : [])) {
+      for (const pid of sub.pageIds) {
+        let content;
+        try { content = await readContent(pid); } catch { continue; }
+        const text = content.elements.map(elementPlainText).filter(Boolean).join('  ·  ').slice(0, 4000);
+        out.push({ id: pid, subject: sub.name, title: (workspace.pages[pid] && workspace.pages[pid].title) || 'Untitled page', text });
+      }
+    }
+    paletteIndex = { at: Date.now(), items: out };
+  } finally {
+    paletteIndexing = false;
+  }
+}
+
+function paletteSnippet(text, q) {
+  if (!text) return '';
+  const at = text.toLowerCase().indexOf(q.toLowerCase());
+  if (at < 0) return text.slice(0, 100);
+  const start = Math.max(0, at - 36);
+  return (start ? '…' : '') + text.slice(start, start + 110).trim() + (text.length > start + 110 ? '…' : '');
+}
+
+function renderPalette(query) {
+  const q = (query || '').trim();
+  const low = q.toLowerCase();
+  el.paletteResults.innerHTML = '';
+  paletteItems = [];
+  paletteActive = 0;
+  const addGroup = (name) => {
+    const g = document.createElement('div');
+    g.className = 'palette-group';
+    g.textContent = name;
+    el.paletteResults.appendChild(g);
+  };
+  const addItem = (title, sub, icon, run) => {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.className = 'palette-item';
+    b.setAttribute('role', 'option');
+    b.dataset.index = String(paletteItems.length);
+    b.innerHTML = '<svg class="icon"><use href="#' + icon + '"/></svg><span class="palette-main"><span class="palette-title"></span><span class="palette-sub"></span></span>';
+    b.querySelector('.palette-title').textContent = title;
+    b.querySelector('.palette-sub').textContent = sub || '';
+    b.addEventListener('mousemove', () => { paletteActive = Number(b.dataset.index); syncPaletteActive(); });
+    b.addEventListener('click', () => runPaletteItem(Number(b.dataset.index)));
+    el.paletteResults.appendChild(b);
+    paletteItems.push({ title, sub, run });
+  };
+
+  const cmds = paletteCommands().filter((c) => !low || (c.title + ' ' + c.sub).toLowerCase().includes(low));
+  if (cmds.length) {
+    addGroup('Commands');
+    for (const c of cmds.slice(0, 8)) addItem(c.title, c.sub, c.icon, c.run);
+  }
+  if (q && paletteIndex) {
+    const hits = paletteIndex.items.filter((p) => (p.title + ' ' + p.subject).toLowerCase().includes(low)).slice(0, 6);
+    if (hits.length) {
+      addGroup('Pages');
+      for (const p of hits) addItem(p.title, p.subject, 'i-page', () => openPage(p.id).catch(() => {}));
+    }
+    const textHits = paletteIndex.items
+      .filter((p) => !hits.includes(p) && p.text && p.text.toLowerCase().includes(low))
+      .slice(0, 6);
+    if (textHits.length) {
+      addGroup('Text in pages');
+      for (const p of textHits) addItem(p.title, paletteSnippet(p.text, q), 'i-text', () => openPage(p.id).catch(() => {}));
+    }
+  } else if (!q && paletteIndex) {
+    const recent = paletteIndex.items.slice(0, 5);
+    if (recent.length) {
+      addGroup('Pages');
+      for (const p of recent) addItem(p.title, p.subject, 'i-page', () => openPage(p.id).catch(() => {}));
+    }
+  }
+  if (!paletteItems.length) {
+    const empty = document.createElement('div');
+    empty.className = 'palette-empty';
+    empty.textContent = q ? 'Nothing matches “' + q + '”.' : 'Start typing to search pages and commands.';
+    el.paletteResults.appendChild(empty);
+  }
+  syncPaletteActive();
+}
+
+function syncPaletteActive() {
+  const nodes = el.paletteResults.querySelectorAll('.palette-item');
+  nodes.forEach((n) => n.classList.toggle('is-active', Number(n.dataset.index) === paletteActive));
+  const active = el.paletteResults.querySelector('.palette-item.is-active');
+  if (active) { try { active.scrollIntoView({ block: 'nearest' }); } catch { /* ok */ } }
+}
+
+function runPaletteItem(i) {
+  const item = paletteItems[i];
+  if (!item) return;
+  closePalette();
+  try { item.run(); } catch { toast('That action could not run'); }
+}
+
+function openPalette() {
+  el.paletteLayer.hidden = false;
+  el.paletteInput.value = '';
+  renderPalette('');
+  setTimeout(() => { try { el.paletteInput.focus(); } catch { /* ok */ } }, 0);
+  buildPaletteIndex(false).then(() => { if (!el.paletteLayer.hidden) renderPalette(el.paletteInput.value); });
+}
+function closePalette() {
+  el.paletteLayer.hidden = true;
+}
+el.paletteLayer.addEventListener('click', (e) => { if (e.target === el.paletteLayer) closePalette(); });
+el.paletteInput.addEventListener('input', () => renderPalette(el.paletteInput.value));
+el.paletteInput.addEventListener('keydown', (e) => {
+  const n = paletteItems.length;
+  if (e.key === 'ArrowDown' && n) { e.preventDefault(); paletteActive = (paletteActive + 1) % n; syncPaletteActive(); }
+  else if (e.key === 'ArrowUp' && n) { e.preventDefault(); paletteActive = (paletteActive - 1 + n) % n; syncPaletteActive(); }
+  else if (e.key === 'Enter' && n) { e.preventDefault(); runPaletteItem(paletteActive); }
+  else if (e.key === 'Escape') { e.preventDefault(); closePalette(); }
+});
+el.paletteBtn.addEventListener('click', openPalette);
+
+/* ============================================================ CLIPBOARD + ARRANGE */
+let elementClipboard = [];
+function copySelection() {
+  if (!selected.size) { toast('Select something first'); return; }
+  elementClipboard = elements.filter((e) => selected.has(e.id)).map((e) => JSON.parse(JSON.stringify(e)));
+  toast(elementClipboard.length + ' mark' + (elementClipboard.length === 1 ? '' : 's') + ' copied');
+}
+function cutSelection() {
+  if (!selected.size) return;
+  copySelection();
+  deleteSelection();
+}
+function pasteClipboard() {
+  if (!elementClipboard.length) { toast('Nothing copied yet'); return; }
+  pushHistory();
+  const offset = 18 / cam.scale;
+  const groups = new Map();
+  const copies = elementClipboard.map((src) => {
+    const e = JSON.parse(JSON.stringify(src));
+    e.id = uid();
+    e.locked = false;
+    if (e.groupId) {
+      if (!groups.has(e.groupId)) groups.set(e.groupId, uid());
+      e.groupId = groups.get(e.groupId);
+    }
+    if (e.type === 'stroke') e.points = e.points.map((p) => ({ x: p.x + offset, y: p.y + offset }));
+    else { e.x1 += offset; e.y1 += offset; e.x2 += offset; e.y2 += offset; }
+    return e;
+  });
+  elements.push(...copies);
+  selected.clear();
+  for (const c of copies) selected.add(c.id);
+  bboxCache = new WeakMap();
+  setTool('select');
+  syncSelectionUi();
+  queueScene();
+  syncEmptyNote();
+  scheduleSave();
+  toast(copies.length + ' pasted');
+}
+
+function translateElement(e, dx, dy) {
+  if (!dx && !dy) return;
+  if (e.type === 'stroke') e.points = e.points.map((p) => ({ x: p.x + dx, y: p.y + dy }));
+  else { e.x1 += dx; e.y1 += dy; e.x2 += dx; e.y2 += dy; }
+  invalidate(e);
+}
+
+function arrangeList() {
+  return elements.filter((e) => selected.has(e.id) && !e.locked);
+}
+
+function alignSelection(mode) {
+  const list = arrangeList();
+  if (list.length < 2) { toast('Select at least two unlocked marks'); return; }
+  pushHistory();
+  const boxes = list.map((e) => ({ e, b: bboxOf(e) }));
+  const minX = Math.min(...boxes.map((o) => o.b.x));
+  const minY = Math.min(...boxes.map((o) => o.b.y));
+  const maxX = Math.max(...boxes.map((o) => o.b.x + o.b.w));
+  const maxY = Math.max(...boxes.map((o) => o.b.y + o.b.h));
+  for (const { e, b } of boxes) {
+    let dx = 0, dy = 0;
+    if (mode === 'left') dx = minX - b.x;
+    else if (mode === 'center') dx = (minX + maxX) / 2 - (b.x + b.w / 2);
+    else if (mode === 'right') dx = maxX - (b.x + b.w);
+    else if (mode === 'top') dy = minY - b.y;
+    else if (mode === 'middle') dy = (minY + maxY) / 2 - (b.y + b.h / 2);
+    else if (mode === 'bottom') dy = maxY - (b.y + b.h);
+    translateElement(e, dx, dy);
+  }
+  queueScene();
+  scheduleSave();
+  toast('Aligned');
+}
+
+function distributeSelection(axis) {
+  const boxes = arrangeList().map((e) => ({ e, b: bboxOf(e) }));
+  if (boxes.length < 3) { toast('Select at least three unlocked marks'); return; }
+  pushHistory();
+  if (axis === 'x') {
+    boxes.sort((a, b) => (a.b.x + a.b.w / 2) - (b.b.x + b.b.w / 2));
+    const first = boxes[0].b.x + boxes[0].b.w / 2;
+    const last = boxes[boxes.length - 1].b.x + boxes[boxes.length - 1].b.w / 2;
+    const step = (last - first) / (boxes.length - 1);
+    boxes.forEach((o, i) => translateElement(o.e, first + step * i - (o.b.x + o.b.w / 2), 0));
+  } else {
+    boxes.sort((a, b) => (a.b.y + a.b.h / 2) - (b.b.y + b.b.h / 2));
+    const first = boxes[0].b.y + boxes[0].b.h / 2;
+    const last = boxes[boxes.length - 1].b.y + boxes[boxes.length - 1].b.h / 2;
+    const step = (last - first) / (boxes.length - 1);
+    boxes.forEach((o, i) => translateElement(o.e, 0, first + step * i - (o.b.y + o.b.h / 2)));
+  }
+  queueScene();
+  scheduleSave();
+  toast('Distributed');
+}
+
+function groupSelection() {
+  const list = arrangeList();
+  if (list.length < 2) { toast('Select at least two unlocked marks'); return; }
+  pushHistory();
+  const gid = uid();
+  for (const e of list) e.groupId = gid;
+  scheduleSave();
+  syncSelectionUi();
+  toast(list.length + ' marks grouped');
+}
+function ungroupSelection() {
+  const list = arrangeList();
+  if (!list.length) return;
+  pushHistory();
+  for (const e of list) delete e.groupId;
+  scheduleSave();
+  syncSelectionUi();
+  toast('Ungrouped');
+}
+
+function lockSelection() {
+  if (!selected.size) return;
+  const list = elements.filter((e) => selected.has(e.id));
+  const turnOn = !list.every((e) => e.locked);
+  pushHistory();
+  for (const e of list) {
+    if (turnOn) e.locked = true;
+    else delete e.locked;
+  }
+  scheduleSave();
+  syncSelectionUi();
+  toast(turnOn ? 'Locked in place' : 'Unlocked');
+}
+
+function openArrangeMenu() {
+  closeArrangeMenu();
+  if (!selected.size) return;
+  const menu = document.createElement('div');
+  menu.className = 'menu';
+  menu.style.cssText = 'position:fixed;z-index:85;min-width:196px;max-height:calc(100vh - 24px);overflow:auto';
+  menu.innerHTML =
+    '<button data-arrange="left"><svg class="icon"><use href="#i-align"/></svg>Align left</button>' +
+    '<button data-arrange="center"><svg class="icon"><use href="#i-align"/></svg>Align center</button>' +
+    '<button data-arrange="right"><svg class="icon"><use href="#i-align"/></svg>Align right</button>' +
+    '<button data-arrange="top"><svg class="icon"><use href="#i-align"/></svg>Align top</button>' +
+    '<button data-arrange="middle"><svg class="icon"><use href="#i-align"/></svg>Align middle</button>' +
+    '<button data-arrange="bottom"><svg class="icon"><use href="#i-align"/></svg>Align bottom</button>' +
+    '<div class="menu-sep"></div>' +
+    '<button data-arrange="distx">Distribute horizontally</button>' +
+    '<button data-arrange="disty">Distribute vertically</button>' +
+    '<div class="menu-sep"></div>' +
+    '<button data-arrange="group"><svg class="icon"><use href="#i-group"/></svg>Group</button>' +
+    '<button data-arrange="ungroup">Ungroup</button>' +
+    '<button data-arrange="lock">' + (elements.filter((e) => selected.has(e.id)).every((e) => e.locked) ? 'Unlock' : 'Lock in place') + '</button>';
+  document.body.appendChild(menu);
+  const rect = el.arrangeBtn.getBoundingClientRect();
+  const w = menu.offsetWidth, h = menu.offsetHeight;
+  menu.style.left = clamp(rect.left, 8, window.innerWidth - w - 8) + 'px';
+  menu.style.top = (rect.bottom + 6 + h > window.innerHeight ? Math.max(8, rect.top - h - 6) : rect.bottom + 6) + 'px';
+  menu.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-arrange]');
+    if (!b) return;
+    closeArrangeMenu();
+    const kind = b.dataset.arrange;
+    if (['left', 'center', 'right', 'top', 'middle', 'bottom'].includes(kind)) alignSelection(kind);
+    else if (kind === 'distx') distributeSelection('x');
+    else if (kind === 'disty') distributeSelection('y');
+    else if (kind === 'group') groupSelection();
+    else if (kind === 'ungroup') ungroupSelection();
+    else if (kind === 'lock') lockSelection();
+  });
+  arrangeMenuEl = menu;
+}
+let arrangeMenuEl = null;
+function closeArrangeMenu() {
+  if (arrangeMenuEl) { arrangeMenuEl.remove(); arrangeMenuEl = null; }
+}
+document.addEventListener('pointerdown', (e) => {
+  if (!arrangeMenuEl) return;
+  if (arrangeMenuEl.contains(e.target) || e.target.closest('#arrangeBtn')) return;
+  closeArrangeMenu();
+}, true);
+el.arrangeBtn.addEventListener('click', openArrangeMenu);
+el.lockBtn.addEventListener('click', lockSelection);
+
+/* ============================================================ EXPORT: PDF + NOTES */
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+async function preloadImagesFor(list) {
+  await Promise.all(list.filter((e) => e.type === 'image').map((e) => new Promise((res) => {
+    const img = imageFor(e.src);
+    if (img.complete && img.naturalWidth) res();
+    else { img.onload = res; img.onerror = res; }
+  })));
+}
+
+async function pageImageDataUrl(list) {
+  if (!list.length) return null;
+  await preloadImagesFor(list);
+  const bb = unionBBox(list);
+  if (!bb) return null;
+  const pad = 28;
+  const w = Math.max(1, bb.w + pad * 2);
+  const h = Math.max(1, bb.h + pad * 2);
+  const scale = Math.min(2, 1700 / Math.max(w, h));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(w * scale));
+  canvas.height = Math.max(1, Math.round(h * scale));
+  const c = canvas.getContext('2d');
+  c.fillStyle = PAPER;
+  c.fillRect(0, 0, canvas.width, canvas.height);
+  c.setTransform(scale, 0, 0, scale, (-bb.x + pad) * scale, (-bb.y + pad) * scale);
+  for (const e of list) drawElement(c, e);
+  return canvas.toDataURL('image/jpeg', 0.94);
+}
+
+async function exportPagesPdf(pageIds, label) {
+  const ids = (pageIds || []).filter(Boolean);
+  if (!ids.length) { toast('Open a page first'); return; }
+  toast(ids.length === 1 ? 'Preparing PDF…' : 'Preparing ' + ids.length + ' pages…');
+  const pages = [];
+  for (const id of ids) {
+    const meta = (workspace && workspace.pages[id]) || { title: 'Untitled page' };
+    let content = { elements: [] };
+    try { content = await readContent(id); } catch { /* keep blank */ }
+    const src = await pageImageDataUrl(content.elements);
+    pages.push({ title: meta.title || 'Untitled page', src });
+  }
+  const frame = document.createElement('iframe');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+  document.body.appendChild(frame);
+  const total = pages.length;
+  const body = pages.map((p, i) =>
+    '<section class="pg">' +
+      (p.src ? '<img src="' + p.src + '" alt="">' : '<div class="blank"></div>') +
+      '<div class="foot"><span>' + escapeHtml(p.title) + '</span><span>' + (i + 1) + ' / ' + total + '</span></div>' +
+    '</section>').join('');
+  const html = '<!doctype html><html><head><meta charset="utf-8"><title>' + escapeHtml(label || 'Margin pages') + '</title>' +
+    '<style>@page{size:A4;margin:12mm}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}' +
+    'body{font-family:"Instrument Sans","Segoe UI",sans-serif;color:#2d2418}' +
+    '.pg{position:relative;page-break-after:always;height:273mm;display:flex;align-items:center;justify-content:center}' +
+    '.pg:last-child{page-break-after:auto}.pg img{max-width:100%;max-height:258mm;object-fit:contain}' +
+    '.pg .blank{width:100%;height:258mm;border:1px dashed #e2dccf}' +
+    '.foot{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:12px;' +
+    'font-size:9pt;color:#8a7d69;border-top:1px solid #ece6da;padding-top:4px}' +
+    '.foot span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+    '</style></head><body>' + body + '</body></html>';
+  const done = () => {
+    try { frame.contentWindow.focus(); frame.contentWindow.print(); } catch { toast('The browser blocked printing'); }
+    setTimeout(() => frame.remove(), 60000);
+  };
+  frame.onload = () => setTimeout(() => {
+    const imgs = Array.from(frame.contentDocument.images || []);
+    Promise.all(imgs.map((img) => img.decode ? img.decode().catch(() => {}) : Promise.resolve())).then(done);
+  }, 80);
+  frame.srcdoc = html;
+  toast('Choose “Save as PDF” in the print dialog');
+}
+
+function exportSubjectPdf() {
+  const sub = pageSubjectForStrip();
+  if (!sub || !sub.pageIds.length) { toast('This subject has no pages'); return; }
+  exportPagesPdf(sub.pageIds, sub.name);
+}
+
+async function exportNotesMarkdown() {
+  const sub = pageSubjectForStrip();
+  if (!sub) { toast('Pick a subject first'); return; }
+  const lines = ['# ' + sub.name, ''];
+  let count = 0;
+  for (const pid of sub.pageIds) {
+    const meta = (workspace && workspace.pages[pid]) || { title: 'Untitled page' };
+    let content;
+    try { content = await readContent(pid); } catch { continue; }
+    const items = content.elements
+      .filter((e) => e.type === 'text' || e.type === 'note' || (e.type === 'callout' && e.label))
+      .map((e) => ({ e, b: bboxOf(e) }))
+      .sort((a, b) => (a.b.y - b.b.y) || (a.b.x - b.b.x));
+    if (!items.length) continue;
+    count++;
+    lines.push('## ' + meta.title, '');
+    for (const { e } of items) {
+      const text = (e.text || e.label || '').trim();
+      if (!text) continue;
+      if (e.type === 'note' && e.at != null) lines.push('- **[' + fmtClock(e.at) + ']** ' + text.replace(/\n/g, ' '));
+      else if (e.type === 'note') lines.push('- ' + text.replace(/\n/g, ' '));
+      else lines.push(text, '');
+    }
+    lines.push('');
+  }
+  if (!count) { toast('No notes or text to export'); return; }
+  const slug = sub.name.trim().replace(/[^\w\-]+/g, '-').replace(/^-+|-+$/g, '') || 'notes';
+  downloadBlob(slug + '-notes-' + new Date().toISOString().slice(0, 10) + '.md', new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' }));
+  toast('Notes exported as Markdown');
+}
+
+/* ============================================================ ACCESSIBILITY + PWA */
+function setHighContrast(on) {
+  const value = on ? 'high' : 'none';
+  document.body.dataset.contrast = value;
+  try { localStorage.setItem('margin.contrast', value); } catch { /* ok */ }
+  if (el.menuContrast) el.menuContrast.textContent = on ? 'Standard contrast' : 'High contrast';
+  toast(on ? 'High contrast on' : 'Standard contrast');
+}
+try {
+  if (localStorage.getItem('margin.contrast') === 'high') {
+    document.body.dataset.contrast = 'high';
+    if (el.menuContrast) el.menuContrast.textContent = 'Standard contrast';
+  }
+} catch { /* ok */ }
+
+async function setYoutubeKey() {
+  let current = '';
+  try { current = localStorage.getItem('margin.ytkey') || ''; } catch { /* ok */ }
+  const value = await promptDialog({
+    eyebrow: 'YouTube search',
+    title: 'Use your own Data API key',
+    sub: 'Search stays optional. A key is public in the page, so restrict it to the YouTube Data API and to this site’s referrer in Google Cloud. Leave blank to use the bundled key.',
+    value: current,
+    confirm: 'Save key',
+    placeholder: 'AIza…'
+  });
+  if (value == null) return;
+  try {
+    const clean = value.trim();
+    if (clean) localStorage.setItem('margin.ytkey', clean);
+    else localStorage.removeItem('margin.ytkey');
+    toast(clean ? 'Key saved — reloading to apply it' : 'Bundled key restored — reloading');
+    setTimeout(() => location.reload(), 700);
+  } catch {
+    toast('This browser would not store the key');
+  }
+}
+
+function syncOfflineBanner() {
+  if (!el.offlineBanner) return;
+  el.offlineBanner.classList.toggle('is-on', !navigator.onLine);
+}
+window.addEventListener('online', syncOfflineBanner);
+window.addEventListener('offline', syncOfflineBanner);
+syncOfflineBanner();
+
+if ('serviceWorker' in navigator && /^https?:$/.test(location.protocol)) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => { /* offline caching is optional */ });
+  });
+}
+
+/* ============================================================ LIVE SHARE
+   One Firestore document per room holds the page. No accounts, no server of
+   our own. Room codes are random; security rules must be scoped to the
+   marginSessions collection in the Firebase console. */
+const SHARE_COLLECTION = 'marginSessions';
+let share = {
+  active: false, code: null, peerId: null, name: '', color: '',
+  unsub: null, peerUnsub: null, applying: false,
+  pushTimer: 0, presenceTimer: 0, lastRev: 0, lastClient: '',
+  prevRemoteIds: new Set(), localDeleted: new Map(), lastAppliedJson: '',
+  peers: new Map()
+};
+
+function shareDb() {
+  if (fbDb) return fbDb;
+  if (typeof window.firebase === 'undefined' || typeof firebase.firestore !== 'function') return null;
+  try {
+    fbApp = (firebase.apps && firebase.apps.length) ? firebase.app() : firebase.initializeApp(FB_CONFIG);
+    fbDb = firebase.firestore();
+    return fbDb;
+  } catch { return null; }
+}
+
+function peerColor(id) {
+  const palette = ['#e0724d', '#5b8def', '#4fae7a', '#c968c9', '#d8a13a', '#47b6c9'];
+  let h = 0;
+  for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+function makeShareCode() {
+  const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let out = '';
+  const arr = new Uint32Array(6);
+  try { crypto.getRandomValues(arr); } catch { for (let i = 0; i < 6; i++) arr[i] = Math.random() * 1e9; }
+  for (let i = 0; i < 6; i++) out += alphabet[arr[i] % alphabet.length];
+  return out;
+}
+
+function shareLink(code) {
+  try {
+    const u = new URL(location.href);
+    u.searchParams.set('share', code);
+    u.hash = '';
+    return u.toString();
+  } catch { return code; }
+}
+
+function syncShareUi() {
+  if (!el.shareModal) return;
+  const on = share.active;
+  el.shareCode.textContent = share.code ? share.code.split('').join(' ') : '— — — —';
+  el.shareStatus.classList.toggle('is-live', on);
+  el.shareStatusText.textContent = on
+    ? 'Live · ' + (share.peers.size ? share.peers.size + ' collaborator' + (share.peers.size === 1 ? '' : 's') : 'just you')
+    : 'Not sharing';
+  el.shareLink.value = share.code ? shareLink(share.code) : '';
+  el.shareStop.disabled = !on;
+  el.shareStart.disabled = on;
+  el.shareJoin.disabled = on;
+}
+
+function openShare() {
+  syncShareUi();
+  openModal(el.shareModal, share.active ? el.shareCopy : el.shareStart);
+}
+
+function stopShare(opts = {}) {
+  if (share.pushTimer) { clearTimeout(share.pushTimer); share.pushTimer = 0; }
+  if (share.presenceTimer) { clearInterval(share.presenceTimer); share.presenceTimer = 0; }
+  if (share.unsub) { try { share.unsub(); } catch { /* ok */ } share.unsub = null; }
+  if (share.peerUnsub) { try { share.peerUnsub(); } catch { /* ok */ } share.peerUnsub = null; }
+  const db = shareDb();
+  if (db && share.code && share.peerId) {
+    try { db.collection(SHARE_COLLECTION).doc(share.code).collection('peers').doc(share.peerId).delete(); } catch { /* ok */ }
+  }
+  share.active = false;
+  share.applying = false;
+  share.prevRemoteIds = new Set();
+  share.localDeleted = new Map();
+  share.lastAppliedJson = '';
+  share.peers.clear();
+  if (el.peerCursors) el.peerCursors.innerHTML = '';
+  syncShareUi();
+  if (!opts.silent) toast('Live sharing stopped');
+}
+
+async function startShare() {
+  if (!activePageId) { toast('Open a page first'); return; }
+  const db = shareDb();
+  if (!db) { toast('Live sharing needs a connection to the app’s Firebase project'); return; }
+  let name = '';
+  try { name = localStorage.getItem('margin.shareName') || ''; } catch { /* ok */ }
+  const answer = await promptDialog({
+    eyebrow: 'Live session',
+    title: 'What should collaborators call you?',
+    value: name || 'Guest',
+    confirm: 'Start sharing',
+    placeholder: 'Your name'
+  });
+  if (answer == null) return;
+  name = answer.trim().slice(0, 24) || 'Guest';
+  try { localStorage.setItem('margin.shareName', name); } catch { /* ok */ }
+  share.peerId = uid();
+  share.name = name;
+  share.color = peerColor(share.peerId);
+  let code = '';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const c = makeShareCode();
+    try {
+      const ref = db.collection(SHARE_COLLECTION).doc(c);
+      const snap = await ref.get();
+      if (!snap.exists) { code = c; break; }
+    } catch (err) {
+      toast('Could not reach the live session service. Check the Firebase rules and your connection.');
+      return;
+    }
+  }
+  if (!code) { toast('Could not find an open session code — try again'); return; }
+  const content = currentContent();
+  if (JSON.stringify(content).length > 700000) {
+    const ok = await confirmDialog({
+      title: 'This page is quite large',
+      body: 'Images on this page may be too big for the live-session document. Start anyway? The first sync could be refused.',
+      confirm: 'Start anyway'
+    });
+    if (!ok) return;
+  }
+  try {
+    await db.collection(SHARE_COLLECTION).doc(code).set({
+      title: state.title || 'Untitled page',
+      content,
+      host: name,
+      clientId: share.peerId,
+      rev: Date.now(),
+      updatedAt: Date.now()
+    });
+  } catch {
+    toast('The session could not be created. Check the Firestore rules for marginSessions.');
+    return;
+  }
+  stopShare({ silent: true });
+  share.active = true;
+  share.code = code;
+  share.lastClient = share.peerId;
+  share.prevRemoteIds = new Set(content.elements.map((e) => e.id));
+  subscribeShare(code);
+  startPresence();
+  syncShareUi();
+  toast('Live session started — share the code or link');
+  openShare();
+}
+
+function subscribeShare(code) {
+  const db = shareDb();
+  if (!db) return;
+  share.unsub = db.collection(SHARE_COLLECTION).doc(code).onSnapshot((doc) => {
+    if (!doc.exists) return;
+    const data = doc.data() || {};
+    if (data.clientId && data.clientId === share.peerId) return;
+    if (!data.content) return;
+    share.lastRev = data.rev || 0;
+    if (activePageId) applyRemoteContent(data.content);
+  }, () => { /* errors are surfaced by the presence/push path */ });
+
+  share.peerUnsub = db.collection(SHARE_COLLECTION).doc(code).collection('peers').onSnapshot((snap) => {
+    const now = Date.now();
+    share.peers.clear();
+    snap.forEach((d) => {
+      const v = d.data() || {};
+      if (d.id === share.peerId) return;
+      if (!Number.isFinite(v.at) || now - v.at > 20000) return;
+      share.peers.set(d.id, v);
+    });
+    renderPeerCursors();
+    syncShareUi();
+  }, () => { /* presence is best effort */ });
+}
+
+function applyRemoteContent(remote) {
+  if (share.applying) return;
+  if (pageWriteGuard === activePageId) return;
+  share.applying = true;
+  try {
+    const incoming = (Array.isArray(remote.elements) ? remote.elements : []).map(sanitizeElement).filter(Boolean);
+    const remoteIds = new Set(incoming.map((e) => e.id));
+    const localIds = new Set(elements.map((e) => e.id));
+    const now = Date.now();
+    for (const id of share.localDeleted.keys()) if (now - share.localDeleted.get(id) > 6000) share.localDeleted.delete(id);
+    const merged = [];
+    for (const r of incoming) {
+      if (share.localDeleted.has(r.id)) continue;
+      merged.push(r);
+    }
+    for (const l of elements) {
+      if (remoteIds.has(l.id)) continue;
+      if (share.prevRemoteIds.has(l.id)) continue;
+      merged.push(l);
+    }
+    share.prevRemoteIds = remoteIds;
+    const same = merged.length === elements.length && merged.every((e, i) => elements[i] === e);
+    if (same) return;
+    elements = merged;
+    share.lastAppliedJson = JSON.stringify(merged);
+    bboxCache = new WeakMap();
+    const ids = new Set(elements.map((e) => e.id));
+    for (const id of Array.from(selected)) if (!ids.has(id)) selected.delete(id);
+    syncSelectionUi();
+    syncEmptyNote();
+    queueScene();
+    scheduleSave();
+  } finally {
+    share.applying = false;
+  }
+}
+
+function scheduleSharePush(delay = 700) {
+  if (!share.active) return;
+  if (share.pushTimer) clearTimeout(share.pushTimer);
+  share.pushTimer = setTimeout(() => { pushShare().catch(() => {}); }, delay);
+}
+
+async function pushShare() {
+  if (!share.active || !share.code || !activePageId || pageWriteGuard === activePageId) return;
+  const db = shareDb();
+  if (!db) return;
+  const content = currentContent();
+  const json = JSON.stringify(content);
+  if (json.length > 900000) return;
+  if (share.lastAppliedJson && JSON.stringify(content.elements) === share.lastAppliedJson) return;
+  const localIds = new Set(content.elements.map((e) => e.id));
+  for (const id of share.prevRemoteIds) if (!localIds.has(id)) share.localDeleted.set(id, Date.now());
+  try {
+    await db.collection(SHARE_COLLECTION).doc(share.code).update({
+      title: state.title || 'Untitled page',
+      content,
+      clientId: share.peerId,
+      rev: Date.now(),
+      updatedAt: Date.now()
+    });
+    share.prevRemoteIds = localIds;
+  } catch { /* offline; the next save retries */ }
+}
+
+function startPresence() {
+  const db = shareDb();
+  if (!db || !share.code || !share.peerId) return;
+  const write = () => {
+    try {
+      db.collection(SHARE_COLLECTION).doc(share.code).collection('peers').doc(share.peerId).set({
+        name: share.name,
+        color: share.color,
+        x: share.lastX == null ? null : share.lastX,
+        y: share.lastY == null ? null : share.lastY,
+        at: Date.now()
+      }).catch(() => {});
+    } catch { /* ok */ }
+  };
+  write();
+  share.presenceTimer = setInterval(write, 5000);
+}
+
+let lastPresenceWrite = 0;
+function sendPresencePoint(p) {
+  if (!share.active) return;
+  share.lastX = p.x;
+  share.lastY = p.y;
+  const now = Date.now();
+  if (now - lastPresenceWrite < 160) return;
+  lastPresenceWrite = now;
+  const db = shareDb();
+  if (!db || !share.code || !share.peerId) return;
+  try {
+    db.collection(SHARE_COLLECTION).doc(share.code).collection('peers').doc(share.peerId).set({
+      name: share.name, color: share.color, x: p.x, y: p.y, at: Date.now()
+    }, { merge: true }).catch(() => {});
+  } catch { /* ok */ }
+}
+
+function renderPeerCursors() {
+  if (!el.peerCursors) return;
+  el.peerCursors.innerHTML = '';
+  if (!share.active) return;
+  for (const [id, peer] of share.peers) {
+    if (!Number.isFinite(peer.x) || !Number.isFinite(peer.y)) continue;
+    const s = worldToScreen(peer.x, peer.y);
+    const node = document.createElement('div');
+    node.className = 'peer-cursor';
+    node.style.transform = 'translate(' + s.x.toFixed(1) + 'px,' + s.y.toFixed(1) + 'px) translate(-50%,-50%)';
+    const dot = document.createElement('span');
+    dot.className = 'peer-dot';
+    dot.style.background = peer.color || peerColor(id);
+    const label = document.createElement('span');
+    label.className = 'peer-name';
+    label.textContent = peer.name || 'Guest';
+    node.append(dot, label);
+    el.peerCursors.appendChild(node);
+  }
+}
+el.overlay.addEventListener('pointermove', (e) => {
+  if (!share.active) return;
+  const r = el.stage.getBoundingClientRect();
+  sendPresencePoint(screenToWorld(e.clientX - r.left, e.clientY - r.top));
+});
+
+async function joinShare(rawCode) {
+  const db = shareDb();
+  if (!db) { toast('Live sharing needs a connection to the app’s Firebase project'); return; }
+  const code = String(rawCode || '').trim().toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+  if (code.length < 4) { toast('Enter the session code'); return; }
+  let data;
+  try {
+    const doc = await db.collection(SHARE_COLLECTION).doc(code).get();
+    if (!doc.exists) { toast('No live session with that code'); return; }
+    data = doc.data() || {};
+  } catch {
+    toast('Could not look up that session. Check the Firebase rules and your connection.');
+    return;
+  }
+  if (!data.content || !Array.isArray(data.content.elements)) { toast('That session has no page yet'); return; }
+  let sub = findSubject(activeSubjectId);
+  if (!sub) {
+    sub = { id: newId('sb'), name: 'Shared', color: '', pageIds: [], createdAt: Date.now(), collapsed: false };
+    workspace.subjects.push(sub);
+    activeSubjectId = sub.id;
+    await saveWorkspace();
+  }
+  const pid = newId('pg');
+  workspace.pages[pid] = { id: pid, title: 'Shared · ' + (data.title || 'page'), createdAt: Date.now(), updatedAt: Date.now() };
+  sub.pageIds.push(pid);
+  try {
+    await writeVerified(PAGE_PREFIX + pid, { v: 1, ...data.content });
+    await saveWorkspace();
+  } catch {
+    toast('Could not save the shared page on this device');
+    return;
+  }
+  stopShare({ silent: true });
+  await openPage(pid);
+  share.active = true;
+  share.code = code;
+  share.peerId = uid();
+  share.name = (() => { try { return localStorage.getItem('margin.shareName') || 'Guest'; } catch { return 'Guest'; } })();
+  share.color = peerColor(share.peerId);
+  share.prevRemoteIds = new Set(data.content.elements.map((e) => e.id));
+  subscribeShare(code);
+  startPresence();
+  syncShareUi();
+  renderPages();
+  toast('Joined the live session');
+  openShare();
+}
+
+el.shareStart.addEventListener('click', () => startShare().catch(() => toast('Could not start sharing')));
+el.shareStop.addEventListener('click', () => stopShare());
+el.shareCopy.addEventListener('click', async () => {
+  if (!share.code) { toast('Start a session first'); return; }
+  const link = shareLink(share.code);
+  try { await navigator.clipboard.writeText(link); toast('Session link copied'); }
+  catch {
+    try { el.shareLink.select(); document.execCommand('copy'); toast('Session link copied'); }
+    catch { toast('Select the link and copy it manually'); }
+  }
+});
+el.shareJoinForm.addEventListener('submit', (e) => {
+  e.preventDefault();
+  joinShare(el.shareJoin.value).catch(() => toast('Could not join that session'));
+});
+el.shareBtn.addEventListener('click', openShare);
+
+/* A ?share=CODE link opens the join dialog prefilled, never joins silently. */
+try {
+  const params = new URLSearchParams(location.search);
+  const invite = params.get('share');
+  if (invite) {
+    setTimeout(() => {
+      el.shareJoin.value = invite.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 8);
+      openShare();
+    }, 600);
+  }
+} catch { /* ok */ }
+
+/* ============================================================ HISTORY BUDGET */
+const HISTORY_BYTES = 3500000;
+function trimUndoStack() {
+  let total = 0;
+  for (const s of undoStack) total += s.length;
+  while (undoStack.length > 1 && total > HISTORY_BYTES) total -= undoStack.shift().length;
+}
+
+/* ============================================================ KEY WIRING
+   The main keydown handler above stays small; these listeners add document
+   verbs (copy/paste, page turns, palette) without entangling the drawing keys. */
+window.addEventListener('keydown', (e) => {
+  const mod = e.metaKey || e.ctrlKey;
+  const key = e.key.toLowerCase();
+  if (mod && key === 'k' && !openModalEl) { e.preventDefault(); openPalette(); return; }
+  if (!el.paletteLayer.hidden) return;
+  if (openModalEl || typingTarget(e.target)) return;
+  if (e.key === 'PageDown') { e.preventDefault(); stepPage(1); return; }
+  if (e.key === 'PageUp') { e.preventDefault(); stepPage(-1); return; }
+  if (mod && key === 'c' && selected.size) { e.preventDefault(); copySelection(); return; }
+  if (mod && key === 'x' && selected.size) { e.preventDefault(); cutSelection(); return; }
+  if (mod && key === 'v' && elementClipboard.length) { e.preventDefault(); pasteClipboard(); return; }
+  if (mod && e.shiftKey && key === 'g') { e.preventDefault(); groupSelection(); return; }
+  if (mod && e.shiftKey && key === 'l') { e.preventDefault(); lockSelection(); return; }
+}, true);
+
+/* ============================================================ SHARE-AWARE SAVES */
+(function hookShareSave() {
+  const original = saveNow;
+  saveNow = async function () {
+    const result = await original();
+    schedulePageStripRefresh(300);
+    scheduleSharePush();
+    if (paletteIndex) paletteIndex.at = 0;
+    return result;
+  };
+})();
 
 boot();
 
