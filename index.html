@@ -4609,6 +4609,9 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
+        if (res.status === 503 && errText.includes('missing_server_key')) {
+          throw new Error('AI server key is missing — set GROQ_KEY / OPENROUTER_KEY in Vercel environment variables.');
+        }
         throw new Error(`AI request failed (${res.status}): ${errText.slice(0, 160)}`);
       }
       break;
