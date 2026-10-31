@@ -2537,7 +2537,7 @@ if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.pro
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'v8';
+const APP_VERSION = 'v9';
 console.log('App version', APP_VERSION);
 const __verBadge = document.createElement('div');
 __verBadge.textContent = 'App ' + APP_VERSION;
@@ -5158,10 +5158,11 @@ Return strictly JSON:
 const TIDY = {
   colW: 264,
   gapX: 56,
-  gapY: 20,
+  gapY: 22,
   headerH: 58,
-  noteFont: 14,
+  noteFont: 15,
   batch: 40,
+  panelPad: 14,
   accents: ['#c85838', '#3f6b52', '#4a5b8c', '#8a5a2b', '#6d4a72']
 };
 const TIDY_TITLES = ['المفاهيم الأساسية', 'القوانين والصيغ', 'الأسئلة', 'ملاحظات مهمة', 'الخطوات', 'أفكار متفرقة'];
@@ -5519,33 +5520,28 @@ function tidyMoveUnit(unit, targetX, targetY, maxW, allowScale) {
 function tidyFitHeader(title) {
   let text = String(title || '').trim();
   let size = 21;
-  while (size > 13 && tidyMeasureBlock(text, size, TIDY.colW - 2).length > 1) size -= 1;
-  while (text.length > 3 && tidyMeasureBlock(text + '…', 13, TIDY.colW - 2).length > 1) text = text.slice(0, -1).trim();
+  while (size > 13 && tidyMeasureBlock(text, size, TIDY.colW - 34).length > 1) size -= 1;
+  while (text.length > 3 && tidyMeasureBlock(text + '…', 13, TIDY.colW - 34).length > 1) text = text.slice(0, -1).trim();
   return { text: text === title ? text : text + '…', size };
 }
 
-/* Columns run right-to-left, the way Arabic is read. */
+function tidyArabicNumeral(n) {
+  const digits = '\u0660\u0661\u0662\u0663\u0664\u0665\u0666\u0667\u0668\u0669';
+  return String(Math.max(0, Math.round(n))).split('').map((d) => digits[Number(d)] || d).join('');
+}
+
+/* Columns run right-to-left, the way Arabic is read. Each column sits on a
+   soft tinted panel with a numbered accent badge, so the result reads like a
+   designed document instead of loose notes on a page. */
 function tidyApplyLayout(columns, boardBox) {
-  const colW = TIDY.colW, gapX = TIDY.gapX, gapY = TIDY.gapY;
+  const colW = TIDY.colW, gapX = TIDY.gapX, gapY = TIDY.gapY, pad = TIDY.panelPad;
   const totalW = columns.length * colW + Math.max(0, columns.length - 1) * gapX;
   const left = boardBox.x + Math.max(0, (boardBox.w - totalW) / 2);
   const top = boardBox.y;
-  const headers = [];
-  let maxBottom = top;
 
-  columns.forEach((col, ci) => {
+  /* Place the content first so every panel can hug its own column height. */
+  const placedCols = columns.map((col, ci) => {
     const x = left + totalW - colW - ci * (colW + gapX);
-    const accent = TIDY.accents[ci % TIDY.accents.length];
-    const head = tidyFitHeader(col.title);
-    headers.push({
-      id: uid(), type: 'text', x1: x, y1: top, x2: x + colW, y2: top + 32,
-      text: head.text, color: accent, size: head.size, opacity: 1, tidy: true
-    });
-    headers.push({
-      id: uid(), type: 'line', x1: x, y1: top + 40, x2: x + colW, y2: top + 40,
-      color: accent, size: 2.4, opacity: 0.85, tidy: true
-    });
-
     let y = top + TIDY.headerH;
     for (const unit of col.units) {
       if (!unit || !unit.els.length) continue;
@@ -5561,10 +5557,57 @@ function tidyApplyLayout(columns, boardBox) {
       if (!placed) continue;
       y = placed.y + placed.h + gapY;
     }
-    maxBottom = Math.max(maxBottom, y - gapY);
+    return { col, ci, x, bottom: y - gapY };
   });
 
-  return { headers, box: { x: left, y: top, w: totalW, h: Math.max(0, maxBottom - top) } };
+  const panels = [];
+  const headers = [];
+  let maxBottom = top;
+
+  placedCols.forEach(({ col, ci, x, bottom }) => {
+    const accent = TIDY.accents[ci % TIDY.accents.length];
+    const panelLeft = x - pad;
+    const panelW = colW + pad * 2;
+    const panelTop = top - 16;
+    const panelBottom = bottom + pad;
+    const panelH = Math.max(52, panelBottom - panelTop);
+
+    /* Tinted body + hairline edge. Inserted behind every mark, so the fill
+       never dulls the notes and the panel never steals a click. */
+    panels.push({
+      id: uid(), type: 'roundrect', x1: panelLeft, y1: panelTop,
+      x2: panelLeft + panelW, y2: panelTop + panelH,
+      color: accent, size: 0.01, fill: true, opacity: 0.5, tidy: true
+    });
+    panels.push({
+      id: uid(), type: 'roundrect', x1: panelLeft, y1: panelTop,
+      x2: panelLeft + panelW, y2: panelTop + panelH,
+      color: accent, size: 0.8, fill: false, opacity: 0.22, tidy: true
+    });
+
+    const head = tidyFitHeader(col.title);
+    headers.push({
+      id: uid(), type: 'text', x1: x, y1: top, x2: x + colW - 30, y2: top + 32,
+      text: head.text, color: accent, size: head.size, opacity: 1, tidy: true
+    });
+    headers.push({
+      id: uid(), type: 'callout', x1: x + colW + pad - 24, y1: top + 3,
+      x2: x + colW + pad - 2, y2: top + 25,
+      color: accent, size: 1, label: tidyArabicNumeral(ci + 1), opacity: 1, tidy: true
+    });
+    headers.push({
+      id: uid(), type: 'line', x1: x, y1: top + 40, x2: x + colW, y2: top + 40,
+      color: accent, size: 2.4, opacity: 0.85, tidy: true
+    });
+
+    maxBottom = Math.max(maxBottom, panelBottom);
+  });
+
+  return {
+    headers,
+    panels,
+    box: { x: left - pad, y: top, w: totalW + pad * 2, h: Math.max(0, maxBottom - top) }
+  };
 }
 
 /* Remember what each arrow pointed at before the board moves. */
@@ -5709,6 +5752,7 @@ async function tidyBoardAi() {
     columns.forEach((c) => c.units.forEach(tidyNormalizeUnit));
     elements = elements.filter((e) => !e.tidy);
     const layout = tidyApplyLayout(columns, boardBox || unionBBox(movable));
+    elements.unshift(...(layout.panels || []));
     elements.push(...layout.headers);
     tidyRouteArrows(anchors);
 
