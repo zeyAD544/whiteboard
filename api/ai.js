@@ -85,7 +85,7 @@ export default async function handler(req) {
   const keys = (process.env[envName + 'S'] || process.env[envName] || '')
     .split(/[,\\s]+/).map((s) => s.trim()).filter(Boolean);
   if (!keys.length) return reply(req, { error: 'missing_server_key', variable: envName }, 503);
-  console.log('proxy', provider.id, 'keys=' + keys.length);
+  console.log('proxy provider=' + (provider.id || provider.env) + ' url=' + provider.url + ' keys=' + keys.length);
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(0, 6) : [];
   if (!messages.length) return reply(req, { error: 'missing_messages' }, 400);
@@ -132,6 +132,8 @@ export default async function handler(req) {
       const h = new Headers();
       h.set('Authorization', 'Bearer ' + key);
       h.set('Content-Type', 'application/json');
+      h.set('HTTP-Referer', 'https://whiteboard123n.vercel.app');
+      h.set('X-Title', 'Whiteboard');
       upstream = await fetch(provider.url, {
         method: 'POST',
         headers: h,
