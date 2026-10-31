@@ -125,28 +125,23 @@ export default async function handler(req) {
     payload.reasoning = { effort: 'none' };
   }
 
-  let upstream = null;
-  let lastFetchErr = null;
-  for (const key of keys) {
-    try {
-      const h = new Headers();
-      h.set('Authorization', 'Bearer ' + key);
-      h.set('Content-Type', 'application/json');
-      h.set('HTTP-Referer', 'https://whiteboard123n.vercel.app');
-      h.set('X-Title', 'Whiteboard');
-      upstream = await fetch(provider.url, {
-        method: 'POST',
-        headers: h,
-        body: JSON.stringify(payload)
-      });
-      if (upstream.ok || upstream.status < 500) break;
-    } catch (err) {
-      lastFetchErr = err;
-      upstream = null;
-    }
+  const apiKey = keys[0];
+  let upstream;
+  try {
+    upstream = await fetch(provider.url, {
+      method: 'POST',
+      headers: {
+        authorization: 'Bearer ' + apiKey,
+        'content-type': 'application/json',
+        'http-referer': 'https://whiteboard123n.vercel.app',
+        'x-title': 'Whiteboard'
+      },
+      body: JSON.stringify(payload)
+    });
+  } catch (err) {
+    console.error('fetch error', err);
+    return reply(req, { error: 'upstream_unreachable' }, 502);
   }
-  if (lastFetchErr && !upstream) return reply(req, { error: 'upstream_unreachable' }, 502);
-  if (!upstream) return reply(req, { error: 'upstream_unreachable' }, 502);
   console.log('proxy upstream status', upstream.status);
 
   const headers = stream
