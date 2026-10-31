@@ -84,6 +84,7 @@ export default async function handler(req) {
   const keys = (process.env[envName + 'S'] || process.env[envName] || '')
     .split(/[,\\s]+/).map((s) => s.trim()).filter(Boolean);
   if (!keys.length) return reply(req, { error: 'missing_server_key', variable: envName }, 503);
+  console.log('proxy', provider.id, 'keys=' + keys.length);
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(0, 6) : [];
   if (!messages.length) return reply(req, { error: 'missing_messages' }, 400);
@@ -140,6 +141,7 @@ export default async function handler(req) {
   }
   if (lastFetchErr && !upstream) return reply(req, { error: 'upstream_unreachable' }, 502);
   if (!upstream) return reply(req, { error: 'upstream_unreachable' }, 502);
+  console.log('proxy upstream status', upstream.status);
 
   const headers = stream
     ? { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', ...corsHeaders(req) }
