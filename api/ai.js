@@ -129,7 +129,7 @@ export default async function handler(req) {
     try {
       upstream = await fetch(provider.url, {
         method: 'POST',
-        headers: { Authorization: Bearer , 'Content-Type': 'application/json' },
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
       if (upstream.ok || upstream.status < 500) break;
