@@ -4652,7 +4652,7 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
 
   for (let attempt = 0; attempt < keyList.length; attempt++) {
     const headers = { 'Content-Type': 'application/json' };
-    if (!viaProxy) headers.Authorization = `Bearer ${keyList[attempt]}`;
+    if (!viaProxy) headers.Authorization = 'Bearer ' + keyList[attempt];
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), 45_000);
     try {
