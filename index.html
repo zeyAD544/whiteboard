@@ -4425,16 +4425,18 @@ const AI_CONFIG = {
   },
   localKey(id) {
     const v = this.localKeys()[id];
-    return typeof v === 'string' ? v.trim() : '';
+    if (Array.isArray(v)) return v.map((x) => String(x || '').trim()).filter(Boolean);
+    if (typeof v === 'string' && v.trim()) return [v.trim()];
+    return [];
   },
   hasLocalKey(id) {
-    return !!this.localKey(id);
+    return this.localKey(id).length > 0;
   },
   providers: {
     groq: {
       id: 'groq',
       name: 'Groq (120B Turbo)',
-      model: 'openai/gpt-oss-120b',
+      model: 'openai/gpt-oss-20b',
       url: 'https://api.groq.com/openai/v1/chat/completions',
       vision: false,
       desc: 'Token-lean low-reasoning mode (openai/gpt-oss-120b) — sub-second replies'
@@ -4443,6 +4445,13 @@ const AI_CONFIG = {
       id: 'openrouter',
       name: 'OpenRouter (Free)',
       model: 'openrouter/free',
+      /* Vision needs a model that actually accepts images; the free router is
+         a lottery, so name real multimodal models and let OpenRouter fall
+         through the list if one is busy. */
+      visionModels: [
+        'nvidia/nemotron-3-nano-omni-30b-a3b-reasoning:free',
+        'openrouter/free'
+      ],
       url: 'https://openrouter.ai/api/v1/chat/completions',
       vision: true,
       desc: 'Multimodal vision + reasoning (openrouter/free)'
@@ -4458,6 +4467,7 @@ const AI_CONFIG = {
   }
 };
 
+try { if (localStorage.getItem('margin.ai_provider') === 'openrouter') localStorage.setItem('margin.ai_provider', 'groq'); } catch {}
 let currentExplainerCapture = null;
 let currentQuizCards = [];
 let currentQuizIndex = 0;
@@ -4540,19 +4550,55 @@ async function callAiChat(opts = {}) {
   }
 }
 
-async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider, jsonMode = false, onStreamChunk, maxTokens }) {
+/* Walks the provider list so a missing or rate-limited Groq key still gets a
+   real model answer instead of silently falling back to geometry. */
+async function callAiWithFallback(opts = {}, providers = ['groq', 'openrouter']) {
+  aiProgressStart(opts.label);
+  let lastErr = null;
+  let tried = 0;
+  try {
+    for (const id of providers) {
+      const prov = AI_CONFIG.providers[id];
+      if (!prov) continue;
+      if (opts.imageBase64 && !prov.vision) continue;
+      tried += 1;
+      try {
+        const res = await callAiChatRaw(Object.assign({}, opts, { forceProvider: id }));
+        if (String((res && res.text) || '').trim()) return res;
+        lastErr = new Error('Empty reply from ' + prov.name);
+      } catch (err) {
+        lastErr = err;
+        console.warn('AI provider "' + id + '" failed — trying the next one', err);
+      }
+    }
+  } finally {
+    aiProgressEnd();
+  }
+  console.error('All AI providers failed', lastErr);
+  throw lastErr || new Error(tried ? 'All AI providers failed' : 'No AI provider supports this request');
+}
+
+async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider, jsonMode = false, onStreamChunk, maxTokens, model, models }) {
   let providerKey = forceProvider || AI_CONFIG.activeProvider;
   let prov = AI_CONFIG.providers[providerKey] || AI_CONFIG.providers.groq;
 
   // Auto-route vision tasks if provider doesn't support images
-  if (imageBase64 && !prov.vision) {
+  if (imageBase64 && !prov.vision && AI_CONFIG.providers.openrouter) {
     prov = AI_CONFIG.providers.openrouter;
+    providerKey = 'openrouter';
   }
+
+  const wantsVision = !!imageBase64 && !!prov.vision;
+  const modelOverride = typeof model === 'string' && model.trim() ? model.trim() : '';
+  const chosenModel = modelOverride || (wantsVision && prov.visionModels ? prov.visionModels[0] : prov.model);
+  let chosenModels = Array.isArray(models) ? models.filter((m) => typeof m === 'string' && m.trim()).slice(0, 4) : [];
+  if (!chosenModels.length && wantsVision && !modelOverride && prov.visionModels) chosenModels = prov.visionModels.slice(0, 4);
+  if (chosenModels.length === 1) chosenModels = [];
 
   const messages = [];
   messages.push({
     role: 'system',
-    content: systemPrompt || 'Fast, precise whiteboard assistant. Answer with maximum signal and minimum words. No preamble.'
+    content: systemPrompt || '\u0623\u0646\u062a \u0645\u0633\u0627\u0639\u062f \u0644\u0648\u062d\u0629 \u0628\u064a\u0636\u0627\u0621. \u0623\u062c\u0628 \u0628\u0627\u0644\u0644\u063a\u0629 \u0627\u0644\u0639\u0631\u0628\u064a\u0629 \u0627\u0644\u0641\u0635\u062d\u0649 \u0641\u0642\u0637.'
   });
 
   if (imageBase64 && prov.vision) {
@@ -4569,27 +4615,34 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
   }
 
   const stream = typeof onStreamChunk === 'function';
-  const cap = clamp(Math.round(maxTokens || (jsonMode ? 600 : 900)), 120, 4000);
+  const cap = clamp(Math.round(maxTokens || (jsonMode ? 600 : 700)), 120, 1200);
   /* With no local key the request goes through our own proxy, so the provider
      key never exists in this file or in the browser. */
   const viaProxy = !!AI_CONFIG.proxyUrl && !AI_CONFIG.hasLocalKey(prov.id);
 
   const payload = {
-    model: prov.model,
+    model: chosenModel,
     messages,
     temperature: 0.1,
     stream
   };
+  if (chosenModels.length) payload.models = chosenModels;
   if (prov.id === 'groq') {
     /* Low reasoning keeps the 120B model smart but spends far fewer tokens,
        and a hard completion cap stops any runaway answer. */
     payload.reasoning_effort = 'low';
     payload.max_completion_tokens = cap;
+  } else {
+    payload.max_tokens = cap;
   }
   if (jsonMode && prov.id === 'groq') payload.response_format = { type: 'json_object' };
+    if (prov.id === 'openrouter') payload.reasoning = { effort: 'none' };
 
-  const proxyBody = { provider: prov.id, messages, jsonMode, maxTokens: cap, stream };
-  const keyList = viaProxy ? [null] : [AI_CONFIG.localKey(prov.id)].filter(Boolean);
+  const proxyBody = {
+    provider: prov.id, messages, jsonMode, maxTokens: cap, stream,
+    model: chosenModel, models: chosenModels
+  };
+  const keyList = viaProxy ? [null] : AI_CONFIG.localKey(prov.id);
   if (!viaProxy && !keyList.length) {
     throw new Error('No AI key. Add it to ai-local.js for local use, or set GROQ_KEY on the server for /api/ai.');
   }
@@ -4600,24 +4653,31 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
   for (let attempt = 0; attempt < keyList.length; attempt++) {
     const headers = { 'Content-Type': 'application/json' };
     if (!viaProxy) headers.Authorization = `Bearer ${keyList[attempt]}`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 45_000);
     try {
       res = await fetch(viaProxy ? AI_CONFIG.proxyUrl : prov.url, {
         method: 'POST',
         headers,
-        body: JSON.stringify(viaProxy ? proxyBody : payload)
+        body: JSON.stringify(viaProxy ? proxyBody : payload),
+        signal: ctrl.signal
       });
+      clearTimeout(timer);
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');
         if (res.status === 503 && errText.includes('missing_server_key')) {
           throw new Error('AI server key is missing — set GROQ_KEY / OPENROUTER_KEY in Vercel environment variables.');
         }
+        console.error('AI request failed', res.status, errText);
         throw new Error(`AI request failed (${res.status}): ${errText.slice(0, 160)}`);
       }
       break;
     } catch (err) {
+      clearTimeout(timer);
       lastErr = err;
       if (attempt < keyList.length - 1) continue;
+      console.error('AI fetch failed', err);
       throw err;
     }
   }
@@ -4647,7 +4707,8 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
         if (jsonStr === '[DONE]') continue;
         try {
           const chunk = JSON.parse(jsonStr);
-          const delta = chunk.choices?.[0]?.delta?.content || '';
+          const d = chunk.choices?.[0]?.delta || {};
+          const delta = d.content || d.reasoning || d.reasoning_content || '';
           if (delta) {
             fullText += delta;
             onStreamChunk(fullText, delta);
@@ -4659,7 +4720,8 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
   }
 
   const data = await res.json();
-  const text = data?.choices?.[0]?.message?.content || '';
+  const msg = data?.choices?.[0]?.message || {};
+  const text = msg.content || msg.reasoning || msg.reasoning_content || '';
   return { text, provider: prov.name, model: prov.model };
 }
 
@@ -4778,7 +4840,7 @@ Return strictly JSON:
     if (!json || !json.answer) {
       const capture = captureSelectionImage();
       if (!capture) { toast('No legible equation selected'); return; }
-      const prompt = `Solve the handwritten or typed math equation in this image.
+      const prompt = `Solve the handwritten or typed math equation in this image. Respond in Arabic. Use proper math symbols (× ÷) not * or /.
 Return strictly JSON:
 {
   "expression": "equation",
@@ -4798,9 +4860,13 @@ Return strictly JSON:
   }
 }
 
+function prettyMath(s) {
+  return String(s || '').replace(/\*/g, '\u00d7').replace(/\//g, '\u00f7');
+}
+
 function applyMathAnswer(bb, answerStr, expression, steps) {
   pushHistory();
-  const ansText = String(answerStr).trim();
+  const ansText = prettyMath(String(answerStr).trim());
   const textEl = {
     id: uid(),
     type: 'text',
@@ -4823,7 +4889,7 @@ function applyMathAnswer(bb, answerStr, expression, steps) {
       y1: bb.y + bb.h + 20,
       x2: bb.x + Math.max(220, bb.w),
       y2: bb.y + bb.h + 20 + Math.min(200, 60 + steps.length * 26),
-      text: `Math Solution: ${expression || ''}\n${ansText}\n\n` + steps.map((s, i) => `${i + 1}. ${s}`).join('\n'),
+      text: `Math Solution: ${prettyMath(expression || '')}\n${ansText}\n\n` + steps.map((s, i) => `${i + 1}. ${String(s || '').replace(/^\*+\s*/, '').trim()}`).join('\n'),
       color: '#fff7d6',
       size: 13,
       opacity: 1
@@ -5198,12 +5264,11 @@ async function tidyAskColumns(batch) {
     `أعد JSON صالحاً فقط بهذه البنية:\n` +
     `{"columns":[{"title":"عنوان عربي قصير","items":["المعرّف"]}]}\n` +
     `الملاحظات:\n` + JSON.stringify(payload);
-  const res = await callAiChat({
+  const res = await callAiWithFallback({
     prompt,
     systemPrompt: 'أنت منظّم لوحات عربي. تكتب بالعربية الفصحى فقط، ولا تستخدم أي كلمة إنجليزية أو حرف لاتيني إطلاقاً.',
-    forceProvider: 'groq',
     jsonMode: true,
-    maxTokens: 500,
+    maxTokens: 700,
     label: 'Tidying board — رتّب اللوح…'
   });
   const json = parseAiJson(res.text);
@@ -5264,12 +5329,14 @@ async function tidyClusterText(units) {
   const byIndex = new Map(withText.map((x) => [x.index, x]));
   const assigned = new Set();
   let columns = [];
+  let aiUsed = false;
 
   for (let start = 0; start < withText.length; start += TIDY.batch) {
     const batch = withText.slice(start, start + TIDY.batch);
     let cols = null;
     try { cols = await tidyAskColumns(batch); } catch (err) { console.warn('Tidy: AI clustering skipped', err); }
-    if (!cols) continue;
+    if (!cols || !cols.length) continue;
+    aiUsed = true;
     for (const raw of cols) {
       if (!raw || typeof raw !== 'object') continue;
       const items = Array.isArray(raw.items) ? raw.items : [];
@@ -5308,7 +5375,7 @@ async function tidyClusterText(units) {
   }
 
   columns = columns.filter((c) => c.units.length);
-  return { columns, assigned };
+  return { columns, assigned, aiUsed };
 }
 
 function tidyNearestColumn(unit, columns) {
@@ -5783,7 +5850,7 @@ async function runAiExplainer(query) {
     const prompt = `You are an expert whiteboard tutor.
 User question: "${q}"
 Context: ${textContext || 'Handwritten drawing'}
-Explain directly, clearly, and concisely with bullet points.`;
+Explain directly, clearly, and concisely with bullet points in Arabic only.`;
 
     if (el.aiExplainerText) el.aiExplainerText.classList.add('is-streaming');
     // Realtime streaming: text streams onto screen live as tokens generate!
@@ -5793,7 +5860,7 @@ Explain directly, clearly, and concisely with bullet points.`;
       maxTokens: 650,
       label: 'Explaining selection…',
       onStreamChunk: (full) => {
-        if (el.aiExplainerText) el.aiExplainerText.textContent = full;
+        if (el.aiExplainerText) el.aiExplainerText.textContent = String(full || '').replace(/\* \*\*/g, '\n* **').trim();
       }
     });
     if (el.aiExplainerText) el.aiExplainerText.classList.remove('is-streaming');

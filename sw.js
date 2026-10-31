@@ -1,6 +1,6 @@
 /* Margin service worker: keep the shell available when the network is not.
    Firestore, auth, and the YouTube API are deliberately never cached here. */
-const CACHE = 'margin-shell-v8';
+const CACHE = 'margin-shell-v9';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {

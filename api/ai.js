@@ -8,7 +8,7 @@ export const config = { runtime: 'edge' };
 const PROVIDERS = {
   groq: {
     url: 'https://api.groq.com/openai/v1/chat/completions',
-    model: 'openai/gpt-oss-120b',
+    model: 'openai/gpt-oss-20b',
     env: 'GROQ_KEY'
   },
   openrouter: {
@@ -80,8 +80,10 @@ export default async function handler(req) {
   }
 
   const provider = PROVIDERS[body.provider === 'openrouter' ? 'openrouter' : 'groq'];
-  const key = process.env[provider.env];
-  if (!key) return reply(req, { error: 'missing_server_key', variable: provider.env }, 503);
+  const envName = provider.env;
+  const keys = (process.env[envName + 'S'] || process.env[envName] || '')
+    .split(/[,\\s]+/).map((s) => s.trim()).filter(Boolean);
+  if (!keys.length) return reply(req, { error: 'missing_server_key', variable: envName }, 503);
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(0, 6) : [];
   if (!messages.length) return reply(req, { error: 'missing_messages' }, 400);
@@ -98,8 +100,14 @@ export default async function handler(req) {
     ? Math.min(Math.max(Math.round(requested), 64), 1200)
     : (jsonMode ? 600 : 900);
 
+  const modelOverride = typeof body.model === 'string' ? body.model.trim() : '';
+  const model = modelOverride || provider.model;
+  const models = Array.isArray(body.models)
+    ? body.models.filter((m) => typeof m === 'string' && m.trim()).slice(0, 4)
+    : [];
+
   const payload = {
-    model: provider.model,
+    model,
     messages,
     temperature: 0.1,
     stream
@@ -108,18 +116,30 @@ export default async function handler(req) {
     payload.reasoning_effort = 'low';
     payload.max_completion_tokens = maxTokens;
     if (jsonMode) payload.response_format = { type: 'json_object' };
+  } else if (models.length >= 2) {
+    payload.models = models;
+  }
+  if (provider !== PROVIDERS.groq) {
+    payload.reasoning = { effort: 'none' };
   }
 
-  let upstream;
-  try {
-    upstream = await fetch(provider.url, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
-  } catch {
-    return reply(req, { error: 'upstream_unreachable' }, 502);
+  let upstream = null;
+  let lastFetchErr = null;
+  for (const key of keys) {
+    try {
+      upstream = await fetch(provider.url, {
+        method: 'POST',
+        headers: { Authorization: Bearer , 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (upstream.ok || upstream.status < 500) break;
+    } catch (err) {
+      lastFetchErr = err;
+      upstream = null;
+    }
   }
+  if (lastFetchErr && !upstream) return reply(req, { error: 'upstream_unreachable' }, 502);
+  if (!upstream) return reply(req, { error: 'upstream_unreachable' }, 502);
 
   const headers = stream
     ? { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', ...corsHeaders(req) }
