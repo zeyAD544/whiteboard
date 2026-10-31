@@ -2537,6 +2537,8 @@ if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.pro
 <script>
 (() => {
 'use strict';
+const APP_VERSION = 'v6';
+console.log('App version', APP_VERSION);
 
 /* ------------------------------------------------------------ helpers */
 const $ = (s, r = document) => r.querySelector(s);
@@ -4663,6 +4665,7 @@ async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider,
         signal: ctrl.signal
       });
       clearTimeout(timer);
+      if (res && res.headers) console.log('Proxy version', res.headers.get('X-Proxy-Version'));
 
       if (!res.ok) {
         const errText = await res.text().catch(() => '');

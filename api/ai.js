@@ -4,6 +4,7 @@
    and receives the provider's OpenAI-shaped response (including SSE when streaming). */
 
 export const config = { runtime: 'edge' };
+const PROXY_VERSION = 'v6';
 
 const PROVIDERS = {
   groq: {
@@ -150,5 +151,6 @@ export default async function handler(req) {
     ? { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', ...corsHeaders(req) }
     : { 'Content-Type': 'application/json', 'Cache-Control': 'no-store', ...corsHeaders(req) };
 
-  return new Response(upstream.body, { status: upstream.status, headers });
+  const respHeaders = Object.assign({}, headers, { 'X-Proxy-Version': PROXY_VERSION });
+  return new Response(upstream.body, { status: upstream.status, headers: respHeaders });
 }
