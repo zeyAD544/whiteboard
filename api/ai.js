@@ -4,7 +4,7 @@
    and receives the provider's OpenAI-shaped response (including SSE when streaming). */
 
 export const config = { runtime: 'edge' };
-const PROXY_VERSION = 'v7';
+const PROXY_VERSION = 'v8';
 
 const PROVIDERS = {
   groq: {
@@ -83,9 +83,11 @@ export default async function handler(req) {
   const provider = PROVIDERS[body.provider === 'openrouter' ? 'openrouter' : 'groq'];
   const envName = provider.env;
   const keys = (process.env[envName + 'S'] || process.env[envName] || '')
-    .split(/[,\\s]+/).map((s) => s.trim()).filter(Boolean);
+    .split(/[,\s]+/)
+    .map((s) => s.trim().replace(/^["']+|["']+$/g, '').trim())
+    .filter(Boolean);
   if (!keys.length) return reply(req, { error: 'missing_server_key', variable: envName }, 503);
-  console.log('proxy provider=' + (provider.id || provider.env) + ' url=' + provider.url + ' keys=' + keys.length);
+  console.log('proxy provider=' + provider.env + ' url=' + provider.url + ' keys=' + keys.length + ' keylen=' + keys[0].length + ' prefix=' + keys[0].slice(0, 7));
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(0, 6) : [];
   if (!messages.length) return reply(req, { error: 'missing_messages' }, 400);
