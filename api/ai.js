@@ -4,7 +4,7 @@
    and receives the provider's OpenAI-shaped response (including SSE when streaming). */
 
 export const config = { runtime: 'edge' };
-const PROXY_VERSION = 'v6';
+const PROXY_VERSION = 'v7';
 
 const PROVIDERS = {
   groq: {
