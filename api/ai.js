@@ -128,9 +128,12 @@ export default async function handler(req) {
   let lastFetchErr = null;
   for (const key of keys) {
     try {
+      const h = new Headers();
+      h.set('Authorization', 'Bearer ' + key);
+      h.set('Content-Type', 'application/json');
       upstream = await fetch(provider.url, {
         method: 'POST',
-        headers: { Authorization: 'Bearer ' + key, 'Content-Type': 'application/json' },
+        headers: h,
         body: JSON.stringify(payload)
       });
       if (upstream.ok || upstream.status < 500) break;
