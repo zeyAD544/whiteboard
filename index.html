@@ -1267,7 +1267,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
 @media (max-width:1100px){.page-pill{display:none!important}}
 @media (max-width:960px){.topbar #paletteBtn,.topbar #shareBtn{display:none}}
 .page-strip{
-  position:absolute;left:50%;bottom:58px;transform:translateX(-50%);
+  position:absolute;left:50%;bottom:68px;transform:translateX(-50%);
   z-index:6;display:flex;align-items:center;gap:4px;padding:5px 6px;
   max-width:min(720px,calc(100% - 190px));
   background:rgba(34,29,22,.94);
@@ -1735,6 +1735,21 @@ body{background:var(--ink-900);color:var(--text)}
 .layout-switch{padding:3px;border:1px solid var(--line);border-radius:11px;background:rgba(6,11,15,.4)}
 .layout-btn[aria-pressed="true"]{color:var(--accent-bright);background:rgba(207,135,99,.09);box-shadow:inset 0 0 0 1px rgba(207,135,99,.16)}
 .workspace{background:transparent!important;gap:10px;padding:10px 12px 12px!important}
+/* The app is a single grid column. Without an explicit minmax(0,1fr) track the
+   column is sized by the topbar's min-content width, so a wide button cluster
+   pushed the whole workspace past the right edge of the window (and clipped
+   the stage, video controls, and the last tools). The track must always equal
+   the window, never the toolbar. */
+.app{grid-template-columns:minmax(0,1fr)}
+.topbar{min-width:0}
+.topbar-left{flex:1 1 auto;min-width:0;overflow:hidden}
+/* The actions cluster may scroll a little on very narrow windows instead of
+   widening the layout (this was the source of the typing jitter: every
+   "Saving…"/"Saved" swap grew the topbar and re-measured the stage). */
+.topbar-right{flex:0 1 auto;min-width:0}
+/* Reserve the width of the widest label so chips never resize the bar. */
+.save-state{min-width:86px}
+#inputStatusText{display:inline-block;min-width:60px}
 .rail{
   width:58px!important;min-width:58px!important;padding:10px 7px!important;gap:6px!important;
   background:rgba(16,24,32,.94)!important;border:1px solid var(--line-strong)!important;border-radius:16px!important;
@@ -1793,6 +1808,19 @@ body{background:var(--ink-900);color:var(--text)}
 }
 .dock-btn{width:34px;height:32px;border-radius:9px;color:#a4b4c0}
 .dock-btn:hover{background:rgba(180,205,218,.09);color:var(--text);transform:none}
+/* On a narrow board (split view or a small window) the dock has to fit the
+   stage, not the window; scale its buttons down before anything is cut off. */
+@container (max-width: 430px){
+  .dock{left:8px;bottom:8px;padding:3px;gap:1px}
+  .dock-btn{width:26px;height:25px}
+  .zoom-label{min-width:38px;padding:0 4px;font-size:10px}
+  .dock-sep{margin:0 2px}
+}
+/* Phone-sized boards: the writing-feel panel lives in the More menu, so drop
+   its dock button before the last controls run off the edge. */
+@container (max-width: 350px){
+  .dock #feelBtn{display:none}
+}
 .zoom-label{color:#b5c3cc;border-radius:8px}.zoom-label:hover{background:rgba(180,205,218,.08)}
 .menu,.math-tools-menu,.color-menu,.dropdown-menu{background:#15212a!important;box-shadow:var(--shadow-float)!important;border-radius:13px!important}
 .menu button,.math-tool-option,.color-menu button{border-radius:8px!important;color:#c3d0d7!important}
@@ -1808,6 +1836,30 @@ input:not([type="range"]),textarea,select{color:var(--text)}
 ::-webkit-scrollbar{width:8px;height:8px}
 ::-webkit-scrollbar-thumb{background:rgba(153,179,193,.2);border:2px solid transparent;background-clip:padding-box;border-radius:99px}
 ::-webkit-scrollbar-thumb:hover{background-color:rgba(153,179,193,.33)}
+/* Mid-size windows (tablets, half-screen laptops): park the actions that also
+   live in the More menu, and let the remaining cluster scroll rather than push
+   the layout wider than the window. */
+@media(max-width:1279px){
+  .topbar #soundBtn,.topbar #clearBtn,.topbar #helpBtn,.topbar #fullscreenBtn{display:none!important}
+  .topbar-right{overflow-x:auto;overflow-y:hidden;scrollbar-width:none}
+  .topbar-right::-webkit-scrollbar{display:none}
+}
+/* Short windows: a 19-tool column does not fit in less than ~960px of height,
+   so tighten it, then flow the groups into two columns before anything gets
+   clipped. */
+@media(min-width:881px) and (max-height:1060px){
+  .rail{padding:6px 0!important;gap:3px!important}
+  .tool-group{gap:3px}
+  .tool{height:36px!important}
+  .rail-sep{margin:4px 0!important}
+}
+@media(min-width:881px) and (max-height:880px){
+  .rail{width:106px!important;min-width:106px!important;padding:8px 6px!important;gap:4px!important}
+  .tool-group{display:grid;grid-template-columns:repeat(2,42px);gap:4px;justify-content:center;width:100%}
+  .tool{width:42px!important;height:38px!important}
+  .rail-sep{width:100%!important;margin:4px 0!important}
+  #mathToolsBtn{margin-inline:auto}
+}
 @media(max-width:880px){
   .topbar{padding-inline:10px}.topbar-left{gap:8px}.input-status{padding:5px 7px}.input-status #inputStatusText{max-width:74px;overflow:hidden;text-overflow:ellipsis}
   .topbar-right{max-width:60%;overflow-x:auto;scrollbar-width:none}.topbar-right::-webkit-scrollbar{display:none}
@@ -1816,11 +1868,14 @@ input:not([type="range"]),textarea,select{color:var(--text)}
   .rail::-webkit-scrollbar{display:none}.tool-group{flex-direction:row;gap:2px;width:auto}.rail-sep{width:1px!important;height:24px;margin:0 5px!important;flex:none}
   .tool{width:40px!important;height:38px!important;flex:none}
   .dash-body{grid-template-columns:205px minmax(0,1fr)}
+  .dock-btn{width:28px;height:27px}
+  .page-strip{bottom:58px}
 }
 @media(max-width:640px){
   .topbar{min-height:54px}.topbar .hairline,.topbar .save-state,.topbar .topbar-divider,.topbar #shareBtn,.topbar #soundBtn,.topbar #helpBtn{display:none!important}
   .topbar .brand{display:flex!important}.input-status{display:inline-flex!important;padding:4px 6px;font-size:9px}.input-status #inputStatusText{max-width:58px}
   .board-title{max-width:36vw}.topbar-right{gap:2px;max-width:57%}.workspace{padding:5px!important;gap:5px}.rail{width:100%!important;min-width:0!important;border-radius:13px!important;padding:6px 5px!important}.tool{width:38px!important;height:38px!important}
+  .v2-chip{display:none}
   .dash-head{height:auto;min-height:60px;padding:10px 14px}.dash-body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.dash-subjects{max-height:142px;border-right:0;border-bottom:1px solid var(--line)}.subject-list{flex-direction:row;overflow-x:auto;overflow-y:hidden}.subject-item{width:auto;flex:none}.subject-item[aria-current="true"]::before{left:8px;right:8px;top:auto;bottom:-7px;height:2px;width:auto}.dash-pages{padding:20px 16px 32px}.dash-pages-head{margin-bottom:18px}.page-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
 }
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
@@ -7960,15 +8015,42 @@ function beginEdit(e, opts) {
   area.style.color = note ? '#3a3020' : themeInk(e.color);
   area.value = e.text || '';
   textEdit = { el: e, isNew: !!o.isNew, original: e.text || '', originalY2: e.y2 };
+  /* The textarea must grow with the editor. Measuring scrollHeight with an
+     "auto" height and then leaving it there kept the field at its default two
+     rows while the box around it grew, so every new line scrolled the text up
+     inside a two-line window instead of showing what was being typed. */
+  const fitEditorToText = () => {
+    area.style.height = 'auto';
+    const need = Math.max(fs * 1.5, area.scrollHeight);
+    el.textEditor.style.height = need + 'px';
+    area.style.height = need + 'px';
+    return need;
+  };
+  /* Keep the caret on the page: when the editor reaches the bottom edge of the
+     board, walk the camera up by the same amount and carry the overlay with it,
+     so the text under the caret stays put instead of disappearing off-stage. */
+  const keepEditorInView = () => {
+    const box = el.textEditor.getBoundingClientRect();
+    const stage = el.stage.getBoundingClientRect();
+    const margin = 14;
+    let dy = 0;
+    const fits = box.height <= stage.height - margin * 2;
+    if (box.bottom > stage.bottom - margin) dy = box.bottom - (stage.bottom - margin);
+    else if (fits && box.top < stage.top + margin) dy = box.top - (stage.top + margin);
+    if (!dy) return;
+    cam.y -= dy;
+    el.textEditor.style.top = ((parseFloat(el.textEditor.style.top) || 0) - dy) + 'px';
+    stageRectDirty = true;
+    queueScene();
+  };
+  if (!note && e.text) { fitEditorToText(); keepEditorInView(); }
   area.oninput = () => {
-    if (textEdit && textEdit.el.type === 'text' && !textEdit.isNew) { /* live width stays fixed */ }
     if (textEdit && textEdit.el.type === 'text') {
-      area.style.height = 'auto';
-      const need = Math.max(fs * 1.5, area.scrollHeight);
-      el.textEditor.style.height = need + 'px';
+      const need = fitEditorToText();
       textEdit.el.y2 = textEdit.el.y1 + need / cam.scale;
       invalidate(textEdit.el);
       queueScene();
+      keepEditorInView();
     }
   };
   setTool('select');
