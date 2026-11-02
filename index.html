@@ -3485,6 +3485,16 @@ let draft = null, marquee = null, hoverEl = null, gesture = null, pinch = null;
 let spaceDown = false, suppressGesture = false, pointerInside = false;
 const activePointers = new Map();
 const activeTouches = new Set();
+/* Which pointer owns the gesture that is running right now, so an extra contact
+   (a resting palm, a second finger) can be told apart from the thing writing. */
+let gesturePointerId = null;
+/* Contacts parked while a stroke is already being written. They stay ignored for
+   the rest of their lifetime, so a hand that lands mid-word can neither draw,
+   erase, zoom, or undo. */
+const strayPointers = new Set();
+/* Two contacts only form a two-finger gesture when they land together: a pair
+   that arrives further apart than this is one finger writing and one brushing. */
+const PAIR_GESTURE_MS = 260;
 let mathMode = null;
 let penActive = false;
 let activePenPressure = 0;
@@ -6766,9 +6776,10 @@ function fitContent() {
 function measureStage() {
   const rect = el.stage.getBoundingClientRect();
   const nextDpr = clamp(window.devicePixelRatio || 1, 1, 2.5);
+  const prevW = viewW, prevH = viewH;
+  const prevLeft = stageRect.left, prevTop = stageRect.top;
   /* Quantize to physical pixels so fractional flex measurements do not move
      the camera back and forth by tiny amounts during resize observations. */
-  const prevW = viewW, prevH = viewH;
   const measuredW = Math.max(1, Math.round(rect.width * nextDpr) / nextDpr);
   const measuredH = Math.max(1, Math.round(rect.height * nextDpr) / nextDpr);
   /* Hysteresis prevents fractional flex rounding from alternating between two
@@ -6776,8 +6787,12 @@ function measureStage() {
   const w = prevW && Math.abs(measuredW - prevW) < 0.75 ? prevW : measuredW;
   const h = prevH && Math.abs(measuredH - prevH) < 0.75 ? prevH : measuredH;
   viewW = w; viewH = h; dpr = nextDpr;
-  stageRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
-  stageRectDirty = !(rect.width > 0 && rect.height > 0);
+  /* A stroke keeps the geometry it started with. Overwriting the cached rect
+     mid-stroke re-maps the pen's coordinates under the hand, which bends the
+     line instead of drawing it straight; re-measured once the stroke is done. */
+  const drawing = !!(gesture && (gesture.type === 'draw' || gesture.type === 'shape' || gesture.type === 'erase'));
+  if (!drawing) stageRect = { left: rect.left, top: rect.top, width: rect.width, height: rect.height };
+  stageRectDirty = drawing || !(rect.width > 0 && rect.height > 0);
 
   let canvasResized = false;
   for (const c of [el.scene, el.overlay]) {
@@ -6804,13 +6819,38 @@ function measureStage() {
       cam.x = w / 2;
       cam.y = h / 2;
     }
-  } else if (prevW && prevH && (prevW !== w || prevH !== h)) {
-    cam.x += (w - prevW) / 2;
-    cam.y += (h - prevH) / 2;
+  } else if (prevW && prevH) {
+    /* Only follow the board when the board itself moved: a panel opening, the
+       layout switching, or the device rotating. Browser chrome collapsing (or
+       the on-screen keyboard opening) changes the stage's edges, not its
+       origin — and recentring for that made the page slide under the pen on
+       every keystroke and every toolbar animation, which is the shake. */
+    const shiftX = Math.abs(rect.left - prevLeft) >= 1 ? rect.left - prevLeft : 0;
+    const shiftY = Math.abs(rect.top - prevTop) >= 1 ? rect.top - prevTop : 0;
+    const relayout = Math.abs(w - prevW) > w * 0.25 || Math.abs(h - prevH) > h * 0.25;
+    if (!drawing) {
+      cam.x += shiftX + (relayout ? (w - prevW) / 2 : 0);
+      cam.y += shiftY + (relayout ? (h - prevH) / 2 : 0);
+    }
   }
   updateZoomUi();
   queueScene();
 }
+
+/* The canvas backing store is stretched by CSS, so a size change nobody observed
+   (a ResizeObserver that never ran, a tablet waking from the background, a
+   device-pixel-ratio flip, a layout the observer coalesced away) silently warps
+   every stroke: circles turn into ellipses and the pen no longer lands where it
+   touched. Verify the real size instead of trusting the observer alone. */
+function verifyStageBacking() {
+  const cssW = el.stage.clientWidth, cssH = el.stage.clientHeight;
+  if (!cssW || !cssH) return;
+  /* A couple of pixels of slack: measureStage quantizes to whole device pixels,
+     so an exact comparison would re-measure on every single pass. */
+  const off = (c) => Math.abs(cssW * dpr - c.width) >= 2 || Math.abs(cssH * dpr - c.height) >= 2;
+  if (off(el.scene) || off(el.overlay)) measureStage();
+}
+setInterval(verifyStageBacking, 900);
 
 /* ------------------------------------------------------------ geometry */
 function pointSegDist(px, py, x1, y1, x2, y2) {
@@ -7603,6 +7643,9 @@ function drawOverlay() {
 let stageRect = { left: 0, top: 0, width: 0, height: 0 };
 let stageRectDirty = true;
 function refreshStageRect() {
+  /* Mid-stroke the rect is frozen: a scroll or a resize must not move the
+     mapping under the pen and turn a straight line into a kinked one. */
+  if (gesture && gesture.type === 'draw' && stageRect.width > 0) return stageRect;
   if (!stageRectDirty && stageRect.width > 0 && stageRect.height > 0) return stageRect;
   const r = el.stage.getBoundingClientRect();
   stageRect = { left: r.left, top: r.top, width: r.width, height: r.height };
@@ -7801,6 +7844,38 @@ function noteStrokeForAssist(stroke) {
 }
 
 /* ------------------------------------------------------------ pointer down */
+/* The pen outranks whatever was already on the glass. Called the moment a pen
+   touches down: resting fingers and palms leave the pointer bookkeeping, and a
+   placeholder stroke one of them started is thrown away. Without this a hand
+   that was resting first paired with the pen, and the pen's own movement drove
+   a pinch zoom that dragged the whole board with it while writing. */
+function releaseRestingTouches() {
+  if (!activeTouches.size) return;
+  const dropped = new Set(activeTouches);
+  for (const id of dropped) {
+    activePointers.delete(id);
+    activeTouches.delete(id);
+    try { el.overlay.releasePointerCapture(id); } catch { /* noop */ }
+  }
+  if (gesturePointerId != null && dropped.has(gesturePointerId)) {
+    gesture = null;
+    draft = null;
+    marquee = null;
+    gesturePointerId = null;
+  }
+  if (pinch) {
+    /* A two-finger erase that already changed the board must land in history,
+       otherwise the ink it removed would come back on undo instead of the
+       stroke written after it. */
+    if (pinch.erase && pinch.armed) commitTx(pinch.changed);
+    pinch = null;
+    suppressGesture = false;
+  }
+  twoFingerTap = null;
+  hoverEl = null;
+  queueOverlay();
+}
+
 function onPointerDown(e) {
   const isPen = e.pointerType === 'pen';
   const isTouch = e.pointerType === 'touch';
@@ -7811,6 +7886,7 @@ function onPointerDown(e) {
   if (isPen) {
     penActive = true;
     penProximity = true;
+    releaseRestingTouches();
     penHasPressure = hasRealPressure(e);
     if (penHasPressure) activePenPressure = clamp(e.pressure, PEN.minPressure, 1);
     setInputStatus('writing', 'Writing');
@@ -7838,21 +7914,31 @@ function onPointerDown(e) {
   }
 
   if (e.button !== 0 && !(e.button === 1 && state.tool === 'hand')) return;
+  /* Never start writing into a stretched canvas. */
+  verifyStageBacking();
   if (!el.context.classList.contains('is-idle')) hidePenControls();
   el.overlay.focus({ preventScroll: true });
   const s = stagePoint(e);
   pointerScreen = s;
   pointerInside = true;
-  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType, t: Date.now() });
   try { el.overlay.setPointerCapture(e.pointerId); } catch { /* noop */ }
 
-  if (isTouch && activeTouches.size === 2 && state.tool !== 'hand' && !penActive) {
-    startPinch();
-    return;
-  }
-  if (activePointers.size === 2) {
-    if (!penActive && activeTouches.size === 2) {
-      const pts = Array.from(activePointers.entries());
+  if (activePointers.size >= 2) {
+    const pts = Array.from(activePointers.entries());
+    const gap = Math.abs((pts[0][1].t || 0) - (pts[pts.length - 1][1].t || 0));
+    const paired = pts.length === 2 && gap <= PAIR_GESTURE_MS && !penActive;
+    /* One finger is writing and another has just landed: park it instead of
+       turning the writer's own movement into a pinch, an erase, or an undo. */
+    if (!paired) {
+      strayPointers.add(e.pointerId);
+      activePointers.delete(e.pointerId);
+      activeTouches.delete(e.pointerId);
+      try { el.overlay.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+      e.preventDefault();
+      return;
+    }
+    if (activeTouches.size === 2) {
       twoFingerTap = {
         moved: false,
         t: Date.now(),
@@ -7862,7 +7948,6 @@ function onPointerDown(e) {
     startPinch();
     return;
   }
-  if (activePointers.size > 2) { twoFingerTap = null; return; }
   if (touchProtected) { e.preventDefault(); return; }
   if (suppressGesture) return;
 
@@ -7873,6 +7958,7 @@ function onPointerDown(e) {
     return;
   }
 
+  gesturePointerId = e.pointerId;
   const p = screenToWorld(s.x, s.y);
   if (state.tool === 'eraser') { startErase(p); return; }
   if (state.tool === 'select') { startSelect(e, p, s); return; }
@@ -8292,10 +8378,14 @@ function startPinch() {
   draft = null;
   marquee = null;
   gesture = null;
+  gesturePointerId = null;
   const rect = el.stage.getBoundingClientRect();
   const pair = activeTouches.size === 2
     ? Array.from(activePointers.entries()).filter(([, q]) => q.pointerType === 'touch').slice(0, 2)
     : Array.from(activePointers.entries()).slice(0, 2);
+  /* A pen is never half of a two-finger gesture: it writes, and the board must
+     not zoom or erase while it is down. */
+  if (pair.some(([, q]) => q.pointerType === 'pen')) return;
   const pts = pair.map(([, q]) => ({ x: q.x - rect.left, y: q.y - rect.top }));
   if (pts.length < 2) return;
   const a = pts[0], b = pts[1];
@@ -8307,15 +8397,17 @@ function startPinch() {
     cam0: { x: cam.x, y: cam.y },
     erase: activeTouches.size === 2 && state.tool !== 'hand',
     lastErase: null,
-    changed: false
+    changed: false,
+    /* Nothing happens until the pair provably moves (see updatePinch). */
+    armed: false,
+    a0: { x: a.x, y: a.y },
+    b0: { x: b.x, y: b.y }
   };
   if (pinch.erase) {
-    twoFingerTap = null;
+    /* twoFingerTap is kept on purpose: a pair that taps and never travels is an
+       undo, not an erase. updatePinch only starts erasing once it moves. */
     setInputStatus('erase', 'Two-finger erase');
-    const p = screenToWorld(pinch.m0.x, pinch.m0.y);
-    pinch.lastErase = p;
     beginTx();
-    pinch.changed = eraseAlong(p, p) || pinch.changed;
   }
   suppressGesture = true;
   queueOverlay();
@@ -8323,6 +8415,8 @@ function startPinch() {
 
 /* ------------------------------------------------------------ pointer move */
 function onPointerMove(e) {
+  /* A contact parked at pointerdown never joins this stroke. */
+  if (strayPointers.has(e.pointerId)) return;
   /* Refresh rect on every move for perfect alignment */
   const r = refreshStageRect();
   const s = { x: e.clientX - r.left, y: e.clientY - r.top };
@@ -8614,6 +8708,18 @@ function updatePinch() {
   const a = pts[0], b = pts[1];
   const d = Math.max(1, dist(a, b));
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  /* A pair only takes over once it actually travels. Fingers resting on the
+     glass, or a hand landing next to the finger that is mid-word, must not
+     erase a line or move the board by a single pixel. */
+  if (!pinch.armed) {
+    const drift = Math.hypot(a.x - pinch.a0.x, a.y - pinch.a0.y) + Math.hypot(b.x - pinch.b0.x, b.y - pinch.b0.y);
+    if (drift < 16 && Math.abs(d - pinch.d0) < 14) return;
+    pinch.armed = true;
+    pinch.d0 = d;
+    pinch.m0 = mid;
+    pinch.scale0 = cam.scale;
+    pinch.cam0 = { x: cam.x, y: cam.y };
+  }
   if (pinch.erase) {
     const p = screenToWorld(mid.x, mid.y);
     pinch.changed = eraseAlong(pinch.lastErase || p, p) || pinch.changed;
@@ -8732,7 +8838,15 @@ function shapeEraseHit(target, a, b, r) {
 
 /* ------------------------------------------------------------ pointer up */
 function onPointerUp(e) {
+  if (strayPointers.delete(e.pointerId)) {
+    /* It was never part of the gesture, so lifting it changes nothing. */
+    try { el.overlay.releasePointerCapture(e.pointerId); } catch { /* noop */ }
+    return;
+  }
   if (activePointers.has(e.pointerId)) activePointers.delete(e.pointerId);
+  /* Parked contacts only matter while the stroke they interrupted is running:
+     once nothing is down, a reused pointer id must not stay ignored forever. */
+  if (activePointers.size === 0) strayPointers.clear();
   try { el.overlay.releasePointerCapture(e.pointerId); } catch { /* noop */ }
 
   if (e.pointerType === 'pen') {
@@ -8745,12 +8859,13 @@ function onPointerUp(e) {
   if (activePointers.size === 0 && (e.pointerType === 'pen' || e.pointerType === 'touch')) setInputStatus('ready', 'Pen ready');
 
   if (pinch) {
+    const armed = pinch.armed;
     if (pinch.pointerIds.some((id) => !activePointers.has(id))) {
       if (pinch.erase) commitTx(pinch.changed || !!(gesture && gesture.changed));
       pinch = null;
     }
     if (activePointers.size === 0) {
-      if (twoFingerTap && !twoFingerTap.moved && Date.now() - twoFingerTap.t < 500) {
+      if (twoFingerTap && !twoFingerTap.moved && !armed && Date.now() - twoFingerTap.t < 500) {
         twoFingerTap = null;
         suppressGesture = false;
         undo();
@@ -8774,11 +8889,15 @@ function onPointerUp(e) {
   if (activePointers.size > 0 && suppressGesture) return;
 
   finishGesture(e);
+  if (gesturePointerId === e.pointerId) gesturePointerId = null;
   if (activePointers.size === 0) suppressGesture = false;
 }
 
 function finishGesture(e) {
   if (!gesture) return;
+  /* Re-measure now that the stroke is over: a resize during it left the cached
+     rect deliberately stale (see measureStage). */
+  if (gesture.type === 'draw' || gesture.type === 'shape' || gesture.type === 'erase') stageRectDirty = true;
   const g = gesture;
   gesture = null;
   el.stage.classList.remove('is-grabbing');
