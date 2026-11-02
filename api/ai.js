@@ -87,7 +87,6 @@ export default async function handler(req) {
     .map((s) => s.trim().replace(/^["']+|["']+$/g, '').trim())
     .filter(Boolean);
   if (!keys.length) return reply(req, { error: 'missing_server_key', variable: envName }, 503);
-  console.log('proxy provider=' + provider.env + ' url=' + provider.url + ' keys=' + keys.length + ' keylen=' + keys[0].length + ' prefix=' + keys[0].slice(0, 7));
 
   const messages = Array.isArray(body.messages) ? body.messages.slice(0, 6) : [];
   if (!messages.length) return reply(req, { error: 'missing_messages' }, 400);
@@ -127,24 +126,32 @@ export default async function handler(req) {
     payload.reasoning = { effort: 'none' };
   }
 
-  const apiKey = keys[0];
-  let upstream;
-  try {
-    upstream = await fetch(provider.url, {
-      method: 'POST',
-      headers: {
-        authorization: 'Bearer ' + apiKey,
-        'content-type': 'application/json',
-        'http-referer': 'https://whiteboard123n.vercel.app',
-        'x-title': 'Whiteboard'
-      },
-      body: JSON.stringify(payload)
-    });
-  } catch (err) {
-    console.error('fetch error', err);
+  const RETRY_STATUSES = new Set([401, 403, 429, 500, 502, 503, 504]);
+  let upstream = null;
+  let lastErr = null;
+  for (const key of keys) {
+    try {
+      const res = await fetch(provider.url, {
+        method: 'POST',
+        headers: {
+          authorization: 'Bearer ' + key,
+          'content-type': 'application/json',
+          'http-referer': 'https://whiteboard123n.vercel.app',
+          'x-title': 'Whiteboard'
+        },
+        body: JSON.stringify(payload)
+      });
+      upstream = res;
+      if (!RETRY_STATUSES.has(res.status)) break;
+    } catch (err) {
+      lastErr = err;
+      upstream = null;
+      continue;
+    }
+  }
+  if (!upstream) {
     return reply(req, { error: 'upstream_unreachable' }, 502);
   }
-  console.log('proxy upstream status', upstream.status);
 
   const headers = stream
     ? { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', ...corsHeaders(req) }

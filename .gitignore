@@ -1,5 +1,6 @@
 # Local secrets — never commit real keys
 ai-local.js
+tokens.txt
 .env
 .env.*
 !.env.example
