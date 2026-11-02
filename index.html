@@ -35,11 +35,12 @@ if (location.protocol === 'http:' || location.protocol === 'https:') {
   --text:#f2ede3;
   --muted:#ab9f8e;
   --faint:#756a59;
-  --paper:#f5f2ea;
-  --paper-deep:#ece7dc;
-  --rule:#c9b48f;
-  --rule-soft:rgba(140,116,76,.15);
-  --rule-ink:#8c744c;
+  /* Eye-safe dark board: warm graphite instead of bright paper. */
+  --paper:#1c1813;
+  --paper-deep:#15110d;
+  --rule:#6f6350;
+  --rule-soft:rgba(220,205,180,.10);
+  --rule-ink:#b9a98f;
   --accent:#df6e48;              /* artisan marking ink */
   --accent-bright:#f28559;
   --accent-ink:#1e100a;
@@ -166,34 +167,34 @@ svg{display:block}
 .page-card{
   position:relative;display:flex;flex-direction:column;
   border-radius:12px;overflow:hidden;text-align:left;
-  background:var(--paper);color:#2b241b;
-  box-shadow:0 10px 28px -14px rgba(0,0,0,.7),inset 0 0 0 1px rgba(60,48,34,.14);
+  background:var(--paper);color:#efe9dd;
+  box-shadow:0 10px 28px -14px rgba(0,0,0,.7),inset 0 0 0 1px rgba(240,233,221,.09);
   transition:transform .14s,box-shadow .14s;
 }
-.page-card:hover{transform:translateY(-2px);box-shadow:0 16px 34px -14px rgba(0,0,0,.75),inset 0 0 0 1px rgba(60,48,34,.24)}
+.page-card:hover{transform:translateY(-2px);box-shadow:0 16px 34px -14px rgba(0,0,0,.75),inset 0 0 0 1px rgba(240,233,221,.18)}
 .page-card.is-dragging{opacity:.45}
 .page-card.is-drop-target{box-shadow:inset 0 0 0 2px var(--accent)}
 .page-thumb{
-  position:relative;aspect-ratio:4/3;background:#f4f1e9;
+  position:relative;aspect-ratio:4/3;background:#211d17;
   display:grid;place-items:center;overflow:hidden;
-  border-bottom:1px solid rgba(60,48,34,.12);
+  border-bottom:1px solid rgba(240,233,221,.08);
 }
 .page-thumb svg{width:100%;height:100%;position:absolute;inset:0}
-.page-thumb .empty-glyph{color:rgba(120,102,74,.4);width:30px;height:30px}
+.page-thumb .empty-glyph{color:rgba(210,198,176,.35);width:30px;height:30px}
 .page-thumb .grab{
   position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:6px;
-  display:grid;place-items:center;color:rgba(60,48,34,.55);
-  background:rgba(255,255,255,.6);opacity:0;transition:opacity .13s;cursor:grab;
+  display:grid;place-items:center;color:rgba(230,222,206,.7);
+  background:rgba(0,0,0,.45);opacity:0;transition:opacity .13s;cursor:grab;
 }
 .page-card:hover .grab{opacity:1}
 .page-card-foot{display:flex;align-items:center;gap:8px;padding:9px 10px}
 .page-card-title{flex:1;min-width:0;font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.page-card-date{font-family:var(--font-mono);font-size:9px;color:rgba(60,48,34,.5);white-space:nowrap}
+.page-card-date{font-family:var(--font-mono);font-size:9px;color:rgba(230,222,206,.5);white-space:nowrap}
 .page-card-menu{
   width:24px;height:24px;border-radius:6px;display:grid;place-items:center;flex:none;
-  color:rgba(60,48,34,.6);transition:background .13s;
+  color:rgba(230,222,206,.65);transition:background .13s;
 }
-.page-card-menu:hover{background:rgba(60,48,34,.1)}
+.page-card-menu:hover{background:rgba(240,233,221,.12)}
 .page-add{
   display:grid;place-items:center;gap:8px;aspect-ratio:4/3;border-radius:12px;
   border:1.5px dashed rgba(240,233,221,.16);color:var(--faint);
@@ -204,7 +205,7 @@ svg{display:block}
 .dash-empty{
   padding:60px 20px;text-align:center;color:var(--faint);
 }
-.dash-empty .de-title{font-family:var(--font-display);font-style:italic;font-size:19px;color:#8a7c66;margin:0 0 8px}
+.dash-empty .de-title{font-family:var(--font-display);font-style:italic;font-size:19px;color:#c9bda6;margin:0 0 8px}
 .dash-empty .de-sub{font-size:12px;margin:0}
 
 /* page-card popover menu */
@@ -304,6 +305,24 @@ kbd{
 .icon-btn:active{transform:scale(.94)}
 .icon-btn:disabled{opacity:.3;pointer-events:none}
 .icon-btn.danger:hover{background:rgba(224,114,77,.12);color:var(--accent-bright)}
+.focus-btn.is-on{
+  width:auto;min-width:32px;padding:0 9px;display:flex;align-items:center;gap:6px;
+  color:var(--accent-bright);background:rgba(224,114,77,.12);border-color:rgba(224,114,77,.32);
+}
+.focus-time{font-family:var(--font-mono);font-size:11px;font-weight:600;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+.focus-durations{margin:2px 0 4px}
+.focus-bigtime{
+  font-family:var(--font-mono);font-size:46px;line-height:1;letter-spacing:-.03em;
+  text-align:center;padding:8px 0 16px;color:var(--text);font-variant-numeric:tabular-nums;
+}
+body.is-focus #aiBtn,
+body.is-focus #tidyBtn,
+body.is-focus #shareBtn,
+body.is-focus #moreMenu [data-action="aistudio"],
+body.is-focus #moreMenu [data-action="collab"],
+body.is-focus #aiExplainerDrawer,
+body.is-focus #aiProgress,
+body.is-focus .writing-ai-block{display:none!important}
 .layout-switch{
   display:flex;align-items:center;gap:2px;padding:3px;
   border:1px solid var(--line);border-radius:9px;background:rgba(0,0,0,.26);
@@ -486,9 +505,9 @@ html,body{overscroll-behavior:none}
   color:#a7a092;transition:opacity .45s ease,visibility .45s ease,transform .45s ease;
 }
 .empty-note p{margin:0}
-.empty-note .en-title{font-family:var(--font-display);font-style:italic;font-size:23px;letter-spacing:-.02em;color:#8a7c66;margin-bottom:9px}
-.empty-note .en-sub{font-size:11.5px;line-height:1.7;color:#a89c88}
-.empty-note .en-sub kbd{background:rgba(32,28,22,.055);border-color:rgba(32,28,22,.12);border-bottom-color:rgba(32,28,22,.2);color:#7d7567;font-size:9px}
+.empty-note .en-title{font-family:var(--font-display);font-style:italic;font-size:23px;letter-spacing:-.02em;color:#cfc3ac;margin-bottom:9px}
+.empty-note .en-sub{font-size:11.5px;line-height:1.7;color:#b6aa95}
+.empty-note .en-sub kbd{background:rgba(240,233,221,.06);border-color:rgba(240,233,221,.14);border-bottom-color:rgba(240,233,221,.22);color:#c3b8a4;font-size:9px}
 .touch-key{display:none}
 @media (pointer:coarse){.touch-key{display:inline}}
 .empty-note.is-hidden{opacity:0;visibility:hidden;transform:translate(-50%,-46%)}
@@ -1262,9 +1281,9 @@ input[type="range"].bg-vol::-moz-range-thumb{
 .pstrip-page svg{position:absolute;inset:0;width:100%;height:100%}
 .pstrip-page .pstrip-num{
   position:absolute;right:2px;bottom:1px;font-family:var(--font-mono);font-size:8px;
-  color:rgba(45,36,24,.55);line-height:1;
+  color:rgba(235,226,210,.6);line-height:1;
 }
-.pstrip-page .pstrip-empty{position:absolute;inset:0;display:grid;place-items:center;color:rgba(120,102,74,.35)}
+.pstrip-page .pstrip-empty{position:absolute;inset:0;display:grid;place-items:center;color:rgba(210,198,176,.3)}
 .pstrip-page .pstrip-empty .icon{width:13px;height:13px}
 .pstrip-page.is-drop{box-shadow:inset 0 0 0 2px var(--accent)}
 .pstrip-count{
@@ -1346,7 +1365,7 @@ input[type="range"].bg-vol::-moz-range-thumb{
 }
 .offline-banner.is-on{transform:translate(-50%,0)}
 .offline-banner .icon{width:13px;height:13px;color:var(--accent)}
-body[data-contrast="high"]{--muted:#d8d0c1;--faint:#b9b0a0;--line:rgba(255,255,255,.18);--line-strong:rgba(255,255,255,.34);--paper:#fbf9f4}
+body[data-contrast="high"]{--muted:#d8d0c1;--faint:#b9b0a0;--line:rgba(255,255,255,.18);--line-strong:rgba(255,255,255,.34)}
 body[data-contrast="high"] .context,
 body[data-contrast="high"] .dock,
 body[data-contrast="high"] .page-strip,
@@ -1431,7 +1450,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
 .ai-drawer-body{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:12px}
 .ai-drawer-preview{
   width:100%;max-height:130px;overflow:hidden;border-radius:10px;
-  border:1px solid rgba(240,233,221,.12);background:#f4f1e9;display:grid;place-items:center;
+  border:1px solid rgba(240,233,221,.12);background:var(--paper-deep);display:grid;place-items:center;
   box-shadow:inset 0 2px 6px rgba(0,0,0,.15);
 }
 .ai-drawer-preview img{max-width:100%;max-height:130px;object-fit:contain}
@@ -1505,24 +1524,24 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
 }
 
 .flashcard{
-  background:#fff7d6;color:#2c2214;border-radius:14px;padding:20px 22px;
+  background:#2a2419;color:#efe6d2;border-radius:14px;padding:20px 22px;
   min-height:150px;box-shadow:0 12px 32px rgba(0,0,0,.4);margin:14px 0 12px;
   display:flex;flex-direction:column;justify-content:space-between;cursor:pointer;
-  border:1px solid rgba(138,106,42,.2);position:relative;
+  border:1px solid rgba(240,233,221,.12);position:relative;
   transition:transform .2s cubic-bezier(.16,1,.3,1),box-shadow .2s ease;
-  background-image:radial-gradient(rgba(140,116,76,.1) 1px,transparent 0);
+  background-image:radial-gradient(rgba(220,205,180,.08) 1px,transparent 0);
   background-size:16px 16px;
 }
 .flashcard:hover{transform:translateY(-2px);box-shadow:0 16px 40px rgba(0,0,0,.45)}
-.fc-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#8a6a2a;margin-bottom:8px;font-weight:700}
-.fc-content{font-size:14.5px;line-height:1.6;font-weight:500;white-space:pre-wrap;flex:1;color:#1e1810}
+.fc-label{font-family:var(--font-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:#e3b463;margin-bottom:8px;font-weight:700}
+.fc-content{font-size:14.5px;line-height:1.6;font-weight:500;white-space:pre-wrap;flex:1;color:#efe6d2}
 .fc-flip-btn{
   margin-top:14px;align-self:flex-start;display:flex;align-items:center;gap:6px;
-  font-size:11.5px;font-weight:600;color:#5a4314;background:rgba(0,0,0,.08);
-  border:1px solid rgba(0,0,0,.06);border-radius:7px;padding:5px 10px;cursor:pointer;
+  font-size:11.5px;font-weight:600;color:#efe6d2;background:rgba(240,233,221,.08);
+  border:1px solid rgba(240,233,221,.12);border-radius:7px;padding:5px 10px;cursor:pointer;
   transition:background .14s ease;
 }
-.fc-flip-btn:hover{background:rgba(0,0,0,.13)}
+.fc-flip-btn:hover{background:rgba(240,233,221,.14)}
 .quiz-counter{font-family:var(--font-mono);font-size:11px;color:var(--faint);margin-bottom:4px}
 .quiz-nav{display:flex;justify-content:space-between;gap:8px}
 
@@ -1790,6 +1809,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
       <button class="icon-btn" id="redoBtn" aria-label="Redo" title="Redo — ⇧⌘Z"><svg class="icon"><use href="#i-redo"/></svg></button>
       <span class="topbar-divider" aria-hidden="true"></span>
       <button class="icon-btn" id="soundBtn" aria-label="Background sound" title="Background sound"><svg class="icon"><use href="#i-music"/></svg></button>
+      <button class="icon-btn focus-btn" id="focusBtn" aria-label="Focus mode" title="Focus mode — ⇧F" aria-pressed="false"><svg class="icon"><use href="#i-clock"/></svg><span class="focus-time" id="focusTime" hidden aria-hidden="true"></span></button>
       <button class="icon-btn danger" id="clearBtn" aria-label="Clear board" title="Clear board"><svg class="icon"><use href="#i-trash"/></svg></button>
       <button class="icon-btn" id="fullscreenBtn" aria-label="Fullscreen" title="Fullscreen — F"><svg class="icon"><use href="#i-expand"/></svg></button>
       <button class="icon-btn" id="helpBtn" aria-label="Keyboard shortcuts" title="Keyboard shortcuts — ?"><svg class="icon"><use href="#i-help"/></svg></button>
@@ -1800,6 +1820,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
           <button data-action="grid"><svg class="icon"><use href="#i-dots"/></svg><span id="menuGrid">Background: Dots</span></button>
           <button data-action="fullscreen"><svg class="icon"><use href="#i-expand"/></svg>Fullscreen</button>
           <button data-action="sound"><svg class="icon"><use href="#i-music"/></svg>Background sound</button>
+          <button data-action="focus"><svg class="icon"><use href="#i-clock"/></svg>Focus mode</button>
           <button data-action="shortcuts"><svg class="icon"><use href="#i-help"/></svg>Keyboard shortcuts</button>
           <button data-action="aistudio"><svg class="icon"><use href="#i-spark"/></svg>AI Studio &amp; Tools</button>
           <button data-action="writing"><svg class="icon"><use href="#i-sliders"/></svg>Writing feel &amp; AI</button>
@@ -1897,7 +1918,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
         <div class="ctx-group ctx-colors">
           <div class="swatches" id="swatches" role="group" aria-label="Ink color"></div>
           <label class="swatch swatch-custom" id="customSwatch" data-tip="Custom color" aria-label="Custom color">
-            <input type="color" id="customColor" value="#26211a" aria-label="Custom color">
+            <input type="color" id="customColor" value="#f2ede3" aria-label="Custom color">
           </label>
         </div>
         <span class="ctx-sep" aria-hidden="true"></span>
@@ -2270,13 +2291,13 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
     <p>Tune the input engine for the screen and stylus in front of you. Higher response keeps fast, cheap styli from dropping detail; lower response trades a little latency for a steadier line.</p>
 
     <div class="writing-block">
-      <div class="writing-head"><strong>Touch &amp; stylus response</strong><output id="feelVal">Instant</output></div>
-      <input type="range" id="feelRange" min="0" max="2" step="1" value="2" aria-label="Touch and stylus response">
-      <div class="feel-scale"><span>Steady</span><span>Balanced</span><span>Instant</span></div>
+      <div class="writing-head"><strong>Touch &amp; stylus response</strong><output id="feelVal">Max</output></div>
+      <input type="range" id="feelRange" min="0" max="3" step="1" value="3" aria-label="Touch and stylus response">
+      <div class="feel-scale"><span>Steady</span><span>Balanced</span><span>Instant</span><span>Max</span></div>
       <p class="writing-sub">Sampling runs at the device's native rate, fills missed reports, and adapts smoothing to speed and contact quality.</p>
     </div>
 
-    <div class="writing-block">
+    <div class="writing-block writing-ai-block">
       <div class="writing-row">
         <div class="writing-copy">
           <strong>AI letter completion</strong>
@@ -2295,6 +2316,38 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
     </div>
 
     <div class="modal-actions"><button class="btn btn-primary" id="writingDone">Back to the board</button></div>
+  </div>
+</div>
+
+<!-- focus / exam mode -->
+<div class="modal-layer" id="focusModal" hidden>
+  <div class="modal-scrim" data-close></div>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="focusTitle">
+    <button class="modal-close" id="focusClose" aria-label="Close"><svg class="icon sm"><use href="#i-close"/></svg></button>
+    <div class="modal-eyebrow">Deep work</div>
+    <h2 id="focusTitle">Focus mode</h2>
+    <p id="focusCopy">A timed study session that hides AI and pop-up notifications while you work.</p>
+    <div id="focusSetup">
+      <div class="focus-durations">
+        <div class="seg" id="focusDurSeg" role="group" aria-label="Session length">
+          <button type="button" data-min="15" aria-pressed="false">15 min</button>
+          <button type="button" data-min="25" aria-pressed="true">25 min</button>
+          <button type="button" data-min="45" aria-pressed="false">45 min</button>
+          <button type="button" data-min="60" aria-pressed="false">60 min</button>
+        </div>
+      </div>
+    </div>
+    <div id="focusRunning" hidden>
+      <div class="focus-bigtime" id="focusBigTime">25:00</div>
+    </div>
+    <div class="modal-actions" id="focusSetupActions">
+      <button class="btn btn-ghost" data-close>Cancel</button>
+      <button class="btn btn-primary" id="focusStart">Start focus</button>
+    </div>
+    <div class="modal-actions" id="focusRunActions" hidden>
+      <button class="btn btn-ghost" id="focusAdd">+10 min</button>
+      <button class="btn btn-danger" id="focusEnd">End session</button>
+    </div>
   </div>
 </div>
 
@@ -2348,6 +2401,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
       <div class="key-row"><span>Group selection</span><span class="keys"><kbd>⌘</kbd><kbd>Shift</kbd><kbd>G</kbd></span></div>
       <div class="key-row"><span>Lock selection</span><span class="keys"><kbd>⌘</kbd><kbd>Shift</kbd><kbd>L</kbd></span></div>
       <div class="key-row"><span>Fullscreen</span><span class="keys"><kbd>F</kbd></span></div>
+      <div class="key-row"><span>Focus mode</span><span class="keys"><kbd>Shift</kbd><kbd>F</kbd></span></div>
     </div>
     <div class="modal-actions"><button class="btn btn-primary" id="keysDone">Back to the board</button></div>
   </div>
@@ -2537,7 +2591,7 @@ if (/^(localhost|127\.0\.0\.1|\[::1\])$/.test(location.hostname) || location.pro
 <script>
 (() => {
 'use strict';
-const APP_VERSION = 'v9';
+const APP_VERSION = 'v11';
 console.log('App version', APP_VERSION);
 const __verBadge = document.createElement('div');
 __verBadge.textContent = 'App ' + APP_VERSION;
@@ -2552,13 +2606,14 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 const uid = () => Math.random().toString(36).slice(2, 10) + Math.random().toString(36).slice(2, 6);
 const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y);
 const KEY = 'margin.board.v1';
+/* Light inks tuned to read on the dark graphite board. */
 const PALETTE = [
-  { hex: '#26211a', name: 'Ink' },
-  { hex: '#b23b2e', name: 'Marking red' },
-  { hex: '#1f6b5c', name: 'Pine' },
-  { hex: '#b5791f', name: 'Ochre' },
-  { hex: '#3a4d8f', name: 'Slate blue' },
-  { hex: '#8a3d78', name: 'Plum' }
+  { hex: '#f2ede3', name: 'Ink' },
+  { hex: '#e58a78', name: 'Marking red' },
+  { hex: '#69c3a9', name: 'Pine' },
+  { hex: '#e3b463', name: 'Ochre' },
+  { hex: '#8ea6e8', name: 'Slate blue' },
+  { hex: '#c98ac2', name: 'Plum' }
 ];
 const SHAPE_TOOLS = ['rect', 'roundrect', 'ellipse', 'polygon', 'line', 'arrow'];
 const BOX_TOOLS = ['rect', 'roundrect', 'polygon', 'ellipse', 'callout'];
@@ -2569,8 +2624,24 @@ const STICKY_COLORS = [
   { hex: '#cfe0f4', name: 'Sky' },
   { hex: '#e6d8f5', name: 'Lilac' }
 ];
-const PAPER = '#f4f1e9';
+const PAPER = '#1c1813';
+const INK_DEFAULT = '#f2ede3';
 const SELECT_INK = '#c85838';
+
+/* Stored ink predates the dark theme. Lift dark colours toward warm white when
+   drawing so old boards stay readable; bright colours pass through untouched.
+   Sticky notes and images keep their own colours. */
+function themeInk(c) {
+  if (!isHex(c)) return c;
+  const [r, g, b] = hexToRgb(c);
+  const lum = (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
+  if (lum >= 0.55) return c;
+  const mix = clamp((0.55 - lum) / 0.55, 0, 1) * 0.85 + 0.10;
+  const lift = (v) => Math.round(v + (246 - v) * mix);
+  return '#' + [lift(r), lift(g), lift(b)]
+    .map((v) => clamp(v, 0, 255).toString(16).padStart(2, '0'))
+    .join('');
+}
 
 /* ============================================================ STORAGE LAYER
    Two drivers behind one interface. IndexedDB is primary (big quota, real
@@ -2760,7 +2831,7 @@ function sanitizeWorkspace(raw) {
 }
 
 /* ---- content (per page) ---- */
-function emptyContent() { return { v: 1, elements: [], view: null, grid: 'dots', color: '#26211a', eraserSize: 32 }; }
+function emptyContent() { return { v: 1, elements: [], view: null, grid: 'dots', color: INK_DEFAULT, eraserSize: 32 }; }
 
 async function readContent(pageId) {
   const r = await readContentDetailed(pageId);
@@ -2790,7 +2861,7 @@ async function readContentDetailed(pageId) {
     elements: raw.elements.slice(0, 4000).map(sanitizeElement).filter(Boolean),
     view: (raw.view && Number.isFinite(raw.view.cx) && Number.isFinite(raw.view.cy) && Number.isFinite(raw.view.scale)) ? { cx: raw.view.cx, cy: raw.view.cy, scale: clamp(raw.view.scale, 0.2, 4) } : null,
     grid: ['none', 'dots', 'grid'].includes(raw.grid) ? raw.grid : 'dots',
-    color: isHex(raw.color) ? raw.color : '#26211a',
+    color: isHex(raw.color) ? raw.color : INK_DEFAULT,
     eraserSize: Number.isFinite(raw.eraserSize) ? clamp(raw.eraserSize, 8, 120) : 32
   };
   return { content, status: 'ok', existed: true };
@@ -2959,7 +3030,7 @@ async function readSnapshot(key) {
     elements: Array.isArray(legacy.elements) ? legacy.elements.slice(0, 4000).map(sanitizeElement).filter(Boolean) : [],
     view: (legacy.view && Number.isFinite(legacy.view.cx)) ? { cx: legacy.view.cx, cy: legacy.view.cy, scale: clamp(legacy.view.scale, 0.2, 4) } : null,
     grid: ['none', 'dots', 'grid'].includes(legacy.grid) ? legacy.grid : 'dots',
-    color: isHex(legacy.color) ? legacy.color : '#26211a',
+    color: isHex(legacy.color) ? legacy.color : INK_DEFAULT,
     eraserSize: Number.isFinite(legacy.eraserSize) ? clamp(legacy.eraserSize, 8, 120) : 32
   };
 
@@ -2992,9 +3063,9 @@ function onStorageError(err, where) {
   storageHealthy = false;
   setSaveState('error');
   if (kind === 'quota') {
-    toast('Storage is full — export a backup, then free space. Nothing was deleted.');
+    toast('Storage is full — export a backup, then free space. Nothing was deleted.', { force: true });
   } else {
-    toast('Could not save (' + where + '). Your work is still here — try exporting a backup.');
+    toast('Could not save (' + where + '). Your work is still here — try exporting a backup.', { force: true });
   }
 }
 
@@ -3004,6 +3075,12 @@ const el = {
   layoutSwitch: $('#layoutSwitch'), layoutCycle: $('#layoutCycle'),
   undoBtn: $('#undoBtn'), redoBtn: $('#redoBtn'), clearBtn: $('#clearBtn'),
   fullscreenBtn: $('#fullscreenBtn'), helpBtn: $('#helpBtn'),
+  focusBtn: $('#focusBtn'), focusTime: $('#focusTime'),
+  focusModal: $('#focusModal'), focusClose: $('#focusClose'), focusTitle: $('#focusTitle'),
+  focusCopy: $('#focusCopy'), focusSetup: $('#focusSetup'), focusRunning: $('#focusRunning'),
+  focusBigTime: $('#focusBigTime'), focusSetupActions: $('#focusSetupActions'),
+  focusRunActions: $('#focusRunActions'), focusStart: $('#focusStart'), focusEnd: $('#focusEnd'),
+  focusAdd: $('#focusAdd'), focusDurSeg: $('#focusDurSeg'),
   moreBtn: $('#moreBtn'), moreMenu: $('#moreMenu'), menuGrid: $('#menuGrid'),
   swatches: $('#swatches'), customColor: $('#customColor'), customSwatch: $('#customSwatch'),
   sizeRange: $('#sizeRange'), sizeVal: $('#sizeVal'),
@@ -3088,7 +3165,7 @@ const el = {
 /* ------------------------------------------------------------ state */
 const state = {
   tool: 'pen',
-  color: '#26211a',
+  color: INK_DEFAULT,
   sizes: { pen: 4, highlighter: 20, eraser: 32, note: 15, text: 22 },
   opacities: { pen: 1, highlighter: 0.4 },
   fill: false,
@@ -3116,10 +3193,13 @@ const state = {
   bgMuted: false,
   recent: [],
   inkAssist: false,
-  penFeel: 2,
+  penFeel: 3,
   letterAssist: false,
   letterLang: 'auto'
 };
+/* Focus/exam mode: a timed session that hides AI and non-critical toasts.
+   Session-only on purpose — a reload should not lock someone into a timer. */
+const focusMode = { active: false, endsAt: 0, minutes: 25, timer: 0 };
 let elements = [];
 let hadSavedData = false;
 let cam = { x: 0, y: 0, scale: 1 };
@@ -3174,7 +3254,12 @@ const PEN = {
   /* A stylus report counts as "real pressure" when the device reports a value
      that isn't the flat 0.5 a mouse/no-pressure source sends. */
   mousePressure: 0.5,
-  pressureMinDelta: 0.0009,
+  /* Anything above this (and different from the mouse baseline) counts as real
+     pen pressure, so even the faintest contact modulates the stroke. */
+  pressureMinDelta: 0.00005,
+  /* Floor for stored pressure: small enough that the lightest touch still
+     leaves a visible mark instead of disappearing. */
+  minPressure: 0.004,
   /* Points closer than this (in screen px) collapse together. The live feel
      preset overrides this; the value here is the safe fallback. */
   minStepScreen: 0.46,
@@ -3198,7 +3283,10 @@ const PEN = {
 const PEN_FEELS = [
   { step: 0.68, minCutoff: 0.82, beta: 0.007, fillGap: 6.5 },
   { step: 0.46, minCutoff: 1.24, beta: 0.016, fillGap: 4.6 },
-  { step: 0.30, minCutoff: 1.95, beta: 0.034, fillGap: 3.4 }
+  { step: 0.30, minCutoff: 1.95, beta: 0.034, fillGap: 3.4 },
+  /* Max: the absolute limit. Sub-pixel steps, almost no smoothing, and gap
+     filling down to the tiniest pen travel so the lightest touch leaves ink. */
+  { step: 0.08, minCutoff: 3.6, beta: 0.075, fillGap: 1.5 }
 ];
 function penTuning(pointerType) {
   const base = PEN_FEELS[clamp(Math.round(state.penFeel) || 0, 0, PEN_FEELS.length - 1)];
@@ -4586,6 +4674,7 @@ async function callAiWithFallback(opts = {}, providers = ['groq', 'openrouter'])
 }
 
 async function callAiChatRaw({ prompt, systemPrompt, imageBase64, forceProvider, jsonMode = false, onStreamChunk, maxTokens, model, models }) {
+  if (focusMode.active) throw new Error('AI is paused during focus mode');
   let providerKey = forceProvider || AI_CONFIG.activeProvider;
   let prov = AI_CONFIG.providers[providerKey] || AI_CONFIG.providers.groq;
 
@@ -4769,7 +4858,7 @@ function captureSelectionImage(list, options = {}) {
   canvas.width = Math.max(1, Math.round(w * scale));
   canvas.height = Math.max(1, Math.round(h * scale));
   const c = canvas.getContext('2d');
-  c.fillStyle = '#f4f1e9';
+  c.fillStyle = PAPER;
   c.fillRect(0, 0, canvas.width, canvas.height);
   c.setTransform(scale, 0, 0, scale, (-bb.x + pad) * scale, (-bb.y + pad) * scale);
   for (const e of targets) {
@@ -4805,12 +4894,14 @@ function syncAiProviderUi() {
 }
 
 function openAiStudio() {
+  if (focusMode.active) return;
   syncAiProviderUi();
   openModal(el.aiStudioModal, el.aiStudioDone);
 }
 
 /* 1. Math Notes Solver (Instant 0ms local eval + Groq turbo fallback) */
 async function solveMathSelection() {
+  if (focusMode.active) return;
   const targets = elements.filter((e) => selected.has(e.id));
   if (!targets.length && !elements.length) { toast('Select or write math first'); return; }
 
@@ -4911,6 +5002,7 @@ function applyMathAnswer(bb, answerStr, expression, steps) {
 
 /* 2. Sketch-to-Icon / Auto-Draw (Fast compressed vectorizer) */
 async function autoDrawSelection() {
+  if (focusMode.active) return;
   const capture = captureSelectionImage();
   if (!capture) { toast('Select a sketch or doodle first'); return; }
   pulseAssist(capture.bbox);
@@ -4967,6 +5059,7 @@ Return strictly JSON:
 
 /* 3. Handwriting-to-Text (Fast compressed OCR) */
 async function ocrHandwritingSelection() {
+  if (focusMode.active) return;
   const capture = captureSelectionImage();
   if (!capture) { toast('Select handwriting or notes first'); return; }
   pulseAssist(capture.bbox);
@@ -5016,6 +5109,7 @@ Return ONLY the transcribed text. Do not wrap in markdown or add conversational 
 
 /* 4. Smart Diagram & Flowchart Beautifier (Groq turbo path) */
 async function beautifyDiagramSelection() {
+  if (focusMode.active) return;
   const targets = elements.filter((e) => selected.has(e.id));
   if (!targets.length) { toast('Select diagram shapes, arrows, or boxes first'); return; }
 
@@ -5697,6 +5791,7 @@ function setTidyBusy(on) {
 }
 
 async function tidyBoardAi() {
+  if (focusMode.active) return;
   if (tidyBusy) { toast('الترتيب قيد التنفيذ…'); return; }
   const movable = elements.filter((e) => !e.locked && !e.tidy);
   if (!movable.length) { toast('اللوح فارغ — اكتب ملاحظاتك أولاً ثم رتّبها'); return; }
@@ -5775,6 +5870,7 @@ async function tidyBoardAi() {
 
 /* 5. Auto-Flashcard & Quiz Generator (Groq ultra-fast text generator) */
 async function generateFlashcardsQuiz(source = 'selection') {
+  if (focusMode.active) return;
   let text = '';
   const picked = (source === 'selection' && selected.size > 0)
     ? elements.filter((e) => selected.has(e.id))
@@ -5864,6 +5960,7 @@ function placeFlashcardsOnBoard() {
 
 /* 6. Visual Selection Explainer (Live Realtime Streaming) */
 async function openAiExplainer(defaultPrompt) {
+  if (focusMode.active) return;
   let capture = captureSelectionImage();
   if (!capture && elements.length) {
     capture = captureSelectionImage(elements.slice(-10));
@@ -5977,7 +6074,7 @@ function syncWritingUi() {
     el.feelRange.value = String(feel);
     paintRange(el.feelRange);
   }
-  if (el.feelVal) el.feelVal.textContent = ['Steady', 'Balanced', 'Instant'][feel];
+  if (el.feelVal) el.feelVal.textContent = ['Steady', 'Balanced', 'Instant', 'Max'][feel] || 'Max';
   for (const b of [el.aiBtn, el.writingAiBtn]) {
     if (b) b.setAttribute('aria-pressed', String(state.letterAssist));
   }
@@ -6003,7 +6100,7 @@ function rgba(hex, a) {
 function isHex(c) { return typeof c === 'string' && /^#[\da-f]{6}$/i.test(c); }
 
 /* ------------------------------------------------------------ persistence */
-function safeColor(c) { return isHex(c) ? c : '#26211a'; }
+function safeColor(c) { return isHex(c) ? c : INK_DEFAULT; }
 function sanitizeElementBase(raw) {
   if (!raw || typeof raw !== 'object') return null;
   const num = (v) => typeof v === 'number' && Number.isFinite(v);
@@ -6122,7 +6219,12 @@ function loadPrefs() {
   if (Number.isFinite(data.bgVolume)) state.bgVolume = clamp(data.bgVolume, 0, 100);
   if (typeof data.bgMuted === 'boolean') state.bgMuted = data.bgMuted;
   if (typeof data.inkAssist === 'boolean') state.inkAssist = data.inkAssist;
-  if (Number.isFinite(data.penFeel)) state.penFeel = clamp(Math.round(data.penFeel), 0, 2);
+  if (Number.isFinite(data.penFeel)) {
+    state.penFeel = clamp(Math.round(data.penFeel), 0, PEN_FEELS.length - 1);
+    /* One-time: anyone sitting on the old maximum (Instant) moves up to the new
+       absolute maximum. Deliberate choices made afterwards are preserved. */
+    if (!data.penFeelMax && state.penFeel === 2) state.penFeel = PEN_FEELS.length - 1;
+  }
   if (typeof data.letterAssist === 'boolean') state.letterAssist = data.letterAssist;
   if (['auto', 'latin', 'arabic'].includes(data.letterLang)) state.letterLang = data.letterLang;
   if (typeof data.snap === 'boolean') state.snap = data.snap;
@@ -6148,7 +6250,7 @@ function loadPrefs() {
 function serializePrefs() {
   return {
     v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted,
-    inkAssist: state.inkAssist, penFeel: state.penFeel, letterAssist: state.letterAssist, letterLang: state.letterLang,
+    inkAssist: state.inkAssist, penFeel: state.penFeel, penFeelMax: true, letterAssist: state.letterAssist, letterLang: state.letterLang,
     snap: state.snap, noteColor: state.noteColor, noteSize: state.sizes.note, textSize: state.sizes.text,
     calloutStyle: state.calloutStyle, polygonSides: state.polygonSides, presets: state.presets
   };
@@ -6162,7 +6264,7 @@ function savePrefs() {
 function applyContent(content) {
   elements = content.elements.slice();
   if (['none', 'dots', 'grid'].includes(content.grid)) state.grid = content.grid;
-  if (isHex(content.color)) state.color = content.color;
+  if (isHex(content.color)) state.color = themeInk(content.color);
   if (Number.isFinite(content.eraserSize)) state.sizes.eraser = clamp(content.eraserSize, 8, 120);
   savedView = content.view ? { cx: content.view.cx, cy: content.view.cy, scale: clamp(content.view.scale, 0.2, 4) } : null;
   undoStack = []; redoStack = [];
@@ -6608,13 +6710,13 @@ function drawGrid(ctx) {
   const ox = ((cam.x % step) + step) % step;
   const oy = ((cam.y % step) + step) % step;
   if (state.grid === 'dots') {
-    ctx.fillStyle = 'rgba(116,108,92,.30)';
+    ctx.fillStyle = 'rgba(200,188,164,.26)';
     const size = cam.scale > 1.6 ? 1.5 : 1.4;
     for (let x = ox; x < viewW; x += step) {
       for (let y = oy; y < viewH; y += step) ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
   } else {
-    ctx.strokeStyle = 'rgba(116,108,92,.16)';
+    ctx.strokeStyle = 'rgba(200,188,164,.13)';
     ctx.lineWidth = 1;
     ctx.beginPath();
     for (let x = ox; x < viewW; x += step) { ctx.moveTo(Math.round(x) + 0.5, 0); ctx.lineTo(Math.round(x) + 0.5, viewH); }
@@ -6655,7 +6757,7 @@ function drawPressureStroke(ctx, e) {
   /* Two ways to modulate width: real pen pressure, or speed for input without
      pressure. Both funnel into one normalised 0..1 "fullness" per point. */
   const fullness = (i) => {
-    if (prs && prs.length === n) return clamp(prs[i] || 0.5, 0.02, 1);
+    if (prs && prs.length === n) return clamp(prs[i] || 0.5, PEN.minPressure, 1);
     if (spd && spd.length === n) {
       const sp = spd[i] || 0;
       return clamp(1 - Math.min(sp / PEN.velRef, 1) * 0.55, 0.35, 1);
@@ -6790,7 +6892,7 @@ function drawTextElement(ctx, e) {
   const fs = clamp(e.size || 22, 6, 240);
   ctx.font = '500 ' + fs + 'px ' + UI_FONT;
   ctx.textBaseline = 'top';
-  ctx.fillStyle = e.color;
+  ctx.fillStyle = themeInk(e.color);
   const pad = textPad(e);
   const rtl = hasArabicText(e.text);
   const lines = wrapLines(ctx, e.text, Math.max(1, w - pad * 2));
@@ -6880,11 +6982,11 @@ function drawImageElement(ctx, e) {
   } else {
     ctx.save();
     ctx.setLineDash([5, 5]);
-    ctx.strokeStyle = 'rgba(116,108,92,.5)';
+    ctx.strokeStyle = 'rgba(200,188,164,.5)';
     ctx.lineWidth = 1;
     ctx.strokeRect(x + 0.5, y + 0.5, w - 1, h - 1);
     ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(116,108,92,.65)';
+    ctx.fillStyle = 'rgba(200,188,164,.65)';
     ctx.font = '500 12px ' + UI_FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -6918,11 +7020,11 @@ function drawCallout(ctx, e) {
     ctx.stroke();
   } else {
     const r = Math.min(w, h) / 2;
-    ctx.fillStyle = e.color;
+    ctx.fillStyle = themeInk(e.color);
     ctx.beginPath();
     ctx.arc(x1 + w / 2, y1 + h / 2, Math.max(1, r), 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = '#fff8ea';
+    ctx.fillStyle = '#241d14';
     ctx.font = '700 ' + Math.max(8, Math.min(r, 30)) + 'px ' + UI_FONT;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
@@ -6932,8 +7034,9 @@ function drawCallout(ctx, e) {
 function drawElement(ctx, e) {
   ctx.save();
   ctx.globalAlpha = clamp(e.opacity == null ? 1 : e.opacity, 0.01, 1);
-  ctx.strokeStyle = e.color;
-  ctx.fillStyle = e.color;
+  const ink = (e.type === 'note' || e.type === 'image') ? e.color : themeInk(e.color);
+  ctx.strokeStyle = ink;
+  ctx.fillStyle = ink;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   if (e.type === 'text') { drawTextElement(ctx, e); ctx.restore(); return; }
@@ -7393,7 +7496,7 @@ function onPointerDown(e) {
     penActive = true;
     penProximity = true;
     penHasPressure = hasRealPressure(e);
-    if (penHasPressure) activePenPressure = clamp(e.pressure, 0.02, 1);
+    if (penHasPressure) activePenPressure = clamp(e.pressure, PEN.minPressure, 1);
   }
   if (isTouch) {
     activeTouches.add(e.pointerId);
@@ -7476,7 +7579,7 @@ function startDraw(p, e) {
   const marker = state.tool === 'highlighter';
   beginStrokeFilter(stagePoint(e), eventTime(e, performance.now()), e.pointerType);
   penHasPressure = !marker && hasRealPressure(e);
-  activePenPressure = penHasPressure ? clamp(e.pressure, 0.02, 1) : 0;
+  activePenPressure = penHasPressure ? clamp(e.pressure, PEN.minPressure, 1) : 0;
   draft = {
     id: uid(),
     type: 'stroke',
@@ -7589,7 +7692,7 @@ function beginEdit(e, opts) {
   area.style.padding = (pad * cam.scale) + 'px ' + (pad * cam.scale) + 'px';
   area.style.fontSize = fs + 'px';
   area.style.lineHeight = '1.35';
-  area.style.color = note ? '#3a3020' : e.color;
+  area.style.color = note ? '#3a3020' : themeInk(e.color);
   area.value = e.text || '';
   textEdit = { el: e, isNew: !!o.isNew, original: e.text || '', originalY2: e.y2 };
   area.oninput = () => {
@@ -7850,8 +7953,17 @@ function startPinch() {
     d0: Math.max(1, dist(a, b)),
     m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
     scale0: cam.scale,
-    cam0: { x: cam.x, y: cam.y }
+    cam0: { x: cam.x, y: cam.y },
+    erase: activeTouches.size === 2 && dist(a, b) <= 72,
+    lastErase: null,
+    changed: false
   };
+  if (pinch.erase) {
+    const p = screenToWorld(pinch.m0.x, pinch.m0.y);
+    pinch.lastErase = p;
+    beginTx();
+    pinch.changed = eraseAlong(p, p) || pinch.changed;
+  }
   suppressGesture = true;
   queueOverlay();
 }
@@ -7867,7 +7979,7 @@ function onPointerMove(e) {
     penProximity = true;
     if (e.buttons) penActive = true;
     if (e.pressure > 0 && Math.abs(e.pressure - PEN.mousePressure) > PEN.pressureMinDelta) {
-      activePenPressure = clamp(e.pressure, 0.02, 1);
+      activePenPressure = clamp(e.pressure, PEN.minPressure, 1);
       penHasPressure = true;
     }
   }
@@ -7938,7 +8050,7 @@ function onPointerMove(e) {
         if (draft.points.length >= 20000) return;
         draft.points.push(pt);
         if (draft.pressures) {
-          draft.pressures.push(clamp(pressure == null ? 0.5 : pressure, 0.02, 1));
+          draft.pressures.push(clamp(pressure == null ? 0.5 : pressure, PEN.minPressure, 1));
         } else if (draft.speeds) {
           const prev = draft.speeds[draft.speeds.length - 1] || 0;
           draft.speeds.push(prev * 0.6 + (speed == null ? 0 : speed) * 0.4);
@@ -7972,8 +8084,8 @@ function onPointerMove(e) {
         let pressure = null;
         if (draft.pressures) {
           pressure = hasRealPressure(ev)
-            ? clamp(ev.pressure, 0.02, 1)
-            : (activePenPressure || clamp(ev.pressure || 0.5, 0.02, 1));
+            ? clamp(ev.pressure, PEN.minPressure, 1)
+            : (activePenPressure || clamp(ev.pressure || 0.5, PEN.minPressure, 1));
           activePenPressure = pressure;
         }
         let speed = null;
@@ -8131,6 +8243,13 @@ function updatePinch() {
   const a = pts[0], b = pts[1];
   const d = Math.max(1, dist(a, b));
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+  if (pinch.erase) {
+    const p = screenToWorld(mid.x, mid.y);
+    pinch.changed = eraseAlong(pinch.lastErase || p, p) || pinch.changed;
+    pinch.lastErase = p;
+    queueScene();
+    return;
+  }
   const scale = clamp(pinch.scale0 * (d / pinch.d0), 0.2, 4);
   const wx = (pinch.m0.x - pinch.cam0.x) / pinch.scale0;
   const wy = (pinch.m0.y - pinch.cam0.y) / pinch.scale0;
@@ -8172,7 +8291,7 @@ function eraseAlong(a, b) {
       else next.push(target);
     }
   }
-  if (!changed) return;
+  if (!changed) return false;
   elements = next;
   bboxCache = new WeakMap();
   const ids = new Set(elements.map((x) => x.id));
@@ -8181,6 +8300,7 @@ function eraseAlong(a, b) {
   hoverEl = null;
   syncSelectionUi();
   syncEmptyNote();
+  return true;
 }
 
 function shapeEraseHit(target, a, b, r) {
@@ -8253,7 +8373,10 @@ function onPointerUp(e) {
   if (e.pointerType === 'touch') activeTouches.delete(e.pointerId);
 
   if (pinch) {
-    if (activePointers.size < 2) pinch = null;
+    if (activePointers.size < 2) {
+      if (pinch.erase) commitTx(pinch.changed || !!(gesture && gesture.changed));
+      pinch = null;
+    }
     if (activePointers.size === 0) {
       if (twoFingerTap && !twoFingerTap.moved && Date.now() - twoFingerTap.t < 500) {
         twoFingerTap = null;
@@ -8297,7 +8420,7 @@ function finishGesture(e) {
       const last = draft.points[draft.points.length - 1];
       if (!last || dist(last, w) > 0.35 / cam.scale) {
         draft.points.push(w);
-        if (draft.pressures) draft.pressures.push(hasRealPressure(e) ? clamp(e.pressure, 0.02, 1) : (activePenPressure || clamp(e.pressure || 0.5, 0.02, 1)));
+        if (draft.pressures) draft.pressures.push(hasRealPressure(e) ? clamp(e.pressure, PEN.minPressure, 1) : (activePenPressure || clamp(e.pressure || 0.5, PEN.minPressure, 1)));
         else if (draft.speeds) draft.speeds.push(draft.speeds[draft.speeds.length - 1] || 0);
       }
     }
@@ -8442,6 +8565,18 @@ function setColor(hex) {
   el.customSwatch.setAttribute('aria-pressed', String(!preset));
   el.customColor.value = state.color;
   scheduleSave();
+}
+
+function cycleColor() {
+  const colors = PALETTE.map((c) => c.hex);
+  const current = colors.indexOf(state.color);
+  setColor(colors[(current + 1) % colors.length]);
+  const name = PALETTE[(current + 1) % colors.length].name;
+  toast('Color: ' + name);
+}
+
+function usesInkColor(tool) {
+  return tool === 'pen' || tool === 'highlighter' || tool === 'text' || tool === 'note' || tool === 'moment' || tool === 'callout' || SHAPE_TOOLS.includes(tool);
 }
 
 function activeSizeKey() {
@@ -8832,7 +8967,8 @@ function trapFocus(e, layer) {
   if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
   else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
 }
-function toast(message) {
+function toast(message, options) {
+  if (focusMode.active && !(options && options.force)) return;
   const node = document.createElement('div');
   node.className = 'toast';
   const dot = document.createElement('span');
@@ -8901,6 +9037,84 @@ document.addEventListener('fullscreenchange', () => {
   syncFullscreenUi();
   setTimeout(measureStage, 90);
 });
+
+/* ------------------------------------------------------------ focus / exam mode */
+function focusRemaining() { return Math.max(0, focusMode.endsAt - Date.now()); }
+function fmtFocus(ms) {
+  const s = Math.max(0, Math.ceil(ms / 1000));
+  return String(Math.floor(s / 60)).padStart(2, '0') + ':' + String(s % 60).padStart(2, '0');
+}
+function syncFocusUi() {
+  const on = focusMode.active;
+  document.body.classList.toggle('is-focus', on);
+  if (el.focusBtn) {
+    el.focusBtn.classList.toggle('is-on', on);
+    el.focusBtn.setAttribute('aria-pressed', String(on));
+    el.focusBtn.title = on ? 'Focus session — click to manage' : 'Focus mode — ⇧F';
+  }
+  if (el.focusTime) {
+    el.focusTime.hidden = !on;
+    if (on) el.focusTime.textContent = fmtFocus(focusRemaining());
+  }
+  if (el.focusSetup) el.focusSetup.hidden = on;
+  if (el.focusRunning) el.focusRunning.hidden = !on;
+  if (el.focusSetupActions) el.focusSetupActions.hidden = on;
+  if (el.focusRunActions) el.focusRunActions.hidden = !on;
+  if (el.focusTitle) el.focusTitle.textContent = on ? 'Focus session' : 'Focus mode';
+  if (el.focusCopy) {
+    el.focusCopy.textContent = on
+      ? 'AI and pop-up notifications are paused. Your work keeps saving on this device.'
+      : 'A timed study session that hides AI and pop-up notifications while you work.';
+  }
+  if (el.focusBigTime) el.focusBigTime.textContent = fmtFocus(focusRemaining());
+}
+function setFocusDuration(minutes) {
+  focusMode.minutes = clamp(Math.round(Number(minutes) || 25), 5, 180);
+  for (const b of $$('#focusDurSeg [data-min]')) {
+    b.setAttribute('aria-pressed', String(Number(b.dataset.min) === focusMode.minutes));
+  }
+}
+function tickFocus() {
+  if (!focusMode.active) return;
+  const left = focusRemaining();
+  if (el.focusTime) el.focusTime.textContent = fmtFocus(left);
+  if (el.focusBigTime) el.focusBigTime.textContent = fmtFocus(left);
+  if (left <= 0) endFocus(true);
+}
+function startFocus(minutes) {
+  const mins = clamp(Math.round(Number(minutes) || focusMode.minutes || 25), 5, 180);
+  focusMode.active = true;
+  focusMode.minutes = mins;
+  focusMode.endsAt = Date.now() + mins * 60000;
+  if (focusMode.timer) clearInterval(focusMode.timer);
+  focusMode.timer = setInterval(tickFocus, 1000);
+  if (openModalEl === el.aiStudioModal) closeModal(el.aiStudioModal);
+  if (el.aiExplainerDrawer) el.aiExplainerDrawer.hidden = true;
+  if (el.toastLayer) el.toastLayer.innerHTML = '';
+  syncFocusUi();
+  closeModal(el.focusModal);
+  toast('Focus session started — ' + mins + ' minutes', { force: true });
+}
+function endFocus(completed) {
+  if (!focusMode.active) return;
+  focusMode.active = false;
+  if (focusMode.timer) clearInterval(focusMode.timer);
+  focusMode.timer = 0;
+  focusMode.endsAt = 0;
+  syncFocusUi();
+  if (openModalEl === el.focusModal) closeModal(el.focusModal);
+  toast(completed ? 'Focus session complete — take a breath.' : 'Focus mode off', { force: true });
+}
+function adjustFocus(delta) {
+  if (!focusMode.active) return;
+  focusMode.endsAt = Math.max(Date.now() + 1000, focusMode.endsAt + delta * 60000);
+  syncFocusUi();
+}
+function openFocusPanel() {
+  setFocusDuration(focusMode.minutes);
+  syncFocusUi();
+  openModal(el.focusModal, focusMode.active ? el.focusEnd : el.focusStart);
+}
 
 /* ------------------------------------------------------------ youtube */
 /* Search keys are public in any client. Prefer a key the user supplies, then
@@ -9801,6 +10015,7 @@ window.addEventListener('keydown', (e) => {
     if (e.key === 'ArrowDown') nudgeSelection(0, step);
     return;
   }
+  if (key === 'f' && e.shiftKey) { e.preventDefault(); openFocusPanel(); return; }
   if (key === 'i' && e.shiftKey) { e.preventDefault(); tidyPage(); return; }
   if (key === 'b' && e.shiftKey) { e.preventDefault(); tidyBoardAi(); return; }
   if (e.key === '?') { e.preventDefault(); openModal(el.shortcutsModal, el.keysDone); return; }
@@ -9882,6 +10097,12 @@ el.redoBtn.addEventListener('click', redo);
 el.clearBtn.addEventListener('click', requestClear);
 el.fullscreenBtn.addEventListener('click', toggleFullscreen);
 el.helpBtn.addEventListener('click', () => openModal(el.shortcutsModal, el.keysDone));
+el.focusBtn.addEventListener('click', openFocusPanel);
+el.focusClose.addEventListener('click', () => closeModal(el.focusModal));
+el.focusStart.addEventListener('click', () => startFocus(focusMode.minutes));
+el.focusEnd.addEventListener('click', () => endFocus(false));
+el.focusAdd.addEventListener('click', () => adjustFocus(10));
+for (const b of $$('#focusDurSeg [data-min]')) b.addEventListener('click', () => setFocusDuration(b.dataset.min));
 
 for (const b of $$('.layout-btn')) b.addEventListener('click', () => setLayout(b.dataset.layout));
 el.layoutCycle.addEventListener('click', cycleLayout);
@@ -9950,8 +10171,17 @@ el.overlay.addEventListener('dblclick', (e) => {
     setTool('select');
     syncSelectionUi();
     beginEdit(hit);
+    return;
   }
+  if (usesInkColor(state.tool)) cycleColor();
 });
+for (const b of $$('.tool')) {
+  b.addEventListener('dblclick', (e) => {
+    if (!usesInkColor(b.dataset.tool)) return;
+    e.preventDefault();
+    cycleColor();
+  });
+}
 window.addEventListener('paste', (e) => {
   if (el.dashboard && !el.dashboard.hidden) return;
   if (typingTarget(e.target)) return;
@@ -9986,7 +10216,7 @@ el.aiBtn.addEventListener('click', openAiStudio);
 el.feelBtn.addEventListener('click', openWritingPanel);
 el.writingAiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
 el.feelRange.addEventListener('input', () => {
-  state.penFeel = clamp(Number(el.feelRange.value), 0, 2);
+  state.penFeel = clamp(Number(el.feelRange.value), 0, PEN_FEELS.length - 1);
   syncWritingUi();
   savePrefs();
 });
@@ -10060,6 +10290,7 @@ for (const item of $$('#moreMenu [data-action]')) {
     else if (action === 'grid') cycleGrid();
     else if (action === 'fullscreen') toggleFullscreen();
     else if (action === 'sound') openSound();
+    else if (action === 'focus') openFocusPanel();
     else if (action === 'shortcuts') openModal(el.shortcutsModal, el.keysDone);
     else if (action === 'writing') openWritingPanel();
     else if (action === 'apikey') setYoutubeKey();
@@ -10497,7 +10728,7 @@ function pageThumbSvg(pageId, elements) {
   const cap = 400;
   for (let i = 0; i < elements.length && i < cap; i++) {
     const e = elements[i];
-    const col = e.color || '#26211a';
+    const col = themeInk(e.color || INK_DEFAULT);
     if (e.type === 'stroke') {
       const pl = document.createElementNS(svgNS, 'polyline');
       const pts = [];
@@ -11055,7 +11286,7 @@ function exportPageSvg() {
   for (const e of elements) {
     const op = clamp(e.opacity == null ? 1 : e.opacity, 0.01, 1);
     const g = ['<g opacity="' + op + '">'];
-    const color = e.color || '#26211a';
+    const color = themeInk(e.color || INK_DEFAULT);
     if (e.type === 'stroke') {
       const pts = e.points.map((p) => p.x.toFixed(1) + ',' + p.y.toFixed(1)).join(' ');
       g.push('<polyline fill="none" stroke="' + color + '" stroke-width="' + e.size + '" stroke-linecap="round" stroke-linejoin="round" points="' + pts + '"/>');
@@ -11119,7 +11350,7 @@ function exportPageSvg() {
       } else if (e.style === 'stamp') {
         const r = Math.min(x2 - x1, y2 - y1) / 2;
         g.push('<circle cx="' + ((x1 + x2) / 2) + '" cy="' + ((y1 + y2) / 2) + '" r="' + Math.max(1, r) + '" fill="' + color + '"/>');
-        g.push('<text x="' + ((x1 + x2) / 2) + '" y="' + ((y1 + y2) / 2) + '" fill="#fff8ea" font-family="Instrument Sans, Segoe UI, sans-serif" font-size="' + Math.max(8, Math.min(r, 30)) + '" font-weight="700" text-anchor="middle" dominant-baseline="middle">' + xmlEsc(e.label || '1') + '</text>');
+        g.push('<text x="' + ((x1 + x2) / 2) + '" y="' + ((y1 + y2) / 2) + '" fill="#241d14" font-family="Instrument Sans, Segoe UI, sans-serif" font-size="' + Math.max(8, Math.min(r, 30)) + '" font-weight="700" text-anchor="middle" dominant-baseline="middle">' + xmlEsc(e.label || '1') + '</text>');
       } else {
         g.push('<path fill="none" stroke="' + color + '" stroke-width="' + Math.max(1.5, e.size * 1.7) + '" d="M' + x1 + ' ' + (y2 - e.size * 0.4) + ' Q' + ((x1 + x2) / 2) + ' ' + (y2 - e.size * 1.6) + ' ' + x2 + ' ' + (y2 - e.size * 0.5) + '"/>');
       }
@@ -11304,6 +11535,7 @@ initPenControls();
 syncGridUi();
 syncHistoryUi();
 syncFullscreenUi();
+syncFocusUi();
 setLayout(state.layout, { silent: true });
 
 /* dashboard wiring */
@@ -12090,7 +12322,7 @@ let paletteIndex = null;
 let paletteIndexing = false;
 
 function paletteCommands() {
-  return [
+  const list = [
     { title: 'AI: Solve Math', sub: 'Calculate handwritten formula or equation', icon: 'i-math', run: solveMathSelection },
     { title: 'AI: Auto-Draw Icon', sub: 'Convert rough sketch to clean vector icon', icon: 'i-wand', run: autoDrawSelection },
     { title: 'AI: Handwriting to Text', sub: 'Transcribe ink to editable typed text', icon: 'i-text-ai', run: ocrHandwritingSelection },
@@ -12107,6 +12339,7 @@ function paletteCommands() {
     { title: 'Export subject as PDF', sub: 'Every page, in order', icon: 'i-book', run: () => exportSubjectPdf() },
     { title: 'Export notes as Markdown', sub: 'Text and notes from this subject', icon: 'i-note', run: () => exportNotesMarkdown() },
     { title: 'Share live session', sub: 'Edit the same page together', icon: 'i-share', run: () => openShare() },
+    { title: 'Focus mode', sub: 'Timed session without AI or pop-ups', icon: 'i-clock', run: openFocusPanel },
     { title: 'High contrast', sub: 'Boost line and text contrast', icon: 'i-eye', run: () => setHighContrast(document.body.dataset.contrast !== 'high') },
     { title: 'Fit to content', sub: 'Zoom so everything is visible', icon: 'i-fit', run: () => fitContent() },
     { title: 'Reset zoom', sub: 'Back to 100%', icon: 'i-compress', run: () => resetView() },
@@ -12116,6 +12349,9 @@ function paletteCommands() {
     { title: 'Keyboard shortcuts', sub: 'Every key in one place', icon: 'i-help', run: () => openModal(el.shortcutsModal, el.keysDone) },
     { title: 'All subjects & pages', sub: 'Back to the dashboard', icon: 'i-book', run: () => closeBoard() }
   ];
+  return focusMode.active
+    ? list.filter((c) => !/^AI:|AI Studio|Tidy Board|Share live session/.test(c.title))
+    : list;
 }
 
 async function buildPaletteIndex(force) {
