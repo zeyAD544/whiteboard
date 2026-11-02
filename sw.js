@@ -1,6 +1,6 @@
 /* Margin service worker: keep the shell available when the network is not.
    Firestore, auth, and the YouTube API are deliberately never cached here. */
-const CACHE = 'margin-shell-v10';
+const CACHE = 'margin-shell-v11';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 
 self.addEventListener('install', (event) => {
@@ -56,6 +56,20 @@ self.addEventListener('fetch', (event) => {
   }
 
   if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE);
+      const hit = await cache.match(req);
+      const network = fetch(req).then((fresh) => {
+        if (fresh.ok) cache.put(req, fresh.clone()).catch(() => {});
+        return fresh;
+      }).catch(() => null);
+      return hit || (await network) || Response.error();
+    })());
+  }
+
+  /* Firebase compat SDK (and other gstatic assets) — cache so the app can boot
+     fully offline after the first visit. */
+  if (url.hostname === 'www.gstatic.com' || url.hostname === 'gstatic.com') {
     event.respondWith((async () => {
       const cache = await caches.open(CACHE);
       const hit = await cache.match(req);

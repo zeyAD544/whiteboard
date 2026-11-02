@@ -11431,6 +11431,7 @@ let fbUser = null;
 let fbMode = 'signin';
 let cloudTimer = 0;
 let cloudBusy = false;
+let cloudPending = false;
 let cloudAt = 0;
 let cloudWarned = false;
 /* Page ids that the account had when we signed in but this device does not.
@@ -11782,6 +11783,7 @@ async function uploadCloud(reason) {
       await Promise.all(kill);
     }
     cloudAt = at;
+    cloudPending = false;
     cloudWarned = false;
     setCloudNote('Backed up ' + shortWhen(at));
     return true;
@@ -11789,6 +11791,7 @@ async function uploadCloud(reason) {
     const msg = (err && err.code === 'permission-denied')
       ? 'The account cannot write backups yet — check the Firestore rules.'
       : 'Backup failed. Your notes are still saved on this device.';
+    cloudPending = true;
     setCloudNote(msg, 'error');
     if (!cloudWarned) { cloudWarned = true; toast(msg); }
     return false;
@@ -12577,7 +12580,19 @@ function syncOfflineBanner() {
   if (!el.offlineBanner) return;
   el.offlineBanner.classList.toggle('is-on', !navigator.onLine);
 }
-window.addEventListener('online', syncOfflineBanner);
+function flushCloudSync() {
+  if (!navigator.onLine) return;
+  if (!fbUser || !fbDb) return;
+  if (cloudPending || cloudTimer) {
+    cloudPending = false;
+    scheduleCloudSync();
+  }
+}
+window.addEventListener('online', () => {
+  syncOfflineBanner();
+  /* Reconnect: catch up any saves that queued while offline. */
+  setTimeout(flushCloudSync, 1200);
+});
 window.addEventListener('offline', syncOfflineBanner);
 syncOfflineBanner();
 
