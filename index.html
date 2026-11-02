@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#16130e">
+<meta name="theme-color" content="#0b1117">
 <script>
 if (location.protocol === 'http:' || location.protocol === 'https:') {
   const link = document.createElement('link');
@@ -14,8 +14,8 @@ if (location.protocol === 'http:' || location.protocol === 'https:') {
 </script>
 <link rel="icon" type="image/svg+xml" href="./icon.svg">
 <link rel="apple-touch-icon" href="./icon.svg">
-<meta name="description" content="Margin — a paper-like whiteboard for pages of notes, beside the video.">
-<title>Margin — a whiteboard beside the video</title>
+<meta name="description" content="Margin — a calm, dark study workspace for writing, drawing, and learning beside video.">
+<title>Margin V2 — a dark study workspace</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@1,9..144,400..600&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -381,6 +381,22 @@ body.is-focus .writing-ai-block{display:none!important}
   content:"";position:absolute;left:-9px;top:11px;bottom:11px;width:2px;border-radius:2px;
   background:var(--accent);box-shadow:0 0 10px rgba(224,114,77,.55);
 }
+.math-tools-menu{
+  position:fixed;z-index:80;min-width:190px;padding:5px;
+  background:rgba(34,29,22,.97);border:1px solid var(--line-strong);border-radius:11px;
+  box-shadow:var(--shadow-float);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+}
+.math-tools-menu[hidden]{display:none!important}
+.math-tool-option{
+  display:flex;align-items:center;gap:10px;width:100%;padding:9px 10px;border-radius:7px;
+  text-align:left;color:var(--text);font-size:12px;transition:background .12s,color .12s;
+}
+.math-tool-option:hover,.math-tool-option:focus-visible{background:rgba(240,233,221,.08)}
+.math-tool-option[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-bright)}
+.math-tool-option .icon{width:17px;height:17px;color:var(--muted)}
+.math-tool-option[aria-pressed="true"] .icon{color:var(--accent-bright)}
+.math-tool-copy{display:flex;flex-direction:column;gap:1px;min-width:0}
+.math-tool-copy small{font-size:10px;color:var(--faint)}
 .rail{overflow-y:auto;overflow-x:hidden;scrollbar-width:none}
 .rail::-webkit-scrollbar{display:none}
 
@@ -1640,6 +1656,166 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
   font-family:var(--font-display);font-style:italic;font-weight:500;font-size:25px;
   letter-spacing:-.025em;color:#fdfaf3;
 }
+
+/* ================================================================ Margin V2
+   Cool graphite surfaces keep the chrome quiet and the board easy on the eyes. */
+:root{
+  color-scheme:dark;
+  --ink-950:#080d12;--ink-900:#0b1117;--ink-850:#101820;--ink-800:#141e27;
+  --ink-750:#1a2631;--ink-700:#22313d;
+  --line:rgba(204,221,234,.085);--line-strong:rgba(204,221,234,.15);
+  --text:#e8f0f5;--muted:#a4b4c0;--faint:#71828f;
+  --paper:#101a22;--paper-deep:#0c141b;--rule:#364754;
+  --rule-soft:rgba(172,199,216,.09);--rule-ink:#a8bac6;
+  --accent:#71e0c2;--accent-bright:#9af0d7;--accent-ink:#071510;
+  --accent-soft:rgba(113,224,194,.13);--amber:#f0c479;--danger:#fb7c87;
+  --select:#85e8cf;--radius-xl:20px;--radius-lg:15px;--radius-md:11px;
+  --shadow-float:0 24px 72px rgba(0,0,0,.58),0 6px 18px rgba(0,0,0,.28);
+}
+body{background:var(--ink-900);color:var(--text)}
+::selection{background:rgba(113,224,194,.28);color:#f5fffb}
+.app,.dashboard{
+  background:radial-gradient(1050px 520px at 12% -16%,rgba(77,143,161,.105),transparent 65%),
+    radial-gradient(800px 500px at 100% 110%,rgba(88,143,130,.065),transparent 64%),var(--ink-900);
+}
+.app::before,.dashboard::before{display:none}
+.brand-mark{color:#b9c9d3!important}
+.brand-name,.dash-head .brand-name{font-family:var(--font-ui)!important;font-style:normal!important;font-weight:700;letter-spacing:-.055em}
+.v2-chip{font:600 9px/1 var(--font-mono);letter-spacing:.08em;color:var(--accent);padding:4px 5px;border:1px solid rgba(113,224,194,.22);border-radius:5px;background:rgba(113,224,194,.07)}
+.brand-dot{color:var(--accent)!important}
+.dash-head{height:68px;padding:0 clamp(20px,4vw,56px);border-color:var(--line)}
+.dash-head .brand-mark{width:26px;height:26px}
+.dash-head .brand-name{font-size:20px}
+.dash-head-actions{gap:9px}
+.dash-body{grid-template-columns:minmax(220px,270px) minmax(0,1fr)}
+.dash-subjects{background:rgba(13,20,27,.56);border-color:var(--line);padding:8px 8px 12px}
+.dash-section-head{padding:18px 16px 10px}
+.dash-section-title,.dash-eyebrow{color:#8da5b3}
+.subject-list{gap:4px;padding:4px 8px 12px}
+.subject-item{padding:10px 11px;border-radius:10px;color:#aebdc7}
+.subject-item:hover{background:rgba(187,211,225,.07);color:var(--text)}
+.subject-item[aria-current="true"]{background:rgba(113,224,194,.12);box-shadow:inset 0 0 0 1px rgba(113,224,194,.16)}
+.subject-item[aria-current="true"]::before{left:-8px;background:var(--accent);box-shadow:0 0 14px rgba(113,224,194,.4)}
+.subject-count,.dash-pages-sub{color:var(--faint)}
+.dash-pages{padding:clamp(24px,4vw,52px) clamp(24px,5vw,72px) 56px}
+.dash-pages-head{align-items:center;margin-bottom:26px}
+.dash-pages-title{font-family:var(--font-ui);font-style:normal;font-weight:650;font-size:clamp(23px,2.5vw,31px);letter-spacing:-.045em}
+.dash-pages-sub{font-size:13px}
+.page-grid{gap:16px}
+.page-card,.page-thumb,.dash-panel-card,.modal,.palette,.command-palette,.menu,.math-menu{
+  border-color:var(--line-strong)!important;
+}
+.page-card{border-radius:15px!important;background:linear-gradient(150deg,#17232c,#111a22)!important;box-shadow:0 8px 28px rgba(0,0,0,.2)!important;transition:border-color .18s,box-shadow .18s,background .18s!important}
+.page-card:hover{border-color:rgba(113,224,194,.44)!important;box-shadow:0 14px 34px rgba(0,0,0,.3),0 0 0 1px rgba(113,224,194,.12)!important;transform:translateY(-2px)}
+.page-thumb{background-color:#0d151c!important}
+.dash-empty{color:var(--muted)}
+.dash-empty .de-title{font-family:var(--font-ui);font-style:normal;color:var(--text);font-weight:600}
+.dash-panel-card,.modal{background:linear-gradient(155deg,#17232c,#101820)!important;border-radius:18px!important;box-shadow:var(--shadow-float)!important}
+.dash-panel-scrim,.modal-scrim{background:rgba(3,8,12,.72)!important;backdrop-filter:blur(8px)}
+.dash-panel-head h2,.modal h2{font-family:var(--font-ui)!important;font-style:normal!important;font-weight:650!important;letter-spacing:-.035em!important;color:var(--text)!important}
+.topbar{
+  min-height:60px;padding:0 14px 0 18px;gap:12px;
+  background:rgba(11,17,23,.94)!important;border-bottom:1px solid var(--line)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.12);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+}
+.topbar-left{gap:11px}.topbar .brand-name{font-size:16px}
+.board-title{font-size:13px!important;font-weight:550!important;color:#dbe6ec!important}
+.hairline,.topbar-divider{background:var(--line-strong)!important}
+.save-state{border:1px solid var(--line);background:rgba(153,182,198,.055);border-radius:999px;padding:4px 9px}
+.input-status{display:inline-flex;align-items:center;gap:7px;padding:5px 9px;border:1px solid var(--line);background:rgba(153,182,198,.055);border-radius:999px;color:#aebdc7;font-size:10px;white-space:nowrap;transition:color .16s,border-color .16s,background .16s}
+.input-status-dot{width:7px;height:7px;border-radius:50%;background:#84dabc;box-shadow:0 0 10px rgba(132,218,188,.36)}
+.input-status[data-status="near"]{color:#a6d9d3}.input-status[data-status="near"] .input-status-dot{background:#76cfc0}
+.input-status[data-status="writing"]{color:#b8f4df;border-color:rgba(113,224,194,.28);background:rgba(113,224,194,.08)}
+.input-status[data-status="writing"] .input-status-dot{background:#71e0c2;box-shadow:0 0 0 4px rgba(113,224,194,.1),0 0 12px rgba(113,224,194,.56)}
+.input-status[data-status="protected"]{color:#f1cb88;border-color:rgba(240,196,121,.24)}
+.input-status[data-status="protected"] .input-status-dot{background:#f0c479;box-shadow:0 0 10px rgba(240,196,121,.45)}
+.input-status[data-status="erase"]{color:#ffb4bd;border-color:rgba(251,124,135,.25)}
+.input-status[data-status="erase"] .input-status-dot{background:#fb7c87;box-shadow:0 0 10px rgba(251,124,135,.45)}
+.icon-btn,.layout-btn{color:#99aab6;border-radius:10px;transition:color .15s,background .15s,border-color .15s}
+.icon-btn:hover,.layout-btn:hover{color:var(--text);background:rgba(184,207,220,.09)}
+.icon-btn.danger:hover{color:#ff9ca6;background:rgba(251,124,135,.1)}
+.layout-switch{padding:3px;border:1px solid var(--line);border-radius:11px;background:rgba(6,11,15,.4)}
+.layout-btn[aria-pressed="true"]{color:var(--accent);background:rgba(113,224,194,.1);box-shadow:inset 0 0 0 1px rgba(113,224,194,.14)}
+.workspace{background:transparent!important;gap:10px;padding:10px 12px 12px!important}
+.rail{
+  width:58px!important;min-width:58px!important;padding:10px 7px!important;gap:6px!important;
+  background:rgba(16,24,32,.94)!important;border:1px solid var(--line-strong)!important;border-radius:16px!important;
+  box-shadow:0 8px 30px rgba(0,0,0,.23);backdrop-filter:blur(14px);
+}
+.tool-group{gap:5px}.rail-sep{background:var(--line-strong)!important;margin:5px 0!important;width:25px!important}
+.tool{
+  width:42px!important;height:42px!important;border-radius:12px!important;color:#92a4b0!important;
+  transition:color .14s,background .14s,box-shadow .14s!important;
+}
+.tool .icon{width:19px;height:19px;transition:none!important}
+.tool:hover{color:var(--text)!important;background:rgba(180,205,218,.08)!important;transform:none!important}
+.tool:active{transform:scale(.97)!important}
+.tool[aria-pressed="true"]{color:#a8f0d8!important;background:rgba(113,224,194,.12)!important;box-shadow:inset 0 0 0 1px rgba(113,224,194,.23)!important}
+.tool[aria-pressed="true"]::before{display:none!important}
+.stage{
+  border-radius:16px!important;background:var(--paper)!important;
+  box-shadow:inset 0 0 0 1px rgba(174,201,216,.12),0 18px 50px rgba(0,0,0,.28)!important;
+}
+.gutter{background:linear-gradient(90deg,rgba(113,224,194,.05),transparent 90%)!important}
+.gutter::before{background:var(--accent)!important;opacity:.46;box-shadow:0 0 8px rgba(113,224,194,.3)!important}
+.context{
+  background:rgba(18,27,35,.96)!important;border:1px solid var(--line-strong)!important;border-radius:14px!important;
+  box-shadow:0 12px 32px rgba(0,0,0,.32)!important;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);
+}
+.context button,.context input{color:var(--muted)}
+.ctx-edge{opacity:.35!important}
+.video{background:linear-gradient(155deg,#15212a,#101820)!important;border-color:var(--line-strong);box-shadow:0 18px 48px rgba(0,0,0,.26),inset 0 1px 0 rgba(190,215,227,.035)}
+.video-dot{background:#42515b}.video-panel[data-state="playing"] .video-dot{box-shadow:0 0 8px rgba(113,224,194,.5)}
+.video::before{background:var(--accent);opacity:.28}
+.player-empty{background:#0e171e!important}
+.player-empty .pe-title,.empty-note .en-title{font-family:var(--font-ui);font-style:normal;font-weight:600;color:#d7e2e8;letter-spacing:-.025em}
+.empty-note .en-sub{color:#9aabb6}
+.empty-note .en-sub kbd{background:rgba(180,205,218,.07);border-color:var(--line-strong);color:#b7c5ce}
+.divider:hover::before,.divider.is-dragging::before{background:rgba(113,224,194,.55);box-shadow:0 0 12px rgba(113,224,194,.28)}
+.divider-grip{background:rgba(180,205,218,.04);border-color:var(--line)}
+.divider:hover .divider-grip,.divider.is-dragging .divider-grip{background:#1a2831;border-color:var(--line-strong)}
+.divider-pct{background:#15212a;border-color:var(--line-strong)}
+.recent-clear:hover,.page-pill:hover{color:var(--accent-bright);background:rgba(113,224,194,.09);border-color:rgba(113,224,194,.22)}
+.page-strip{background:rgba(18,27,35,.96);border-color:var(--line-strong);box-shadow:0 12px 32px rgba(0,0,0,.36)}
+.pstrip-page .pstrip-num{color:rgba(202,220,229,.64)}
+.pstrip-page .pstrip-empty{color:rgba(170,192,204,.36)}
+.pstrip-sep{background:var(--line-strong)}
+.toast{background:rgba(21,32,41,.97);border-color:var(--line-strong);color:var(--text)}
+.palette-item.is-active,.palette-item:hover{background:rgba(113,224,194,.1)}
+.palette-item.is-active .icon{color:var(--accent-bright)}
+.show-video,.math-tools-menu{background:rgba(21,32,41,.97);border-color:var(--line-strong)}
+.dock{
+  left:18px;bottom:18px;padding:5px 7px;gap:3px;background:rgba(18,27,35,.95)!important;
+  border:1px solid var(--line-strong)!important;border-radius:13px!important;box-shadow:0 14px 34px rgba(0,0,0,.38)!important;
+}
+.dock-btn{width:34px;height:32px;border-radius:9px;color:#a4b4c0}
+.dock-btn:hover{background:rgba(180,205,218,.09);color:var(--text);transform:none}
+.zoom-label{color:#b5c3cc;border-radius:8px}.zoom-label:hover{background:rgba(180,205,218,.08)}
+.menu,.math-tools-menu,.color-menu,.dropdown-menu{background:#15212a!important;box-shadow:var(--shadow-float)!important;border-radius:13px!important}
+.menu button,.math-tool-option,.color-menu button{border-radius:8px!important;color:#c3d0d7!important}
+.menu button:hover,.math-tool-option:hover,.color-menu button:hover{background:rgba(113,224,194,.1)!important;color:var(--text)!important}
+.btn{border-radius:10px!important;transition:background .15s,color .15s,border-color .15s,box-shadow .15s!important}
+.btn-primary{background:var(--accent)!important;color:#092018!important;border-color:var(--accent)!important;font-weight:650}
+.btn-primary:hover{background:#8ce9cf!important;box-shadow:0 0 0 4px rgba(113,224,194,.1)}
+.btn-ghost{color:#b6c4cd!important;border-color:var(--line-strong)!important;background:rgba(180,205,218,.025)!important}
+.btn-ghost:hover{color:var(--text)!important;background:rgba(180,205,218,.075)!important}
+.switch[aria-pressed="true"]{background:var(--accent)!important}
+input,textarea,select{accent-color:var(--accent)}
+input:not([type="range"]),textarea,select{color:var(--text)}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-thumb{background:rgba(153,179,193,.2);border:2px solid transparent;background-clip:padding-box;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background-color:rgba(153,179,193,.33)}
+@media(max-width:900px){
+  .topbar{padding-inline:10px}.topbar-left{gap:8px}.input-status{padding:5px 7px}.input-status #inputStatusText{max-width:74px;overflow:hidden;text-overflow:ellipsis}
+  .workspace{gap:7px;padding:7px!important}.rail{width:52px!important;min-width:52px!important;padding:8px 4px!important}.tool{width:40px!important;height:40px!important}
+  .dash-body{grid-template-columns:205px minmax(0,1fr)}
+}
+@media(max-width:640px){
+  .topbar{min-height:54px}.topbar .brand,.topbar .hairline,.topbar .save-state,.topbar .input-status,.topbar .topbar-divider,.topbar #shareBtn,.topbar #soundBtn,.topbar #helpBtn{display:none!important}
+  .board-title{max-width:36vw}.topbar-right{gap:2px}.workspace{padding:5px!important;gap:5px}.rail{width:46px!important;min-width:46px!important;border-radius:13px!important;padding:7px 2px!important}.tool{width:38px!important;height:38px!important}
+  .dash-head{height:auto;min-height:60px;padding:10px 14px}.dash-body{grid-template-columns:1fr;grid-template-rows:auto minmax(0,1fr)}.dash-subjects{max-height:142px;border-right:0;border-bottom:1px solid var(--line)}.subject-list{flex-direction:row;overflow-x:auto;overflow-y:hidden}.subject-item{width:auto;flex:none}.subject-item[aria-current="true"]::before{left:8px;right:8px;top:auto;bottom:-7px;height:2px;width:auto}.dash-pages{padding:20px 16px 32px}.dash-pages-head{margin-bottom:18px}.page-grid{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
 </style>
 </head>
 <body>
@@ -1675,6 +1851,9 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
   <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
   <symbol id="i-dots" viewBox="0 0 24 24" fill="currentColor" stroke="none"><circle cx="6" cy="6" r="1.35"/><circle cx="12" cy="6" r="1.35"/><circle cx="18" cy="6" r="1.35"/><circle cx="6" cy="12" r="1.35"/><circle cx="12" cy="12" r="1.35"/><circle cx="18" cy="12" r="1.35"/><circle cx="6" cy="18" r="1.35"/><circle cx="12" cy="18" r="1.35"/><circle cx="18" cy="18" r="1.35"/></symbol>
   <symbol id="i-grid" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 9.5h17M3.5 15h17M9.5 3.5v17M15 3.5v17"/></symbol>
+  <symbol id="i-ruler" viewBox="0 0 24 24"><path d="m4.5 4.5 15 15M7.5 3l-4.5 4.5 14 14 4.5-4.5z"/><path d="m8 8 2-2m1 5 2-2m1 5 2-2"/></symbol>
+  <symbol id="i-protractor" viewBox="0 0 24 24"><path d="M3 19a9 9 0 0 1 18 0Z"/><path d="M12 10v2m-4.5-.8 1 1.7m8-1.7-1 1.7M5.8 15l1.7 1m10.7-1-1.7 1M12 19v-5"/></symbol>
+  <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="m10.8 6.6-6 14m8.4-14 6 14M8 13l8 0m-9.7 7.6h4m3.4 0h4"/></symbol>
   <symbol id="i-blank" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="m4 20 16-16"/></symbol>
   <symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 3H4.5A1.5 1.5 0 0 0 3 4.5V8"/><path d="M16 3h3.5A1.5 1.5 0 0 1 21 4.5V8"/><path d="M8 21H4.5A1.5 1.5 0 0 1 3 19.5V16"/><path d="M16 21h3.5a1.5 1.5 0 0 0 1.5-1.5V16"/><circle cx="12" cy="12" r="2.1"/></symbol>
   <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7.5 9.5h6M7.5 13h9"/></symbol>
@@ -1737,7 +1916,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
         <rect x="4" y="3" width="16" height="18" rx="4.5" stroke="currentColor" stroke-width="1.5"/>
         <path d="M9.4 3.7v16.6" stroke="var(--accent)" stroke-width="1.6"/>
       </svg>
-      <span class="brand-name">margin<span class="brand-dot">.</span></span>
+      <span class="brand-name">margin<span class="brand-dot">.</span></span><span class="v2-chip">V2</span>
     </div>
     <div class="dash-head-actions">
       <div class="save-state" id="dashSaveState" data-state="saved" title="Saved on this device">
@@ -1785,13 +1964,14 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
           <rect x="4" y="3" width="16" height="18" rx="4.5" stroke="currentColor" stroke-width="1.5"/>
           <path d="M9.4 3.7v16.6" stroke="var(--accent)" stroke-width="1.6"/>
         </svg>
-        <span class="brand-name">margin<span class="brand-dot">.</span></span>
+        <span class="brand-name">margin<span class="brand-dot">.</span></span><span class="v2-chip">V2</span>
       </div>
       <span class="hairline" aria-hidden="true"></span>
       <input class="board-title" id="boardTitle" value="Untitled board" maxlength="60" aria-label="Board name" spellcheck="false" autocomplete="off">
       <div class="save-state" id="saveState" data-state="saved" title="Saved in this browser">
         <span class="save-dot"></span><span class="save-text">Saved</span>
       </div>
+      <div class="input-status" id="inputStatus" data-status="ready" aria-live="polite"><span class="input-status-dot" aria-hidden="true"></span><span id="inputStatusText">Pen ready</span></div>
       <button class="page-pill" id="pagePill" title="Open the page outline" aria-label="Page position"><svg class="icon sm"><use href="#i-pages"/></svg><span id="pagePillText">Page 1 of 1</span></button>
     </div>
     <div class="topbar-right">
@@ -1851,6 +2031,8 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
         <button class="tool" data-tool="hand" data-tip="Hand · Space / 4" aria-label="Hand" aria-pressed="false"><svg class="icon"><use href="#i-hand"/></svg></button>
       </div>
       <div class="rail-sep" aria-hidden="true"></div>
+      <button class="tool" id="mathToolsBtn" data-tip="Math tools" aria-label="Math tools" aria-haspopup="menu" aria-expanded="false"><svg class="icon"><use href="#i-ruler"/></svg></button>
+      <div class="rail-sep" aria-hidden="true"></div>
       <div class="tool-group">
         <button class="tool" data-tool="rect" data-tip="Rectangle · R" aria-label="Rectangle" aria-pressed="false"><svg class="icon"><use href="#i-rect"/></svg></button>
         <button class="tool" data-tool="ellipse" data-tip="Ellipse · O" aria-label="Ellipse" aria-pressed="false"><svg class="icon"><use href="#i-ellipse"/></svg></button>
@@ -1873,6 +2055,21 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
         <button class="tool" data-tool="laser" data-tip="Laser pointer - X" aria-label="Laser pointer" aria-pressed="false"><svg class="icon"><use href="#i-laser"/></svg></button>
       </div>
     </aside>
+
+    <div class="math-tools-menu" id="mathToolsMenu" role="menu" aria-label="Math tools" hidden>
+      <button class="math-tool-option" type="button" role="menuitemradio" data-math-tool="ruler" aria-pressed="false">
+        <svg class="icon"><use href="#i-ruler"/></svg><span class="math-tool-copy">Ruler<small>Draw straight lines</small></span>
+      </button>
+      <button class="math-tool-option" type="button" role="menuitemradio" data-math-tool="protractor" aria-pressed="false">
+        <svg class="icon"><use href="#i-protractor"/></svg><span class="math-tool-copy">Protractor<small>Snap angles every 15°</small></span>
+      </button>
+      <button class="math-tool-option" type="button" role="menuitemradio" data-math-tool="compass" aria-pressed="false">
+        <svg class="icon"><use href="#i-compass"/></svg><span class="math-tool-copy">Compass<small>Draw circles from the center</small></span>
+      </button>
+      <button class="math-tool-option" type="button" role="menuitemradio" data-math-tool="graph" aria-pressed="false">
+        <svg class="icon"><use href="#i-grid"/></svg><span class="math-tool-copy">Graph paper<small>Show a square grid</small></span>
+      </button>
+    </div>
 
     <section class="stage" id="stage" aria-label="Drawing board">
       <canvas id="scene" aria-hidden="true"></canvas>
@@ -2001,7 +2198,7 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
 
       <div class="empty-note" id="emptyNote">
         <p class="en-title">A page, not a blank one.</p>
-        <p class="en-sub">Draw anywhere in the margin to begin.<br><span class="desk-key">Hold <kbd>space</kbd> to pan · <kbd>4</kbd> for the hand tool · <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom</span><span class="touch-key">Two fingers to pan &amp; zoom · two-finger tap to undo</span></p>
+        <p class="en-sub">Draw anywhere in the margin to begin.<br><span class="desk-key">Use the Hand tool to move around · <kbd>4</kbd> for Hand · <kbd>⌘</kbd>/<kbd>Ctrl</kbd> + scroll to zoom</span><span class="touch-key">Two fingers erase · use Hand to move and zoom</span></p>
       </div>
 
       <div class="page-strip" id="pageStrip" aria-label="Pages">
@@ -2292,9 +2489,19 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
 
     <div class="writing-block">
       <div class="writing-head"><strong>Touch &amp; stylus response</strong><output id="feelVal">Max</output></div>
-      <input type="range" id="feelRange" min="0" max="3" step="1" value="3" aria-label="Touch and stylus response">
-      <div class="feel-scale"><span>Steady</span><span>Balanced</span><span>Instant</span><span>Max</span></div>
-      <p class="writing-sub">Sampling runs at the device's native rate, fills missed reports, and adapts smoothing to speed and contact quality.</p>
+      <input type="range" id="feelRange" min="0" max="4" step="1" value="4" aria-label="Touch and stylus response">
+      <div class="feel-scale"><span>Steady</span><span>Balanced</span><span>Instant</span><span>Max</span><span>Precision</span></div>
+      <p class="writing-sub">Precision keeps fine detail while filtering slow hand jitter, then responds faster as you draw.</p>
+    </div>
+
+    <div class="writing-block">
+      <div class="writing-row">
+        <div class="writing-copy">
+          <strong>Palm protection</strong>
+          <span>Rejects broad hand contacts and touch near an active pen. Compact capacitive styli can still write.</span>
+        </div>
+        <button class="switch" id="palmGuardBtn" aria-label="Toggle palm protection" aria-pressed="true"></button>
+      </div>
     </div>
 
     <div class="writing-block writing-ai-block">
@@ -2382,8 +2589,9 @@ body[data-contrast="high"] .stage canvas{filter:contrast(1.08)}
       <div class="keys-section">Board</div>
       <div class="key-row"><span>Straight line with the pen</span><span class="keys"><kbd>Shift</kbd>+draw</span></div>
       <div class="key-row"><span>Snap to grid</span><span class="keys"><kbd>S</kbd></span></div>
-      <div class="key-row"><span>Pan</span><span class="keys"><kbd>Space</kbd>+drag</span></div>
-      <div class="key-row"><span>Zoom</span><span class="keys"><kbd>⌘</kbd>/<kbd>Ctrl</kbd>+scroll</span></div>
+      <div class="key-row"><span>Move around</span><span class="keys">Hand tool + drag</span></div>
+      <div class="key-row"><span>Zoom</span><span class="keys">Hand tool + <kbd>⌘</kbd>/<kbd>Ctrl</kbd>+scroll</span></div>
+      <div class="key-row"><span>Erase on touch</span><span class="keys">Two-finger drag</span></div>
       <div class="key-row"><span>Fit to content</span><span class="keys"><kbd>1</kbd></span></div>
       <div class="key-row"><span>Reset zoom</span><span class="keys"><kbd>0</kbd></span></div>
       <div class="key-row"><span>Undo</span><span class="keys"><kbd>⌘</kbd><kbd>Z</kbd></span></div>
@@ -2624,7 +2832,7 @@ const STICKY_COLORS = [
   { hex: '#cfe0f4', name: 'Sky' },
   { hex: '#e6d8f5', name: 'Lilac' }
 ];
-const PAPER = '#1c1813';
+const PAPER = '#101a22';
 const INK_DEFAULT = '#f2ede3';
 const SELECT_INK = '#c85838';
 
@@ -3076,6 +3284,7 @@ const el = {
   undoBtn: $('#undoBtn'), redoBtn: $('#redoBtn'), clearBtn: $('#clearBtn'),
   fullscreenBtn: $('#fullscreenBtn'), helpBtn: $('#helpBtn'),
   focusBtn: $('#focusBtn'), focusTime: $('#focusTime'),
+  inputStatus: $('#inputStatus'), inputStatusText: $('#inputStatusText'), palmGuardBtn: $('#palmGuardBtn'),
   focusModal: $('#focusModal'), focusClose: $('#focusClose'), focusTitle: $('#focusTitle'),
   focusCopy: $('#focusCopy'), focusSetup: $('#focusSetup'), focusRunning: $('#focusRunning'),
   focusBigTime: $('#focusBigTime'), focusSetupActions: $('#focusSetupActions'),
@@ -3111,6 +3320,7 @@ const el = {
   quizPinAllBtn: $('#quizPinAllBtn'),
   zoomIn: $('#zoomIn'), zoomOut: $('#zoomOut'), zoomLabel: $('#zoomLabel'),
   gridBtn: $('#gridBtn'), fitBtn: $('#fitBtn'), assistBtn: $('#assistBtn'), aiBtn: $('#aiBtn'), feelBtn: $('#feelBtn'), emptyNote: $('#emptyNote'),
+  mathToolsBtn: $('#mathToolsBtn'), mathToolsMenu: $('#mathToolsMenu'),
   writingModal: $('#writingModal'), writingClose: $('#writingClose'), writingDone: $('#writingDone'),
   feelRange: $('#feelRange'), feelVal: $('#feelVal'), writingAiBtn: $('#writingAiBtn'), writingLangs: $('#writingLangs'),
   aiLangSeg: $('#aiLangSeg'),
@@ -3193,7 +3403,8 @@ const state = {
   bgMuted: false,
   recent: [],
   inkAssist: false,
-  penFeel: 3,
+  penFeel: 4,
+  palmGuard: true,
   letterAssist: false,
   letterLang: 'auto'
 };
@@ -3211,6 +3422,7 @@ let draft = null, marquee = null, hoverEl = null, gesture = null, pinch = null;
 let spaceDown = false, suppressGesture = false, pointerInside = false;
 const activePointers = new Map();
 const activeTouches = new Set();
+let mathMode = null;
 let penActive = false;
 let activePenPressure = 0;
 let twoFingerTap = null;
@@ -3271,22 +3483,26 @@ const PEN = {
   velWidthMax: 1.12,
   velRef: 2.4,
   /* Ignore an accidental palm touch that starts this soon after the pen lifts. */
-  palmGraceMs: 260,
+  palmGraceMs: 520,
+  /* A large touch ellipse is almost always a resting hand, while a capacitive
+     stylus normally reports a compact contact. Kept conservative for phones. */
+  palmMaxContact: 54,
   /* Predicted-point lookahead is intentionally off: it invents geometry that
      then has to be retracted, which reads as wobble on paper. Sampling fidelity
      plus smoothing already covers the perceived latency. */
   usePrediction: false
 };
-/* Three input profiles. "Instant" is the default: the smallest accepted step
-   and the least lag, with missed reports filled in so a slow stylus still
-   produces one continuous ribbon. */
+/* Five input profiles balance responsiveness, stabilization, and detail. */
 const PEN_FEELS = [
   { step: 0.68, minCutoff: 0.82, beta: 0.007, fillGap: 6.5 },
   { step: 0.46, minCutoff: 1.24, beta: 0.016, fillGap: 4.6 },
   { step: 0.30, minCutoff: 1.95, beta: 0.034, fillGap: 3.4 },
   /* Max: the absolute limit. Sub-pixel steps, almost no smoothing, and gap
      filling down to the tiniest pen travel so the lightest touch leaves ink. */
-  { step: 0.08, minCutoff: 3.6, beta: 0.075, fillGap: 1.5 }
+  { step: 0.08, minCutoff: 3.6, beta: 0.075, fillGap: 1.5 },
+  /* Precision keeps the same tiny steps while filtering low-speed jitter. Its
+     velocity response opens up during faster strokes to limit perceived lag. */
+  { step: 0.08, minCutoff: 1.05, beta: 0.028, fillGap: 1.5 }
 ];
 function penTuning(pointerType) {
   const base = PEN_FEELS[clamp(Math.round(state.penFeel) || 0, 0, PEN_FEELS.length - 1)];
@@ -3304,6 +3520,18 @@ let penProximity = false;
 let lastPenUpAt = 0;
 let penHasPressure = false;
 let smoothing = null;
+function setInputStatus(status, label) {
+  if (!el.inputStatus || !el.inputStatusText) return;
+  if (el.inputStatus.dataset.status === status && el.inputStatusText.textContent === label) return;
+  el.inputStatus.dataset.status = status;
+  el.inputStatusText.textContent = label;
+}
+
+function isPalmSizedContact(e) {
+  if (!state.palmGuard || e.pointerType !== 'touch') return false;
+  const w = Number(e.width) || 0, h = Number(e.height) || 0;
+  return Math.max(w, h) >= PEN.palmMaxContact || w * h >= PEN.palmMaxContact * PEN.palmMaxContact * 0.55;
+}
 
 /* Coalesced/historical samples give us the true stylus trace; a naive single
    pointermove per frame throws most of it away. */
@@ -6074,7 +6302,8 @@ function syncWritingUi() {
     el.feelRange.value = String(feel);
     paintRange(el.feelRange);
   }
-  if (el.feelVal) el.feelVal.textContent = ['Steady', 'Balanced', 'Instant', 'Max'][feel] || 'Max';
+  if (el.feelVal) el.feelVal.textContent = ['Steady', 'Balanced', 'Instant', 'Max', 'Precision'][feel] || 'Precision';
+  if (el.palmGuardBtn) el.palmGuardBtn.setAttribute('aria-pressed', String(state.palmGuard));
   for (const b of [el.aiBtn, el.writingAiBtn]) {
     if (b) b.setAttribute('aria-pressed', String(state.letterAssist));
   }
@@ -6085,6 +6314,13 @@ function syncWritingUi() {
     }
   }
   if (el.app) el.app.dataset.letterAssist = state.letterAssist ? 'on' : 'off';
+}
+
+function setPalmGuard(on) {
+  state.palmGuard = !!on;
+  syncWritingUi();
+  savePrefs();
+  toast(state.palmGuard ? 'Palm protection on' : 'Palm protection off');
 }
 
 /* ------------------------------------------------------------ color utils */
@@ -6225,6 +6461,7 @@ function loadPrefs() {
        absolute maximum. Deliberate choices made afterwards are preserved. */
     if (!data.penFeelMax && state.penFeel === 2) state.penFeel = PEN_FEELS.length - 1;
   }
+  if (typeof data.palmGuard === 'boolean') state.palmGuard = data.palmGuard;
   if (typeof data.letterAssist === 'boolean') state.letterAssist = data.letterAssist;
   if (['auto', 'latin', 'arabic'].includes(data.letterLang)) state.letterLang = data.letterLang;
   if (typeof data.snap === 'boolean') state.snap = data.snap;
@@ -6250,7 +6487,7 @@ function loadPrefs() {
 function serializePrefs() {
   return {
     v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted,
-    inkAssist: state.inkAssist, penFeel: state.penFeel, penFeelMax: true, letterAssist: state.letterAssist, letterLang: state.letterLang,
+    inkAssist: state.inkAssist, penFeel: state.penFeel, penFeelMax: true, palmGuard: state.palmGuard, letterAssist: state.letterAssist, letterLang: state.letterLang,
     snap: state.snap, noteColor: state.noteColor, noteSize: state.sizes.note, textSize: state.sizes.text,
     calloutStyle: state.calloutStyle, polygonSides: state.polygonSides, presets: state.presets
   };
@@ -7489,6 +7726,7 @@ function noteStrokeForAssist(stroke) {
 function onPointerDown(e) {
   const isPen = e.pointerType === 'pen';
   const isTouch = e.pointerType === 'touch';
+  let touchProtected = false;
   /* A new contact always wins over a pending completion guess. */
   cancelHandwritingAssist();
 
@@ -7497,34 +7735,43 @@ function onPointerDown(e) {
     penProximity = true;
     penHasPressure = hasRealPressure(e);
     if (penHasPressure) activePenPressure = clamp(e.pressure, PEN.minPressure, 1);
+    setInputStatus('writing', 'Writing');
   }
   if (isTouch) {
-    activeTouches.add(e.pointerId);
     /* Palm rejection has two triggers: the pen is physically down right now, or
        it just lifted (a resting hand lands in that window). Either way a finger
        rest must never leave a mark. The Hand tool and Select are intentional
        finger tools, so a single finger is allowed through for them. A second
-       finger still gets through so pinch and two-finger undo keep working. */
+       finger can still enter the shared two-finger gesture path. */
     const penNear = penActive || penProximity;
     const withinGrace = Date.now() - lastPenUpAt < PEN.palmGraceMs;
     const fingerTool = state.tool === 'select' || state.tool === 'hand';
-    if ((penNear || withinGrace) && !fingerTool) {
-      if (activeTouches.size === 1) {
-        e.preventDefault();
-        return;
-      }
+    const markTool = !fingerTool;
+    const palmNearPen = state.palmGuard && markTool && (penNear || withinGrace);
+    const broadPalm = state.palmGuard && markTool && activeTouches.size === 0 && isPalmSizedContact(e);
+    touchProtected = palmNearPen || broadPalm;
+    activeTouches.add(e.pointerId);
+    if (touchProtected) {
+      setInputStatus('protected', 'Palm blocked');
     }
+    /* A live pen contact means these touch contacts are resting hand/palm.
+       Ignore them before they can participate in a navigation gesture. */
+    if (touchProtected && penActive) { e.preventDefault(); return; }
   }
 
-  if (e.button !== 0 && e.button !== 1) return;
+  if (e.button !== 0 && !(e.button === 1 && state.tool === 'hand')) return;
   if (!el.context.classList.contains('is-idle')) hidePenControls();
   el.overlay.focus({ preventScroll: true });
   const s = stagePoint(e);
   pointerScreen = s;
   pointerInside = true;
-  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
   try { el.overlay.setPointerCapture(e.pointerId); } catch { /* noop */ }
 
+  if (isTouch && activeTouches.size === 2 && state.tool !== 'hand' && !penActive) {
+    startPinch();
+    return;
+  }
   if (activePointers.size === 2) {
     if (!penActive && activeTouches.size === 2) {
       const pts = Array.from(activePointers.entries());
@@ -7538,16 +7785,10 @@ function onPointerDown(e) {
     return;
   }
   if (activePointers.size > 2) { twoFingerTap = null; return; }
+  if (touchProtected) { e.preventDefault(); return; }
   if (suppressGesture) return;
 
   if (state.tool === 'hand') {
-    gesture = { type: 'pan', last: { x: e.clientX, y: e.clientY } };
-    el.stage.classList.add('is-grabbing');
-    e.preventDefault();
-    return;
-  }
-
-  if (e.button === 1 || spaceDown) {
     gesture = { type: 'pan', last: { x: e.clientX, y: e.clientY } };
     el.stage.classList.add('is-grabbing');
     e.preventDefault();
@@ -7573,6 +7814,7 @@ function onPointerDown(e) {
   if (state.tool === 'image') { openImagePicker(p); return; }
   if (SHAPE_TOOLS.includes(state.tool) || state.tool === 'callout') { startShape(snapPoint(p), e); return; }
   startDraw(p, e);
+  if (isTouch) setInputStatus('writing', 'Touch writing');
 }
 
 function startDraw(p, e) {
@@ -7625,7 +7867,7 @@ function startShape(p, e) {
     draft.style = state.calloutStyle;
     if (draft.style === 'stamp') draft.label = String(nextStampNumber());
   }
-  gesture = { type: 'shape', shift: !!e.shiftKey };
+  gesture = { type: 'shape', shift: !!e.shiftKey, start: { x: p.x, y: p.y } };
   hoverEl = null;
   queueOverlay();
 }
@@ -7946,19 +8188,25 @@ function startPinch() {
   marquee = null;
   gesture = null;
   const rect = el.stage.getBoundingClientRect();
-  const pts = Array.from(activePointers.values()).slice(0, 2).map((q) => ({ x: q.x - rect.left, y: q.y - rect.top }));
+  const pair = activeTouches.size === 2
+    ? Array.from(activePointers.entries()).filter(([, q]) => q.pointerType === 'touch').slice(0, 2)
+    : Array.from(activePointers.entries()).slice(0, 2);
+  const pts = pair.map(([, q]) => ({ x: q.x - rect.left, y: q.y - rect.top }));
   if (pts.length < 2) return;
   const a = pts[0], b = pts[1];
   pinch = {
+    pointerIds: pair.map(([id]) => id),
     d0: Math.max(1, dist(a, b)),
     m0: { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 },
     scale0: cam.scale,
     cam0: { x: cam.x, y: cam.y },
-    erase: activeTouches.size === 2 && dist(a, b) <= 72,
+    erase: activeTouches.size === 2 && state.tool !== 'hand',
     lastErase: null,
     changed: false
   };
   if (pinch.erase) {
+    twoFingerTap = null;
+    setInputStatus('erase', 'Two-finger erase');
     const p = screenToWorld(pinch.m0.x, pinch.m0.y);
     pinch.lastErase = p;
     beginTx();
@@ -7978,12 +8226,13 @@ function onPointerMove(e) {
   if (e.pointerType === 'pen') {
     penProximity = true;
     if (e.buttons) penActive = true;
+    setInputStatus(e.buttons ? 'writing' : 'near', e.buttons ? 'Writing' : 'Pen nearby');
     if (e.pressure > 0 && Math.abs(e.pressure - PEN.mousePressure) > PEN.pressureMinDelta) {
       activePenPressure = clamp(e.pressure, PEN.minPressure, 1);
       penHasPressure = true;
     }
   }
-  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+  if (activePointers.has(e.pointerId)) activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY, pointerType: e.pointerType });
 
   if (twoFingerTap) {
     const start = twoFingerTap.starts.get(e.pointerId);
@@ -8121,10 +8370,26 @@ function onPointerMove(e) {
     }
     case 'shape': {
       if (!draft) break;
-      let end = constrainShape(draft, p, e.shiftKey);
-      if (state.snap) end = snapPoint(end);
-      draft.x2 = end.x;
-      draft.y2 = end.y;
+      if (mathMode === 'compass' && draft.type === 'ellipse' && gesture.start) {
+        const radius = Math.hypot(p.x - gesture.start.x, p.y - gesture.start.y);
+        draft.x1 = gesture.start.x - radius;
+        draft.y1 = gesture.start.y - radius;
+        draft.x2 = gesture.start.x + radius;
+        draft.y2 = gesture.start.y + radius;
+      } else {
+        let end;
+        if (mathMode === 'protractor' && (draft.type === 'line' || draft.type === 'arrow')) {
+          const dx = p.x - draft.x1, dy = p.y - draft.y1;
+          const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 12)) * (Math.PI / 12);
+          const length = Math.hypot(dx, dy);
+          end = { x: draft.x1 + Math.cos(angle) * length, y: draft.y1 + Math.sin(angle) * length };
+        } else {
+          end = constrainShape(draft, p, e.shiftKey);
+        }
+        if (state.snap && mathMode !== 'protractor') end = snapPoint(end);
+        draft.x2 = end.x;
+        draft.y2 = end.y;
+      }
       queueOverlay();
       break;
     }
@@ -8237,9 +8502,10 @@ function constrainShape(start, p, shift) {
 }
 
 function updatePinch() {
+  if (!pinch) return;
   const rect = el.stage.getBoundingClientRect();
-  const pts = Array.from(activePointers.values()).slice(0, 2).map((q) => ({ x: q.x - rect.left, y: q.y - rect.top }));
-  if (!pinch || pts.length < 2) return;
+  const pts = pinch.pointerIds.map((id) => activePointers.get(id)).filter(Boolean).map((q) => ({ x: q.x - rect.left, y: q.y - rect.top }));
+  if (pts.length < 2) return;
   const a = pts[0], b = pts[1];
   const d = Math.max(1, dist(a, b));
   const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
@@ -8371,9 +8637,10 @@ function onPointerUp(e) {
     activePenPressure = 0;
   }
   if (e.pointerType === 'touch') activeTouches.delete(e.pointerId);
+  if (activePointers.size === 0 && (e.pointerType === 'pen' || e.pointerType === 'touch')) setInputStatus('ready', 'Pen ready');
 
   if (pinch) {
-    if (activePointers.size < 2) {
+    if (pinch.pointerIds.some((id) => !activePointers.has(id))) {
       if (pinch.erase) commitTx(pinch.changed || !!(gesture && gesture.changed));
       pinch = null;
     }
@@ -8524,8 +8791,9 @@ el.overlay.addEventListener('contextmenu', (e) => e.preventDefault());
 
 el.stage.addEventListener('wheel', (e) => {
   if (e.target.closest('.context,.dock,.show-video')) return;
-  /* Eraser must not trigger zoom/pan gestures */
-  if (state.tool === 'eraser') { e.preventDefault(); return; }
+  /* Navigation is exclusive to Hand so a stray scroll cannot shift the board
+     while the student is writing, selecting, or using another tool. */
+  if (state.tool !== 'hand') { e.preventDefault(); return; }
   endTextEdit(true);
   e.preventDefault();
   const s = stagePoint(e);
@@ -8651,6 +8919,11 @@ function initPenControls() {
 
 function setTool(tool) {
   if (!['select', 'pen', 'highlighter', 'eraser', 'hand', 'text', 'note', 'moment', 'image', 'laser', 'lasso', 'callout', ...SHAPE_TOOLS].includes(tool)) return;
+  if (tool !== 'hand' && spaceDown) {
+    spaceDown = false;
+    el.stage.classList.remove('is-grab');
+  }
+  mathMode = null;
   state.tool = tool;
   el.app.dataset.tool = tool;
   for (const b of $$('.tool')) b.setAttribute('aria-pressed', String(b.dataset.tool === tool));
@@ -8660,6 +8933,7 @@ function setTool(tool) {
   updateToolCursor();
   queueOverlay();
   revealPenControls();
+  syncMathToolsMenu();
 }
 
 function syncSelectionUi() {
@@ -8768,9 +9042,70 @@ function syncGridUi() {
 function cycleGrid() {
   state.grid = GRID_ORDER[(GRID_ORDER.indexOf(state.grid) + 1) % GRID_ORDER.length];
   syncGridUi();
+  syncMathToolsMenu();
   queueScene();
   scheduleSave();
 }
+
+function syncMathToolsMenu() {
+  for (const b of $$('[data-math-tool]', el.mathToolsMenu)) {
+    const name = b.dataset.mathTool;
+    const active = name === 'graph' ? state.grid === 'grid' : mathMode === name;
+    b.setAttribute('aria-pressed', String(active));
+  }
+  el.mathToolsBtn.setAttribute('aria-pressed', String(!!mathMode));
+}
+
+function closeMathToolsMenu() {
+  el.mathToolsMenu.hidden = true;
+  el.mathToolsBtn.setAttribute('aria-expanded', 'false');
+}
+
+function toggleMathToolsMenu() {
+  if (!el.mathToolsMenu.hidden) { closeMathToolsMenu(); return; }
+  el.mathToolsMenu.hidden = false;
+  el.mathToolsBtn.setAttribute('aria-expanded', 'true');
+  syncMathToolsMenu();
+  const anchor = el.mathToolsBtn.getBoundingClientRect();
+  const menu = el.mathToolsMenu.getBoundingClientRect();
+  if (window.innerWidth <= 560) {
+    el.mathToolsMenu.style.left = Math.max(8, Math.min(anchor.left, window.innerWidth - menu.width - 8)) + 'px';
+    el.mathToolsMenu.style.top = Math.max(8, anchor.top - menu.height - 8) + 'px';
+  } else {
+    el.mathToolsMenu.style.left = Math.min(anchor.right + 8, window.innerWidth - menu.width - 8) + 'px';
+    el.mathToolsMenu.style.top = Math.max(8, Math.min(anchor.top, window.innerHeight - menu.height - 8)) + 'px';
+  }
+}
+
+function chooseMathTool(name) {
+  closeMathToolsMenu();
+  if (name === 'graph') {
+    mathMode = null;
+    state.grid = 'grid';
+    syncGridUi();
+    queueScene();
+    scheduleSave();
+    toast('Graph paper on');
+  } else {
+    const tool = name === 'compass' ? 'ellipse' : 'line';
+    setTool(tool);
+    mathMode = name;
+    toast(name === 'ruler' ? 'Ruler ready — drag a straight line' : name === 'protractor' ? 'Protractor ready — angles snap every 15°' : 'Compass ready — drag from the circle center');
+  }
+  syncMathToolsMenu();
+}
+
+el.mathToolsBtn.addEventListener('click', toggleMathToolsMenu);
+el.mathToolsMenu.addEventListener('click', (e) => {
+  const option = e.target.closest('[data-math-tool]');
+  if (option) chooseMathTool(option.dataset.mathTool);
+});
+document.addEventListener('pointerdown', (e) => {
+  if (!el.mathToolsMenu.hidden && !el.mathToolsMenu.contains(e.target) && e.target !== el.mathToolsBtn) closeMathToolsMenu();
+});
+window.addEventListener('resize', closeMathToolsMenu);
+window.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !el.mathToolsMenu.hidden) closeMathToolsMenu(); });
+
 function syncSnapUi() {
   if (!el.snapBtn) return;
   el.snapBtn.setAttribute('aria-pressed', String(!!state.snap));
@@ -9988,6 +10323,7 @@ window.addEventListener('keydown', (e) => {
   }
 
   if (e.code === 'Space') {
+    if (state.tool !== 'hand') return;
     if (!spaceDown) { spaceDown = true; el.stage.classList.add('is-grab'); }
     e.preventDefault();
     return;
@@ -10214,6 +10550,7 @@ el.fitBtn.addEventListener('click', fitContent);
 el.assistBtn.addEventListener('click', () => setInkAssist(!state.inkAssist));
 el.aiBtn.addEventListener('click', openAiStudio);
 el.feelBtn.addEventListener('click', openWritingPanel);
+el.palmGuardBtn.addEventListener('click', () => setPalmGuard(!state.palmGuard));
 el.writingAiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
 el.feelRange.addEventListener('input', () => {
   state.penFeel = clamp(Number(el.feelRange.value), 0, PEN_FEELS.length - 1);
