@@ -2806,7 +2806,7 @@ svg{shape-rendering:geometricPrecision}
         <div class="ai-tc-icon"><svg class="icon"><use href="#i-broom"/></svg></div>
         <div class="ai-tc-body">
           <strong>Tidy Board <span class="ai-kbd">⇧B</span></strong>
-          <span dir="rtl" lang="ar">تجميع دلالي للملاحظات في أعمدة عربية مرتّبة، مع تقويم الأسهم وتنظيم الهوامش.</span>
+          <span dir="rtl" lang="ar">تجميع دلالي للملاحظات في أقسام عربية مرتّبة، مع تقويم الأسهم وتنظيم الهوامش.</span>
         </div>
       </button>
     </div>
@@ -2893,6 +2893,16 @@ svg{shape-rendering:geometricPrecision}
           <button type="button" data-lang="latin" aria-pressed="false">Latin</button>
           <button type="button" data-lang="arabic" aria-pressed="false">Arabic</button>
         </div>
+      </div>
+    </div>
+
+    <div class="writing-block writing-ai-block">
+      <div class="writing-row">
+        <div class="writing-copy">
+          <strong>Handwriting AI bridge</strong>
+          <span>Runs your Python model (KHATT-trained recognizer) on recent ink and suggests how to make it clearer. Needs the local bridge: python -m handwriting_ai.serve.</span>
+        </div>
+        <button class="switch" id="handwritingAiBtn" aria-label="Toggle Handwriting AI bridge" aria-pressed="false"></button>
       </div>
     </div>
 
@@ -3679,7 +3689,7 @@ const el = {
   cardAiMath: $('#cardAiMath'), cardAiDraw: $('#cardAiDraw'), cardAiOcr: $('#cardAiOcr'),
   cardAiDiagram: $('#cardAiDiagram'), cardAiQuiz: $('#cardAiQuiz'), cardAiExplain: $('#cardAiExplain'),
   cardAiTidy: $('#cardAiTidy'), tidyBtn: $('#tidyBtn'),
-  studioAiAssistBtn: $('#studioAiAssistBtn'),
+  studioAiAssistBtn: $('#studioAiAssistBtn'), handwritingAiBtn: $('#handwritingAiBtn'),
   aiExplainerDrawer: $('#aiExplainerDrawer'), aiExplainerClose: $('#aiExplainerClose'),
   aiExplainerThumb: $('#aiExplainerThumb'), aiExplainerTag: $('#aiExplainerTag'),
   aiExplainerInput: $('#aiExplainerInput'), aiExplainerSend: $('#aiExplainerSend'),
@@ -3774,6 +3784,7 @@ const state = {
   bgMuted: false,
   recent: [],
   inkAssist: false,
+  handwritingAi: false,
   penFeel: 4,
   palmGuard: true,
   letterAssist: false,
@@ -5860,7 +5871,7 @@ Return strictly JSON:
    Arabic headings. Loose ink rides along with the note it sits on, and arrows
    are re-anchored to whatever they used to point at. */
 const TIDY = {
-  colW: 264,
+  colW: 400,
   gapX: 56,
   gapY: 22,
   headerH: 58,
@@ -5991,8 +6002,8 @@ async function tidyAskColumns(batch) {
     `شروط إلزامية:\n` +
     `- اكتب كل العناوين بالعربية الفصحى فقط، دون أي حرف لاتيني أو كلمة إنجليزية.\n` +
     `- استخدم الأرقام العربية (٠١٢٣٤٥٦٧٨٩) عند الحاجة.\n` +
-    `- أنشئ من عمودين إلى خمسة أعمدة فقط، ولكل عمود عنوان قصير واضح.\n` +
-    `- ضع كل معرّف في عمود واحد فقط، ولا تكرّره ولا تختلق معرّفات جديدة.\n` +
+    `- أنشئ من قسمين إلى خمسة أقسام فقط، ولكل قسم عنوان قصير واضح.\n` +
+    `- ضع كل معرّف في قسم واحد فقط، ولا تكرّره ولا تختلق معرّفات جديدة.\n` +
     `- استخدم المعرّفات المعطاة حرفياً كما هي.\n` +
     `أعد JSON صالحاً فقط بهذه البنية:\n` +
     `{"columns":[{"title":"عنوان عربي قصير","items":["المعرّف"]}]}\n` +
@@ -6254,50 +6265,45 @@ function tidyArabicNumeral(n) {
   return String(Math.max(0, Math.round(n))).split('').map((d) => digits[Number(d)] || d).join('');
 }
 
-/* Columns run right-to-left, the way Arabic is read. Each column sits on a
-   soft tinted panel with a numbered accent badge, so the result reads like a
-   designed document instead of loose notes on a page. */
+/* Sections read top-to-bottom, like a document. Each section gets a heading,
+   a numbered badge, and a soft panel so the page holds together instead of
+   fanning out into a row of columns. */
 function tidyApplyLayout(columns, boardBox) {
-  const colW = TIDY.colW, gapX = TIDY.gapX, gapY = TIDY.gapY, pad = TIDY.panelPad;
-  const totalW = columns.length * colW + Math.max(0, columns.length - 1) * gapX;
-  const left = boardBox.x + Math.max(0, (boardBox.w - totalW) / 2);
+  const colW = TIDY.colW, gapY = TIDY.gapY, pad = TIDY.panelPad, sectionGap = 28;
+  const left = boardBox.x;
   const top = boardBox.y;
-
-  /* Place the content first so every panel can hug its own column height. */
-  const placedCols = columns.map((col, ci) => {
-    const x = left + totalW - colW - ci * (colW + gapX);
-    let y = top + TIDY.headerH;
-    for (const unit of col.units) {
-      if (!unit || !unit.els.length) continue;
-      const isText = !!unit.host;
-      let targetX = x + Math.max(0, (colW - (unit.box ? unit.box.w : 0)) / 2);
-      if (isText) {
-        /* Align the card itself, not the union box, so attached ink never
-           nudges a note out of its column. */
-        const hostLeft = Math.min(unit.host.x1, unit.host.x2);
-        targetX = x - (hostLeft - unit.box.x);
-      }
-      const placed = tidyMoveUnit(unit, targetX, y, colW, !isText);
-      if (!placed) continue;
-      y = placed.y + placed.h + gapY;
-    }
-    return { col, ci, x, bottom: y - gapY };
-  });
 
   const panels = [];
   const headers = [];
-  let maxBottom = top;
+  let y = top;
 
-  placedCols.forEach(({ col, ci, x, bottom }) => {
+  columns.forEach((col, ci) => {
     const accent = TIDY.accents[ci % TIDY.accents.length];
-    const panelLeft = x - pad;
+    const sectionTop = y;
+    let itemY = sectionTop + TIDY.headerH;
+
+    for (const unit of col.units) {
+      if (!unit || !unit.els.length) continue;
+      const isText = !!unit.host;
+      let targetX = left;
+      if (isText) {
+        /* Align the card itself, not the union box, so attached ink never
+           nudges a note out of its section. */
+        const hostLeft = Math.min(unit.host.x1, unit.host.x2);
+        targetX = left - (hostLeft - unit.box.x);
+      }
+      const placed = tidyMoveUnit(unit, targetX, itemY, colW, !isText);
+      if (!placed) continue;
+      itemY = placed.y + placed.h + gapY;
+    }
+
+    const bottom = itemY - gapY;
+    const panelLeft = left - pad;
     const panelW = colW + pad * 2;
-    const panelTop = top - 16;
+    const panelTop = sectionTop - 16;
     const panelBottom = bottom + pad;
     const panelH = Math.max(52, panelBottom - panelTop);
 
-    /* Tinted body + hairline edge. Inserted behind every mark, so the fill
-       never dulls the notes and the panel never steals a click. */
     panels.push({
       id: uid(), type: 'roundrect', x1: panelLeft, y1: panelTop,
       x2: panelLeft + panelW, y2: panelTop + panelH,
@@ -6311,26 +6317,27 @@ function tidyApplyLayout(columns, boardBox) {
 
     const head = tidyFitHeader(col.title);
     headers.push({
-      id: uid(), type: 'text', x1: x, y1: top, x2: x + colW - 30, y2: top + 32,
+      id: uid(), type: 'text', x1: left, y1: sectionTop, x2: left + colW - 30, y2: sectionTop + 32,
       text: head.text, color: accent, size: head.size, opacity: 1, tidy: true
     });
     headers.push({
-      id: uid(), type: 'callout', x1: x + colW + pad - 24, y1: top + 3,
-      x2: x + colW + pad - 2, y2: top + 25,
+      id: uid(), type: 'callout', x1: left + colW + pad - 24, y1: sectionTop + 3,
+      x2: left + colW + pad - 2, y2: sectionTop + 25,
       color: accent, size: 1, label: tidyArabicNumeral(ci + 1), opacity: 1, tidy: true
     });
     headers.push({
-      id: uid(), type: 'line', x1: x, y1: top + 40, x2: x + colW, y2: top + 40,
+      id: uid(), type: 'line', x1: left, y1: sectionTop + 40, x2: left + colW, y2: sectionTop + 40,
       color: accent, size: 2.4, opacity: 0.85, tidy: true
     });
 
-    maxBottom = Math.max(maxBottom, panelBottom);
+    y = panelBottom + sectionGap;
   });
 
+  const maxBottom = Math.max(top, y - sectionGap);
   return {
     headers,
     panels,
-    box: { x: left - pad, y: top, w: totalW + pad * 2, h: Math.max(0, maxBottom - top) }
+    box: { x: left - pad, y: top, w: colW + pad * 2, h: Math.max(0, maxBottom - top) }
   };
 }
 
@@ -6488,7 +6495,7 @@ async function tidyBoardAi() {
     syncEmptyNote();
     syncSelectionUi();
     pulseAssist(layout.box);
-    toast('تم ترتيب اللوح — ' + columns.length + ' أعمدة و' + units.length + ' عنصراً');
+    toast('تم ترتيب اللوح — ' + columns.length + ' أقسام و' + units.length + ' عنصراً');
     requestAnimationFrame(() => { try { tidyFrame(layout.box); } catch { /* view only */ } });
   } catch (err) {
     console.error('Tidy Board failed', err);
@@ -6697,6 +6704,73 @@ function setLetterLang(lang) {
   savePrefs();
 }
 
+/* Local bridge to the Python handwriting model. The page never bundles the
+   model; it posts a small image to a bridge started with
+   `python -m handwriting_ai.serve`. */
+const HANDWRITING_BRIDGE = 'http://127.0.0.1:8765/feedback';
+let handwritingAiTimer = 0;
+let handwritingAiRecent = [];
+
+function setHandwritingAi(on, opts = {}) {
+  state.handwritingAi = !!on;
+  if (!state.handwritingAi) {
+    clearTimeout(handwritingAiTimer);
+    handwritingAiTimer = 0;
+    handwritingAiRecent = [];
+  }
+  syncWritingUi();
+  savePrefs();
+  if (!opts.silent) {
+    toast(state.handwritingAi
+      ? 'Handwriting AI on — the Python model listens to your recent strokes'
+      : 'Handwriting AI off');
+  }
+}
+
+function noteStrokeForHandwritingAi(stroke) {
+  if (!state.handwritingAi || !stroke || stroke.ai || stroke.marker) return;
+  if (focusMode.active) return;
+  handwritingAiRecent.push({ id: stroke.id, at: Date.now(), page: activePageId });
+  if (handwritingAiRecent.length > 12) handwritingAiRecent.shift();
+  clearTimeout(handwritingAiTimer);
+  handwritingAiTimer = setTimeout(runHandwritingAiBridge, 1000);
+}
+
+async function runHandwritingAiBridge() {
+  handwritingAiTimer = 0;
+  if (!state.handwritingAi || focusMode.active) return;
+  const now = Date.now();
+  handwritingAiRecent = handwritingAiRecent.filter((r) => now - r.at <= 5000 && r.page === activePageId);
+  const strokes = handwritingAiRecent
+    .map((r) => elements.find((e) => e.id === r.id))
+    .filter((e) => e && e.type === 'stroke' && !e.ai && !e.marker);
+  if (!strokes.length) return;
+  const capture = captureSelectionImage(strokes, { maxDim: 900, pad: 14 });
+  if (!capture) return;
+  try {
+    const res = await fetch(HANDWRITING_BRIDGE, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ image: capture.dataUrl, lang: state.letterLang })
+    });
+    if (!res.ok) throw new Error('bridge ' + res.status);
+    const data = await res.json();
+    const text = String((data && data.text) || '').trim();
+    const confidence = Number(data && data.confidence) || 0;
+    handwritingAiRecent = [];
+    if (!text) {
+      toast('Handwriting AI: couldn\u2019t read that — slow down and keep the baseline steady');
+    } else if (confidence < 0.6) {
+      toast('Handwriting AI read \u201C' + text + '\u201D — unsure; try writing more consistently');
+    } else {
+      toast('Handwriting AI read \u201C' + text + '\u201D');
+    }
+  } catch (err) {
+    console.warn('Handwriting bridge unavailable', err);
+    toast('Handwriting bridge offline — run python -m handwriting_ai.serve');
+  }
+}
+
 function syncWritingUi() {
   const feel = clamp(Math.round(state.penFeel) || 0, 0, PEN_FEELS.length - 1);
   state.penFeel = feel;
@@ -6706,6 +6780,7 @@ function syncWritingUi() {
   }
   if (el.feelVal) el.feelVal.textContent = ['Steady', 'Balanced', 'Instant', 'Max', 'Precision'][feel] || 'Precision';
   if (el.palmGuardBtn) el.palmGuardBtn.setAttribute('aria-pressed', String(state.palmGuard));
+  if (el.handwritingAiBtn) el.handwritingAiBtn.setAttribute('aria-pressed', String(state.handwritingAi));
   for (const b of [el.aiBtn, el.writingAiBtn]) {
     if (b) b.setAttribute('aria-pressed', String(state.letterAssist));
   }
@@ -6857,6 +6932,7 @@ function loadPrefs() {
   if (Number.isFinite(data.bgVolume)) state.bgVolume = clamp(data.bgVolume, 0, 100);
   if (typeof data.bgMuted === 'boolean') state.bgMuted = data.bgMuted;
   if (typeof data.inkAssist === 'boolean') state.inkAssist = data.inkAssist;
+  if (typeof data.handwritingAi === 'boolean') state.handwritingAi = data.handwritingAi;
   if (Number.isFinite(data.penFeel)) {
     state.penFeel = clamp(Math.round(data.penFeel), 0, PEN_FEELS.length - 1);
     /* One-time: anyone sitting on the old maximum (Instant) moves up to the new
@@ -6889,7 +6965,7 @@ function loadPrefs() {
 function serializePrefs() {
   return {
     v: 1, layout: state.layout, ratios: state.ratios, bgVolume: state.bgVolume, bgMuted: state.bgMuted,
-    inkAssist: state.inkAssist, penFeel: state.penFeel, penFeelMax: true, palmGuard: state.palmGuard, letterAssist: state.letterAssist, letterLang: state.letterLang,
+    inkAssist: state.inkAssist, handwritingAi: state.handwritingAi, penFeel: state.penFeel, penFeelMax: true, palmGuard: state.palmGuard, letterAssist: state.letterAssist, letterLang: state.letterLang,
     snap: state.snap, noteColor: state.noteColor, noteSize: state.sizes.note, textSize: state.sizes.text,
     calloutStyle: state.calloutStyle, polygonSides: state.polygonSides, presets: state.presets
   };
@@ -9267,6 +9343,7 @@ function finishGesture(e) {
       if (!draft.straight) {
         noteStrokeForAssist(draft);
         noteStrokeForHandwriting(draft);
+        noteStrokeForHandwritingAi(draft);
       }
     }
     draft = null;
@@ -11126,6 +11203,7 @@ el.aiBtn.addEventListener('click', openAiStudio);
 el.feelBtn.addEventListener('click', openWritingPanel);
 el.palmGuardBtn.addEventListener('click', () => setPalmGuard(!state.palmGuard));
 el.writingAiBtn.addEventListener('click', () => setLetterAssist(!state.letterAssist));
+if (el.handwritingAiBtn) el.handwritingAiBtn.addEventListener('click', () => setHandwritingAi(!state.handwritingAi));
 el.feelRange.addEventListener('input', () => {
   state.penFeel = clamp(Number(el.feelRange.value), 0, PEN_FEELS.length - 1);
   syncWritingUi();
@@ -13245,7 +13323,7 @@ function paletteCommands() {
     { title: 'AI: Beautify Diagram', sub: 'Align flowchart boxes and orthogonal arrows', icon: 'i-flowchart', run: beautifyDiagramSelection },
     { title: 'AI: Flashcards & Quiz', sub: 'Generate study review cards from board', icon: 'i-quiz', run: () => generateFlashcardsQuiz('selection') },
     { title: 'AI: Explain Selection', sub: 'Ask questions & explain diagrams', icon: 'i-spark', run: () => openAiExplainer() },
-    { title: 'Tidy Board · رتّب اللوح', sub: 'تجميع دلالي للملاحظات في أعمدة عربية مرتّبة', icon: 'i-broom', run: () => tidyBoardAi() },
+    { title: 'Tidy Board · رتّب اللوح', sub: 'تجميع دلالي للملاحظات في أقسام عربية مرتّبة', icon: 'i-broom', run: () => tidyBoardAi() },
     { title: 'AI Studio & Providers', sub: 'Switch between Groq and OpenRouter models', icon: 'i-spark', run: openAiStudio },
     { title: 'New page', sub: 'Add a page to this subject', icon: 'i-plus', run: () => addPageFromStrip() },
     { title: 'Duplicate page', sub: 'Copy this page beside itself', icon: 'i-duplicate', run: async () => { const n = await duplicatePage(activePageId); if (n) { await openPage(n); renderPages(); } } },

@@ -1,0 +1,6 @@
+name: improver
+batch_size: 16
+lr: 0.0002
+epochs: 20
+pairs: data/pairs.json
+out: checkpoints/improver.pt

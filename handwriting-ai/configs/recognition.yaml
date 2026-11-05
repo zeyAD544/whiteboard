@@ -1,0 +1,8 @@
+name: recognizer
+height: 32
+batch_size: 16
+lr: 0.001
+epochs: 10
+data: data/manifest.csv
+root: data/images
+out: checkpoints/recognizer.pt
