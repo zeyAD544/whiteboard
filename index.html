@@ -36,7 +36,8 @@ body{
   overflow:hidden;
 }
 button,input,output,textarea{font:inherit;color:inherit}
-button{background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button{background:none;border:0;padding:0;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+[role="button"]{touch-action:manipulation}
 input{font-family:inherit}
 svg{display:block}
 [hidden]{display:none!important}
@@ -11139,6 +11140,7 @@ function closeMoreMenu() {
   el.moreMenu.hidden = true;
   el.moreBtn.setAttribute('aria-expanded', 'false');
 }
+el.moreBtn.addEventListener('pointerdown', (e) => { e.stopPropagation(); });
 el.moreBtn.addEventListener('click', (e) => {
   e.stopPropagation();
   const willOpen = el.moreMenu.hidden;
@@ -11146,8 +11148,10 @@ el.moreBtn.addEventListener('click', (e) => {
   el.moreBtn.setAttribute('aria-expanded', String(willOpen));
 });
 document.addEventListener('pointerdown', (e) => {
-  if (!el.moreMenu.hidden && !e.target.closest('.menu-wrap')) closeMoreMenu();
-});
+  const path = (typeof e.composedPath === 'function') ? e.composedPath() : [e.target];
+  const inside = path.some((n) => n && n.classList && n.classList.contains('menu-wrap'));
+  if (!el.moreMenu.hidden && !inside) closeMoreMenu();
+}, true);
 for (const item of $$('#moreMenu [data-action]')) {
   item.addEventListener('click', () => {
     const action = item.dataset.action;
