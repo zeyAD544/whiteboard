@@ -9,6 +9,8 @@ from __future__ import annotations
 import argparse
 import base64
 import json
+import mimetypes
+import os
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from io import BytesIO
@@ -36,8 +38,9 @@ def preprocess(img: Image.Image, height: int = 32):
     ratio = height / max(h, 1)
     new_w = max(1, int(w * ratio))
     img = img.resize((new_w, height), Image.LANCZOS)
-    arr = np.asarray(img, dtype=np.float32) / 255.0
-    arr = 1.0 - arr
+    gray = np.asarray(img, dtype=np.float32) / 255.0
+    dark = gray.mean() < 0.5
+    arr = gray if dark else 1.0 - gray  # ink = 1
     t = torch.from_numpy(arr).unsqueeze(0).unsqueeze(0)  # (1,1,H,W)
     return (t - 0.5) / 0.5
 
@@ -81,6 +84,31 @@ class Handler(BaseHTTPRequestHandler):
             self._json(200, payload)
         except Exception as exc:  # keep the bridge alive on bad input
             self._json(500, {"error": str(exc)})
+
+    def do_GET(self):
+        root = Path(__file__).resolve().parent.parent.parent
+        path = self.path.split("?", 1)[0]
+        if path == "/":
+            path = "/index.html"
+        if "\x00" in path or ".." in Path(path).parts:
+            self.send_error(400, "bad path")
+            return
+        file_path = (root / path.lstrip("/")).resolve()
+        try:
+            file_path.relative_to(root)
+        except ValueError:
+            self.send_error(403, "outside root")
+            return
+        if not file_path.is_file():
+            self.send_error(404, "not found")
+            return
+        ctype, _ = mimetypes.guess_type(str(file_path))
+        self.send_response(200)
+        self.send_header("content-type", ctype or "application/octet-stream")
+        self.send_header("content-length", str(file_path.stat().st_size))
+        self.end_headers()
+        with open(file_path, "rb") as f:
+            self.wfile.write(f.read())
 
     def _json(self, status, payload):
         body = json.dumps(payload, ensure_ascii=False).encode("utf-8")

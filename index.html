@@ -6704,12 +6704,108 @@ function setLetterLang(lang) {
   savePrefs();
 }
 
-/* Local bridge to the Python handwriting model. The page never bundles the
-   model; it posts a small image to a bridge started with
-   `python -m handwriting_ai.serve`. */
+/* Handwriting AI: in-browser ONNX model when the site is served (GitHub
+   Pages), local Python bridge for file:// and offline development. */
+const HANDWRITING_LOCALHOST = location.hostname === '127.0.0.1' || location.hostname === 'localhost';
 const HANDWRITING_BRIDGE = 'http://127.0.0.1:8765/feedback';
+const HANDWRITING_MODEL = './models/recognizer_khatt.onnx';
+const HANDWRITING_CHARS = './models/handwriting_chars.json';
+const HANDWRITING_ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.28.0/dist/ort.wasm.min.js';
 let handwritingAiTimer = 0;
 let handwritingAiRecent = [];
+let handwritingChars = null;
+let handwritingSession = null;
+let handwritingSessionPromise = null;
+
+function loadHandwritingOrt() {
+  return new Promise((resolve, reject) => {
+    if (window.ort) return resolve(window.ort);
+    const s = document.createElement('script');
+    s.src = HANDWRITING_ORT;
+    s.onload = () => (window.ort ? resolve(window.ort) : reject(new Error('ort not exposed')));
+    s.onerror = () => reject(new Error('failed to load onnxruntime-web'));
+    document.head.appendChild(s);
+  });
+}
+
+async function ensureHandwritingSession() {
+  if (handwritingSession && handwritingChars) return handwritingSession;
+  if (!handwritingSessionPromise) {
+    handwritingSessionPromise = (async () => {
+      const [ort, charsRes, modelBuf] = await Promise.all([
+        loadHandwritingOrt(),
+        fetch(HANDWRITING_CHARS).then((r) => r.json()),
+        fetch(HANDWRITING_MODEL).then((r) => r.arrayBuffer())
+      ]);
+      handwritingChars = String(charsRes.chars || '');
+      handwritingSession = await ort.InferenceSession.create(modelBuf);
+      return handwritingSession;
+    })().catch((err) => { handwritingSessionPromise = null; throw err; });
+  }
+  return handwritingSessionPromise;
+}
+
+async function recognizeHandwritingImage(dataUrl) {
+  const ort = await loadHandwritingOrt();
+  await ensureHandwritingSession();
+  const img = await new Promise((resolve, reject) => {
+    const im = new Image();
+    im.onload = () => resolve(im);
+    im.onerror = reject;
+    im.src = dataUrl;
+  });
+  const h = 32;
+  const w = Math.max(1, Math.round(img.width * (h / img.height)));
+  const c = document.createElement('canvas');
+  c.width = w; c.height = h;
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, w, h);
+  ctx.drawImage(img, 0, 0, w, h);
+  const px = ctx.getImageData(0, 0, w, h).data;
+  let sum = 0;
+  for (let i = 0; i < px.length; i += 4) sum += (px[i] + px[i + 1] + px[i + 2]) / 3;
+  const dark = sum / ((px.length / 4) || 1) < 128;
+  const arr = new Float32Array(w * h);
+  for (let i = 0, j = 0; i < px.length; i += 4, j++) {
+    const gray = (px[i] + px[i + 1] + px[i + 2]) / 3;
+    const ink = dark ? gray / 255 : 1 - gray / 255;
+    arr[j] = (ink - 0.5) / 0.5;
+  }
+  const out = await handwritingSession.run({ input: new ort.Tensor('float32', arr, [1, 1, h, w]) });
+  const logits = out.output.data;
+  const dims = out.output.dims;
+  const T = dims[1], V = dims[2];
+  const chars = handwritingChars;
+  const kept = [];
+  let prev = -1, confSum = 0;
+  for (let t = 0; t < T; t++) {
+    let best = 0, bestV = -Infinity;
+    for (let v = 0; v < V; v++) {
+      const val = logits[t * V + v];
+      if (val > bestV) { bestV = val; best = v; }
+    }
+    if (best !== 0 && best !== prev) {
+      kept.push({ id: best, prob: Math.exp(bestV) });
+      confSum += Math.exp(bestV);
+    }
+    prev = best === 0 ? -1 : best;
+  }
+  const text = kept.map((k) => chars[k.id - 1] || '').join('');
+  const confidence = kept.length ? confSum / kept.length : 0;
+  return { text, confidence };
+}
+
+async function fetchHandwritingBridge(dataUrl) {
+  const res = await fetch(HANDWRITING_BRIDGE, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ image: dataUrl, lang: state.letterLang })
+  });
+  if (!res.ok) throw new Error('bridge ' + res.status);
+  const data = await res.json();
+  return { text: String((data && data.text) || '').trim(), confidence: Number(data && data.confidence) || 0 };
+}
 
 function setHandwritingAi(on, opts = {}) {
   state.handwritingAi = !!on;
@@ -6748,15 +6844,11 @@ async function runHandwritingAiBridge() {
   const capture = captureSelectionImage(strokes, { maxDim: 900, pad: 14 });
   if (!capture) return;
   try {
-    const res = await fetch(HANDWRITING_BRIDGE, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ image: capture.dataUrl, lang: state.letterLang })
-    });
-    if (!res.ok) throw new Error('bridge ' + res.status);
-    const data = await res.json();
-    const text = String((data && data.text) || '').trim();
-    const confidence = Number(data && data.confidence) || 0;
+    const data = (location.protocol === 'http:' || location.protocol === 'https:')
+      ? await recognizeHandwritingImage(capture.dataUrl)
+      : await fetchHandwritingBridge(capture.dataUrl);
+    const text = String(data.text || '').trim();
+    const confidence = Number(data.confidence) || 0;
     handwritingAiRecent = [];
     if (!text) {
       toast('Handwriting AI: couldn\u2019t read that — slow down and keep the baseline steady');
