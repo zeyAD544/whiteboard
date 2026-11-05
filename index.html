@@ -2229,6 +2229,7 @@ svg{shape-rendering:geometricPrecision}
   <symbol id="i-protractor" viewBox="0 0 24 24"><path d="M3 19a9 9 0 0 1 18 0Z"/><path d="M12 10v2m-4.5-.8 1 1.7m8-1.7-1 1.7M5.8 15l1.7 1m10.7-1-1.7 1M12 19v-5"/></symbol>
   <symbol id="i-compass" viewBox="0 0 24 24"><circle cx="12" cy="5" r="2"/><path d="m10.8 6.6-6 14m8.4-14 6 14M8 13l8 0m-9.7 7.6h4m3.4 0h4"/></symbol>
   <symbol id="i-blank" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="m4 20 16-16"/></symbol>
+  <symbol id="i-lined" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="2.5"/><path d="M3.5 8.5h17M3.5 13h17M3.5 17.5h17"/></symbol>
   <symbol id="i-fit" viewBox="0 0 24 24"><path d="M8 3H4.5A1.5 1.5 0 0 0 3 4.5V8"/><path d="M16 3h3.5A1.5 1.5 0 0 1 21 4.5V8"/><path d="M8 21H4.5A1.5 1.5 0 0 1 3 19.5V16"/><path d="M16 21h3.5a1.5 1.5 0 0 0 1.5-1.5V16"/><circle cx="12" cy="12" r="2.1"/></symbol>
   <symbol id="i-board" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M7.5 9.5h6M7.5 13h9"/></symbol>
   <symbol id="i-split" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="15" rx="2.5"/><path d="M12.5 4.5v15"/></symbol>
@@ -3438,7 +3439,7 @@ async function readContentDetailed(pageId) {
     v: 1,
     elements: raw.elements.slice(0, 4000).map(sanitizeElement).filter(Boolean),
     view: (raw.view && Number.isFinite(raw.view.cx) && Number.isFinite(raw.view.cy) && Number.isFinite(raw.view.scale)) ? { cx: raw.view.cx, cy: raw.view.cy, scale: clamp(raw.view.scale, 0.2, 4) } : null,
-    grid: ['none', 'dots', 'grid'].includes(raw.grid) ? raw.grid : 'dots',
+    grid: ['none', 'dots', 'grid', 'lined'].includes(raw.grid) ? raw.grid : 'dots',
     color: isHex(raw.color) ? raw.color : INK_DEFAULT,
     eraserSize: Number.isFinite(raw.eraserSize) ? clamp(raw.eraserSize, 8, 120) : 32
   };
@@ -3607,7 +3608,7 @@ async function readSnapshot(key) {
     v: 1,
     elements: Array.isArray(legacy.elements) ? legacy.elements.slice(0, 4000).map(sanitizeElement).filter(Boolean) : [],
     view: (legacy.view && Number.isFinite(legacy.view.cx)) ? { cx: legacy.view.cx, cy: legacy.view.cy, scale: clamp(legacy.view.scale, 0.2, 4) } : null,
-    grid: ['none', 'dots', 'grid'].includes(legacy.grid) ? legacy.grid : 'dots',
+    grid: ['none', 'dots', 'grid', 'lined'].includes(legacy.grid) ? legacy.grid : 'dots',
     color: isHex(legacy.color) ? legacy.color : INK_DEFAULT,
     eraserSize: Number.isFinite(legacy.eraserSize) ? clamp(legacy.eraserSize, 8, 120) : 32
   };
@@ -5043,7 +5044,8 @@ function noteStrokeForHandwriting(stroke) {
   if (aiRecent.length > 8) aiRecent.shift();
   cancelHandwritingAssist();
   aiPageId = activePageId;
-  aiTimer = setTimeout(runHandwritingAssist, AI.settleMs);
+  const settle = state.grid === 'lined' ? 420 : AI.settleMs;
+  aiTimer = setTimeout(runHandwritingAssist, settle);
 }
 
 function cancelHandwritingAssist() {
@@ -5867,7 +5869,7 @@ const TIDY = {
   panelPad: 14,
   accents: ['#e4a93f', '#3f6b52', '#4a5b8c', '#8a5a2b', '#6d4a72']
 };
-const TIDY_TITLES = ['المفاهيم الأساسية', 'القوانين والصيغ', 'الأسئلة', 'ملاحظات مهمة', 'الخطوات', 'أفكار متفرقة'];
+const TIDY_TITLES = ['الملاحظات', 'الأساسيات', 'الأمثلة', 'الأسئلة', 'أخرى'];
 const ARABIC_DIGITS = '٠١٢٣٤٥٦٧٨٩';
 let tidyBusy = false;
 let tidyMeasureCtx = null;
@@ -5934,8 +5936,9 @@ function tidyBuildUnits() {
     used.add(e.id);
   }
 
-  /* Loose marks snap to the note they sit on; anything else becomes its own
-     card, so no scribble is left stranded in the margins. */
+  /* Loose marks snap to the note they sit on. Remaining ink is clustered into
+     connected strokes first, so individual letters/words are never split apart. */
+  const looseInk = [];
   for (const e of nodes) {
     if (used.has(e.id)) continue;
     const b = bboxOf(e);
@@ -5948,8 +5951,27 @@ function tidyBuildUnits() {
       if (d < bestD) { bestD = d; best = u; }
     }
     if (best && bestD <= 28) best.els.push(e);
-    else units.push({ els: [e], kind: 'ink', host: null });
+    else looseInk.push(e);
   }
+  /* Cluster loose ink strokes by proximity so letters stay intact. */
+  const inkClusters = [];
+  const sortedInk = looseInk.slice().sort((a, b) => (bboxOf(a).x - bboxOf(b).x) || (bboxOf(a).y - bboxOf(b).y));
+  for (const e of sortedInk) {
+    const b = bboxOf(e);
+    let target = null, bestD = Infinity;
+    for (const c of inkClusters) {
+      const cb = c.box;
+      const d = tidyRectGap(cb, b);
+      if (d < bestD) { bestD = d; target = c; }
+    }
+    if (target && bestD <= 26) {
+      target.els.push(e);
+      target.box = unionBBox(target.els);
+    } else {
+      inkClusters.push({ els: [e], kind: 'ink', host: null, box: { ...b } });
+    }
+  }
+  for (const c of inkClusters) units.push(c);
 
   for (const u of units) {
     u.box = unionBBox(u.els);
@@ -5965,7 +5987,7 @@ function tidyBuildUnits() {
 async function tidyAskColumns(batch) {
   const payload = batch.map((b) => ({ id: 'u' + b.index, text: b.text.slice(0, 160) }));
   const prompt = `أنت منظّم لوحات دراسية خبير. بعد محاضرة سريعة وصلت إليك ملاحظات مبعثرة على لوح أبيض.\n` +
-    `صنّف هذه الملاحظات دلالياً إلى أعمدة موضوعية (مثل: المفاهيم الأساسية، القوانين والصيغ، الأسئلة، التعريفات، الخطوات، أمثلة).\n` +
+    `صنّف هذه الملاحظات دلالياً إلى أقسام (أقسام مثل: الملاحظات، الأساسيات، الأمثلة، الأسئلة، أخرى).\n` +
     `شروط إلزامية:\n` +
     `- اكتب كل العناوين بالعربية الفصحى فقط، دون أي حرف لاتيني أو كلمة إنجليزية.\n` +
     `- استخدم الأرقام العربية (٠١٢٣٤٥٦٧٨٩) عند الحاجة.\n` +
@@ -6880,7 +6902,7 @@ function savePrefs() {
 /* Apply a page's stored content into the live canvas. */
 function applyContent(content) {
   elements = content.elements.slice();
-  if (['none', 'dots', 'grid'].includes(content.grid)) state.grid = content.grid;
+  if (['none', 'dots', 'grid', 'lined'].includes(content.grid)) state.grid = content.grid;
   if (isHex(content.color)) state.color = themeInk(content.color);
   if (Number.isFinite(content.eraserSize)) state.sizes.eraser = clamp(content.eraserSize, 8, 120);
   savedView = content.view ? { cx: content.view.cx, cy: content.view.cy, scale: clamp(content.view.scale, 0.2, 4) } : null;
@@ -7032,7 +7054,7 @@ function screenToWorld(x, y) {
 function worldToScreen(x, y) {
   return { x: x * cam.scale + cam.x, y: y * cam.scale + cam.y };
 }
-function gridWorldStep() { return state.grid === 'grid' ? 52 : 26; }
+function gridWorldStep() { return state.grid === 'grid' ? 52 : state.grid === 'lined' ? 34 : 26; }
 function snapValue(v) {
   if (!state.snap) return v;
   const step = gridWorldStep();
@@ -7366,7 +7388,9 @@ function render() {
 
 function drawGrid(ctx) {
   if (state.grid === 'none') return;
-  let step = (state.grid === 'dots' ? 26 : 52) * cam.scale;
+  const lined = state.grid === 'lined';
+  const stepBase = lined ? 34 : (state.grid === 'dots' ? 26 : 52);
+  let step = stepBase * cam.scale;
   if (step < 9) { while (step < 9) step *= 2; }
   const ox = ((cam.x % step) + step) % step;
   const oy = ((cam.y % step) + step) % step;
@@ -7376,6 +7400,19 @@ function drawGrid(ctx) {
     for (let x = ox; x < viewW; x += step) {
       for (let y = oy; y < viewH; y += step) ctx.fillRect(x - size / 2, y - size / 2, size, size);
     }
+  } else if (lined) {
+    ctx.strokeStyle = 'rgba(210,205,186,.16)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (let y = oy; y < viewH; y += step) { ctx.moveTo(0, Math.round(y) + 0.5); ctx.lineTo(viewW, Math.round(y) + 0.5); }
+    ctx.stroke();
+    /* margin rule */
+    const marginX = 34 * cam.scale;
+    const mx = ((cam.x % marginX) + marginX) % marginX; // not used; draw at fixed left gutter
+    ctx.strokeStyle = 'rgba(228,169,63,.35)';
+    ctx.beginPath();
+    ctx.moveTo(34 + 0.5, 0); ctx.lineTo(34 + 0.5, viewH);
+    ctx.stroke();
   } else {
     ctx.strokeStyle = 'rgba(210,205,186,.12)';
     ctx.lineWidth = 1;
@@ -9562,10 +9599,10 @@ function nudgeSelection(worldStepX, worldStepY) {
 }
 
 /* ------------------------------------------------------------ grid + layout */
-const GRID_ORDER = ['dots', 'grid', 'none'];
-function gridLabel(g) { return g === 'dots' ? 'Dots' : g === 'grid' ? 'Grid' : 'Blank'; }
+const GRID_ORDER = ['dots', 'grid', 'lined', 'none'];
+function gridLabel(g) { return g === 'dots' ? 'Dots' : g === 'grid' ? 'Grid' : g === 'lined' ? 'Lined' : 'Blank'; }
 function syncGridUi() {
-  const href = state.grid === 'dots' ? '#i-dots' : state.grid === 'grid' ? '#i-grid' : '#i-blank';
+  const href = state.grid === 'dots' ? '#i-dots' : state.grid === 'grid' ? '#i-grid' : state.grid === 'lined' ? '#i-lined' : '#i-blank';
   el.gridBtn.querySelector('use').setAttribute('href', href);
   el.gridBtn.setAttribute('aria-label', 'Background: ' + gridLabel(state.grid));
   el.menuGrid.textContent = 'Background: ' + gridLabel(state.grid);
@@ -9574,6 +9611,12 @@ function cycleGrid() {
   state.grid = GRID_ORDER[(GRID_ORDER.indexOf(state.grid) + 1) % GRID_ORDER.length];
   syncGridUi();
   syncMathToolsMenu();
+  if (state.grid === 'lined' && !state.letterAssist) {
+    setLetterAssist(true, { silent: true });
+    toast('Lined paper on \u2014 AI guide engaged');
+  } else {
+    toast(gridLabel(state.grid) + ' background');
+  }
   queueScene();
   scheduleSave();
 }
