@@ -6710,7 +6710,8 @@ const HANDWRITING_LOCALHOST = location.hostname === '127.0.0.1' || location.host
 const HANDWRITING_BRIDGE = 'http://127.0.0.1:8765/feedback';
 const HANDWRITING_MODEL = './models/recognizer_khatt.onnx';
 const HANDWRITING_CHARS = './models/handwriting_chars.json';
-const HANDWRITING_ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.28.0/dist/ort.wasm.min.js';
+const HANDWRITING_ORT = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/ort.min.js';
+const HANDWRITING_WASM = 'https://cdn.jsdelivr.net/npm/onnxruntime-web@1.31.1/dist/';
 let handwritingAiTimer = 0;
 let handwritingAiRecent = [];
 let handwritingChars = null;
@@ -6722,7 +6723,10 @@ function loadHandwritingOrt() {
     if (window.ort) return resolve(window.ort);
     const s = document.createElement('script');
     s.src = HANDWRITING_ORT;
-    s.onload = () => (window.ort ? resolve(window.ort) : reject(new Error('ort not exposed')));
+    s.onload = () => {
+      try { if (window.ort && window.ort.env && window.ort.env.wasm) window.ort.env.wasm.wasmPaths = HANDWRITING_WASM; } catch { /* keep script default */ }
+      return window.ort ? resolve(window.ort) : reject(new Error('ort not exposed'));
+    };
     s.onerror = () => reject(new Error('failed to load onnxruntime-web'));
     document.head.appendChild(s);
   });
@@ -6858,8 +6862,11 @@ async function runHandwritingAiBridge() {
       toast('Handwriting AI read \u201C' + text + '\u201D');
     }
   } catch (err) {
-    console.warn('Handwriting bridge unavailable', err);
-    toast('Handwriting bridge offline — run python -m handwriting_ai.serve');
+    console.warn('Handwriting AI unavailable', err);
+    const msg = err && err.message ? String(err.message).slice(0, 120) : 'unknown error';
+    toast((location.protocol === 'http:' || location.protocol === 'https:')
+      ? 'Handwriting AI failed to load in-browser — ' + msg
+      : 'Handwriting bridge offline — run python -m handwriting_ai.serve');
   }
 }
 
